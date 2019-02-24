@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<!--suppress HtmlRequiredTitleElement -->
+<head th:replace="layout::base_header(${title})">
+</head>
+<body>
+
+<table class="table table-bordered table-hover table-lg">
+    <thead class="thead-light">
+    <tr>
+        <th>ID</th>
+        <th>バーコード</th>
+        <th>スタッフ名</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="staff: ${data}">
+        <td th:text="${staff.id}"></td>
+        <td th:text="${staff.barcode}"></td>
+        <td th:text="${staff.name}"></td>
+        <td><a class="btn btn-default btn-xs" th:href="@{/items/{id}/edit(id=*{id})}">編集</a></td>
+    </tr>
+    </tbody>
+</table>
+<a class="btn btn-default" href="/staffs/new">新規作成</a>
+<a href="/">Back</a>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<!--suppress HtmlRequiredTitleElement -->
+<head th:replace="layout::base_header(${title})">
+</head>
+<body>
+<table class="table table-bordered table-hover table-lg">
+    <thead class="thead-light">
+    <tr>
+        <th>ID</th>
+        <th>店舗ID</th>
+        <th>スタッフID</th>
+        <th>商品個数</th>
+        <th>値段</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="sale: ${data}">
+        <td th:text="${sale.id}"></td>
+        <td th:text="${sale.storeId}"></td>
+        <td th:text="${sale.staffId}"></td>
+        <td th:text="${sale.quantity}"></td>
+        <td th:text="${sale.amount}"></td>
+    </tr>
+    </tbody>
+</table>
+<a href="/">Back</a>
+</body>
+</html>

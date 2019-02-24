@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<!--suppress HtmlRequiredTitleElement -->
+<head th:replace="layout::base_header(${title})">
+</head>
+<body>
+<table class="table table-bordered table-hover table-lg">
+    <thead class="thead-light">
+    <tr>
+        <th>key</th>
+        <th>value</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="setting: ${settings}">
+        <td th:text="${setting.key}"></td>
+        <td th:text="${setting.value}"></td>
+        <td><a class="btn btn-default btn-xs" th:href="@{/settings/{id}/edit(id=*{key})}">編集</a></td>
+    </tr>
+    </tbody>
+</table>
+<a href="/">Back</a>
+</body>
+</html>

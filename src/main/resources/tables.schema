@@ -1,0 +1,44 @@
+CREATE TABLE IF NOT EXISTS item
+(
+  id    INTEGER PRIMARY KEY,
+  name  varchar(255) NOT NULL,
+  price INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS sale
+(
+  id        INTEGER PRIMARY KEY,
+  store_id  INTEGER,
+  staff_id  INTEGER,
+  quantity  INTEGER,
+  amount    INTEGER,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sale_detail
+(
+  id   INTEGER PRIMARY KEY,
+  sale_id  INTEGER,
+  item_id  INTEGER,
+  price    INTEGER,
+  quantity INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS store
+(
+  id   INTEGER PRIMARY KEY,
+  name varchar(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS staff
+(
+  id   INTEGER PRIMARY KEY,
+  barcode varchar(255) NOT NULL UNIQUE,
+  name    varchar(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS setting
+(
+  key     varchar(255) PRIMARY KEY,
+  value   varchar(255) NOT NULL UNIQUE
+);
