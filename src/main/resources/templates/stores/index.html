@@ -4,7 +4,7 @@
 <head th:replace="layout::base_header(${title})">
 </head>
 <body>
-<table class="table table-bordered table-hover table-lg">
+<table id="content" class="table table-bordered table-hover table-lg">
     <thead class="thead-light">
     <tr>
         <th>ID</th>
@@ -20,7 +20,9 @@
     </tr>
     </tbody>
 </table>
-<a class="btn btn-default" href="/stores/new">新規作成</a>
-<a href="/">Back</a>
+<footer>
+    <a class="btn btn-outline-dark" role="button" href="/stores/new">新規作成</a>
+    <a class="btn btn-outline-warning" role="button" href="/">Back</a>
+</footer>
 </body>
 </html>
