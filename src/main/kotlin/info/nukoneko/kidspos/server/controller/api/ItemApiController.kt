@@ -15,8 +15,13 @@ class ItemApiController {
     @Autowired
     private lateinit var service: ItemService
 
+    @RequestMapping("list", method = [RequestMethod.GET])
+    fun getItems(): List<ItemEntity> {
+        return service.findAll()
+    }
+
     @RequestMapping(method = [RequestMethod.GET], value = ["{barcode}"])
-    fun getItem(@PathVariable barcode: String): ItemEntity {
+    fun getItem(@PathVariable barcode: String): ItemEntity? {
         return service.findItem(barcode)
     }
 }

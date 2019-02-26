@@ -1,12 +1,10 @@
 package info.nukoneko.kidspos.server.service
 
+import info.nukoneko.kidspos.server.controller.api.model.ItemBean
 import info.nukoneko.kidspos.server.controller.api.model.SaleBean
 import info.nukoneko.kidspos.server.entity.SaleDetailEntity
 import info.nukoneko.kidspos.server.entity.SaleEntity
-import info.nukoneko.kidspos.server.repository.SaleDetailRepository
-import info.nukoneko.kidspos.server.repository.SaleRepository
-import info.nukoneko.kidspos.server.repository.StaffRepository
-import info.nukoneko.kidspos.server.repository.StoreRepository
+import info.nukoneko.kidspos.server.repository.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.stereotype.Service
@@ -15,6 +13,9 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class SaleService {
+    @Autowired
+    private lateinit var itemRepository: ItemRepository
+
     @Autowired
     private lateinit var saleRepository: SaleRepository
 
@@ -47,7 +48,7 @@ class SaleService {
     /**
      * 綺麗にしたい
      */
-    fun save(saleBean: SaleBean): SaleEntity {
+    fun save(saleBean: SaleBean, items: List<ItemBean>): SaleEntity {
         val id = try {
             saleRepository.getLastId() + 1
         } catch (e: EmptyResultDataAccessException) {
@@ -55,13 +56,23 @@ class SaleService {
         }
 
         // 売り上げを保存
-        val sale = SaleEntity(id, saleBean.store_id, saleBean.staff_id,
-                saleBean.items.size, saleBean.items.sumBy { it.price })
+        val staffId = if (saleBean.staffBarcode.length > 4) {
+            saleBean.staffBarcode.substring(saleBean.staffBarcode.length - 3).toIntOrNull() ?: 0
+        } else {
+            0
+        }
+        items.forEach {
+            println(it.id)
+            println(it.name)
+            println(it.price)
+        }
+        val sale = SaleEntity(id, saleBean.storeId, staffId,
+                items.size, items.sumBy { it.price }, saleBean.deposit)
 
         val savedSale = saleRepository.save(sale)
 
         // 売り上げの詳細を保存
-        saleBean.items
+        items
                 .toSet()
                 .map { it.id }.filter { it != null }.distinct()
                 .forEach { itemId ->
@@ -70,7 +81,7 @@ class SaleService {
                     } catch (e: EmptyResultDataAccessException) {
                         1
                     }
-                    val items = saleBean.items.filter { it.id == itemId!! }
+                    val items = items.filter { it.id == itemId!! }
                     saleDetailRepository.save(SaleDetailEntity(saleDetailId, id, itemId!!, items[0].price, items.size))
                 }
 
