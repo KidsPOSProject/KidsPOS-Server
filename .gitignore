@@ -27,3 +27,6 @@
 
 ## db
 *.sqlite3
+
+## heroku
+app.jar
