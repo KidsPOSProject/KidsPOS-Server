@@ -24,8 +24,6 @@ class TopController {
     fun index(model: Model): String {
         model.addAttribute("title", "top")
         model.addAttribute("running_canonicalHostName", InetAddress.getLocalHost().canonicalHostName)
-        model.addAttribute("running_address", InetAddress.getLocalHost().address.joinToString(","))
-        model.addAttribute("running_host", InetAddress.getLocalHost().hostName)
         model.addAttribute("running_port", environment.getProperty("local.server.port"))
         return "index"
     }
