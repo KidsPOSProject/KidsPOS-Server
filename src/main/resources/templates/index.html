@@ -11,6 +11,11 @@
     position: absolute;margin: auto;"></div>
 </div>
 
+<p th:text="${running_canonicalHostName}"></p>
+<p th:text="${running_address}"></p>
+<p th:text="${running_host}"></p>
+<p th:text="${running_port}"></p>
+
 <footer>
     <a class="btn btn-outline-dark" role="button" href="items">Items</a>
     <a class="btn btn-outline-dark" role="button" href="staffs">Staffs</a>
@@ -21,13 +26,12 @@
 
 <!-- QR -->
 <script th:inline="text" type="text/javascript">
-    getLocalIP().then((ipAddr) => {
-        new QRCode(document.getElementById("qrcode"), {
-            text: "http://" + ipAddr + ":[[${running_port}]]",
-            width: 160,
-            height: 160
-        });
-    });
+// noinspection BadExpressionStatementJS
+new QRCode(document.getElementById("qrcode"), {
+    text: "http://[[${running_canonicalHostName}]]:[[${running_port}]]",
+    width: 160,
+    height: 160
+});
 </script>
 </body>
 </html>

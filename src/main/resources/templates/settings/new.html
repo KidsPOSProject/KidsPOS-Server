@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<!--suppress HtmlRequiredTitleElement -->
+<head th:replace="layout::base_header(${title})">
+</head>
+<body>
+<div class="container">
+    <h1>New Setting</h1>
+    <form th:action="@{/settings}" th:method="post">
+        <div class="form-group">
+            <label class="control-label">key</label>
+            <input class="form-control" name="key" type="text"/>
+        </div>
+        <div class="form-group">
+            <label class="control-label">value</label>
+            <input class="form-control" name="value" type="text"/>
+        </div>
+        <button class="btn btn-outline-primary" type="submit">作成</button>
+    </form>
+    <div class="pull-right">
+        <a class="btn btn-outline-warning" href="/settings">一覧画面へ</a>
+    </div>
+</div>
+</body>
+</html>
