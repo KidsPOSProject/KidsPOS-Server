@@ -36,18 +36,16 @@ class SaleApiController {
     @RequestMapping("create", method = [RequestMethod.POST])
     fun createSale(@ModelAttribute sale: SaleBean): SaleEntity {
         // 汚い。時間があるときに直す
-        println(sale.itemIds)
         val items: List<ItemBean> = sale.itemIds.split(",").map {
-            println(it)
             val itemEntity: ItemEntity = itemService.findItem(it.toInt()) ?: throw IOException("Unknown item.")
-            ItemBean(itemEntity.id, itemEntity.name, itemEntity.price)
+            ItemBean(itemEntity.id, itemEntity.barcode, itemEntity.name, itemEntity.price)
         }
 
         val entity = service.save(sale, items)
 
         // レシート印刷
         printReceipt(sale.storeId, ReceiptDetail(
-                items.map { ItemEntity(it.id!!, it.name, it.price) },
+                items.map { ItemEntity(it.id!!, it.name, it.barcode, it.price) },
                 storeService.findStore(sale.storeId)?.name,
                 staffService.findStaff(sale.staffBarcode)?.name,
                 sale.deposit, null, Date()
@@ -57,14 +55,19 @@ class SaleApiController {
     }
 
     private fun printReceipt(storeId: Int, receipt: ReceiptDetail) {
-        val ip = settingService.findPrinterHostPortById(storeId)
-        if (ip == null) {
+        val printerIp = storeService.findStore(storeId)?.printerUri ?: kotlin.run {
             println("$storeId の プリンタは設定されていない可能性があります。")
             println("レシートの印刷はされません")
             return
         }
 
-        val printer = ReceiptPrinter(ip.first, ip.second, receipt)
+        if (printerIp.isEmpty()) {
+            println("$storeId の プリンタは設定されていない可能性があります。")
+            println("レシートの印刷はされません")
+            return
+        }
+
+        val printer = ReceiptPrinter(printerIp, 9100, receipt)
         try {
             printer.print()
         } catch (e: IOException) {

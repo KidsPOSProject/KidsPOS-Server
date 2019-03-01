@@ -9,6 +9,7 @@
     <tr>
         <th>ID</th>
         <th>商品名</th>
+        <th>バーコード</th>
         <th>値段</th>
         <th></th>
     </tr>
@@ -17,8 +18,9 @@
     <tr th:each="item: ${data}">
         <td th:text="${item.id}"></td>
         <td th:text="${item.name}"></td>
+        <td th:text="${item.barcode}"></td>
         <td th:text="${item.price}"></td>
-        <td><a class="btn btn-default btn-xs" th:href="@{/items/{id}/edit(id=*{id})}">編集</a></td>
+        <!--<td><a class="btn btn-default btn-xs" th:href="@{/items/{id}/edit(id=*{id})}">編集</a></td>-->
     </tr>
     </tbody>
 </table>

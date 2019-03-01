@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:sqlite:./db.sqlite3
+    url: jdbc:sqlite:./kidspos.db
     driverClassName: org.sqlite.JDBC
 
   jpa:

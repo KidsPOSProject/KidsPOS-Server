@@ -10,20 +10,20 @@ import java.net.InetAddress
 
 
 @Controller
-@RequestMapping("/")
-class TopController {
+@RequestMapping("/ip")
+class IpController {
 
     @Autowired
     private lateinit var environment: Environment
 
     @GetMapping
     fun index(model: Model): String {
-        model.addAttribute("title", "top")
+        model.addAttribute("title", "ip")
         model.addAttribute("canonicalHostName", InetAddress.getLocalHost().canonicalHostName)
         model.addAttribute("address", InetAddress.getLocalHost().address)
         model.addAttribute("hostName", InetAddress.getLocalHost().hostName)
         model.addAttribute("hostAddress", InetAddress.getLocalHost().hostAddress)
         model.addAttribute("running_port", environment.getProperty("local.server.port"))
-        return "index"
+        return "ip/index"
     }
 }

@@ -35,7 +35,7 @@ class ItemService {
         } catch (e: EmptyResultDataAccessException) {
             1
         }
-        val item = ItemEntity(id, itemBean.name, itemBean.price)
+        val item = ItemEntity(id, itemBean.name, itemBean.barcode, itemBean.price)
         return repository.save(item)
     }
 }
