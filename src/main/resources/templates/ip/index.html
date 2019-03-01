@@ -28,12 +28,12 @@
         <script th:inline="text" type="text/javascript">
             // noinspection BadExpressionStatementJS
             new QRCode(document.getElementById("[[${host.nameId}]]"), {
-                text: "http://[[${host.name}]]:[[${running_port}]]",
+                text: "http://[[${host.name}]]:[[${port}]]",
                 width: 160,
                 height: 160
             });
             new QRCode(document.getElementById("[[${host.addressId}]]"), {
-                text: "http://[[${host.address}]]:[[${running_port}]]",
+                text: "http://[[${host.address}]]:[[${port}]]",
                 width: 160,
                 height: 160
             });

@@ -1,6 +1,8 @@
 package info.nukoneko.kidspos.receipt
 
 import info.nukoneko.kidspos.common.PrintCommand
+import info.nukoneko.kidspos.common.toAllEm
+import info.nukoneko.kidspos.common.toEm
 import java.io.IOException
 import java.net.Socket
 import java.nio.charset.Charset
@@ -21,12 +23,14 @@ class ReceiptPrinter(private val ipOrHost: String,
         // 店舗名・担当者
         command.setGravity(PrintCommand.Direction.LEFT)
         if (!detail.storeName.isNullOrEmpty()) {
-            command.writeTextLine("店舗名: ${detail.storeName}")
+            command.writeTextLine("店舗名：${detail.storeName.toAllEm()}")
         }
         if (!detail.staffName.isNullOrEmpty()) {
-            command.writeTextLine(" 担当 : ${detail.staffName}")
+            command.writeTextLine("担　当：${detail.staffName.toAllEm()}")
         }
         command.drawLine()
+
+        command.setGravity(PrintCommand.Direction.CENTER)
 
         // 商品
         detail.items.forEach {
@@ -38,11 +42,10 @@ class ReceiptPrinter(private val ipOrHost: String,
         val total = detail.items.sumBy { it.price }
         writeKV("ごうけい", total)
         writeKV("あずかり", detail.deposit)
-        writeKV(" おつり ", total - detail.deposit)
+        writeKV("おつり", detail.deposit - total)
         command.drawLine()
 
         /// Footer
-        command.setGravity(PrintCommand.Direction.CENTER)
 
         // 注釈
         command.newLine()
@@ -54,22 +57,28 @@ class ReceiptPrinter(private val ipOrHost: String,
         if (detail.transactionId != null) {
             command.drawBarcode(detail.transactionId)
         }
+
+        command.cut()
     }
 
     /**
      * 商品1行を印字する
+     * safe** は 古いプリンタのための対応 JISだと 半角文字が干渉しておかしくなる
      */
-    private fun writeKV(key: String, value: Int, valuePrefix: String = "リバー") {
-        val order = if (value == 0) {
-            1
-        } else {
-            Math.log(value.toDouble()).toInt() + 1
-        }
+    private fun writeKV(key: String, value: Int) {
+        val safeKey = key.toAllEm()
+        val safePrefix = "リバー"
+        val safeValue = value.toEm()
 
-        command.writeBytes(0x1B, 0x24, 0x18, 0x00) // 先頭スペース
-        command.writeText(key) // 商品名
-        command.writeBytes(0x1B, 0x24, (226 - order * 12).toByte(), 0x01) // 値段とのスペース
-        command.writeText("$value$valuePrefix")
+        val keyLength = safeKey.length
+        val valueLength = safeValue.length
+        val prefixLength = safePrefix.length
+
+        val needSpaceNum = MAX_ROW_TEXT_NUM - keyLength - valueLength - prefixLength
+        val safeSpace = "　".repeat(needSpaceNum)
+
+//        command.writeBytes(0x1B, 0x24, 0x18, 0x00) // 先頭スペース
+        command.writeText(safeKey + safeSpace + safeValue + safePrefix)
         command.newLine()
     }
 
@@ -83,6 +92,7 @@ class ReceiptPrinter(private val ipOrHost: String,
     }
 
     companion object {
+        private val MAX_ROW_TEXT_NUM = 20
         private val dateFormat =
                 SimpleDateFormat("yyyy年MM月dd日(E) HH時mm分ss秒")
     }

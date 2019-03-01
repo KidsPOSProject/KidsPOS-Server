@@ -4,7 +4,6 @@ import info.nukoneko.kidspos.server.controller.api.model.ItemBean
 import info.nukoneko.kidspos.server.entity.ItemEntity
 import info.nukoneko.kidspos.server.repository.ItemRepository
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,17 +24,16 @@ class ItemService {
     }
 
     fun findItem(barcode: String): ItemEntity? {
-        val id = barcode.substring(barcode.length - 3).toInt()
-        return repository.findByIdOrNull(id)
+        return repository.findByBarcode(barcode)
     }
 
     fun save(itemBean: ItemBean): ItemEntity {
         val id = try {
             repository.getLastId() + 1
-        } catch (e: EmptyResultDataAccessException) {
+        } catch (e: Throwable) {
             1
         }
-        val item = ItemEntity(id, itemBean.name, itemBean.barcode, itemBean.price)
+        val item = ItemEntity(id, itemBean.barcode, itemBean.name, itemBean.price)
         return repository.save(item)
     }
 }

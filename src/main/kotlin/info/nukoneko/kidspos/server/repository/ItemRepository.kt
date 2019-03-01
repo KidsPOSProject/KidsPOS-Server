@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository
 interface ItemRepository : JpaRepository<ItemEntity, Int> {
     @Query(value = "SELECT max(item.id) FROM ItemEntity as item")
     fun getLastId(): Int
+
+    fun findByBarcode(barcode: String): ItemEntity?
 }

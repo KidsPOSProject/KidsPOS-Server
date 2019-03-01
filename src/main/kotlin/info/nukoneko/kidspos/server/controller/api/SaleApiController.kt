@@ -45,7 +45,7 @@ class SaleApiController {
 
         // レシート印刷
         printReceipt(sale.storeId, ReceiptDetail(
-                items.map { ItemEntity(it.id!!, it.name, it.barcode, it.price) },
+                items.map { ItemEntity(it.id!!, it.barcode, it.name, it.price) },
                 storeService.findStore(sale.storeId)?.name,
                 staffService.findStaff(sale.staffBarcode)?.name,
                 sale.deposit, null, Date()

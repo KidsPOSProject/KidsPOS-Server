@@ -8,6 +8,12 @@ class PrintCommand(private val textEncoding: Charset) : Commander() {
         // 初期化
         writeBytes(0x1B, 0x40)
 
+        writeBytes(0x1B, 0x74, 0x01) // ESC t 文字コードテーブルを カタカナに
+
+        writeBytes(0x1C, 0x43, 0x01) // FS C コード体系選択 シフトJISコード体系
+
+        writeBytes(0x1B, 0x61, 0x01) // ESC = 周辺機器の指定 カスタマーディスプレイを介してプリンタへ送信
+
         /// スタイル調整
         // 改行量
         writeBytes(0x1B, 0x33, 0x28)
