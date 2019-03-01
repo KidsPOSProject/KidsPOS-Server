@@ -1,14 +1,8 @@
 body , html {
     margin: auto;
-    max-width: 480px;
-    max-height: 320px;
-    width: 480px;
-    height: 320px;
 }
 
 #content {
-    width: 440px;
-    height: 220px;
     margin: 0 auto;
 }
 
