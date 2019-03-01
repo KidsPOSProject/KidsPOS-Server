@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.*
 
 @Service
 @Transactional
@@ -67,7 +68,7 @@ class SaleService {
             println(it.price)
         }
         val sale = SaleEntity(id, saleBean.storeId, staffId,
-                items.size, items.sumBy { it.price }, saleBean.deposit)
+                items.size, items.sumBy { it.price }, saleBean.deposit, Date())
 
         val savedSale = saleRepository.save(sale)
 
