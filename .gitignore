@@ -26,7 +26,7 @@
 /.nb-gradle/
 
 ## db
-*.sqlite3
+*.db
 
 ## heroku
 app.jar
