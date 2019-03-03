@@ -13,7 +13,7 @@ class StoreApiController {
     @Autowired
     private lateinit var service: StoreService
 
-    @RequestMapping(method = [RequestMethod.GET])
+    @RequestMapping("list", method = [RequestMethod.GET])
     fun getStores(): List<StoreEntity> {
         return service.findAll()
     }

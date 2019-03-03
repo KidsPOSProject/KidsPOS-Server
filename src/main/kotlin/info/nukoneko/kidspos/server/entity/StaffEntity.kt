@@ -6,4 +6,4 @@ import javax.persistence.Table
 
 @Entity
 @Table(name = "staff")
-data class StaffEntity(@Id var id: Int = 0, var barcode: String, val name: String)
+data class StaffEntity(@Id var barcode: String, val name: String)

@@ -1,5 +1,6 @@
 package info.nukoneko.kidspos.server.entity
 
+import java.util.*
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Table
@@ -11,5 +12,7 @@ data class SaleEntity(
         val storeId: Int, // 店舗ID
         val staffId: Int, // スタッフID
         val quantity: Int, // 数量
-        val amount: Int // 売り上げ
+        val amount: Int, // 売り上げ
+        val deposit: Int,
+        val createdAt: Date
 )

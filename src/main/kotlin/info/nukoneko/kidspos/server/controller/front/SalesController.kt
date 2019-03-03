@@ -34,7 +34,7 @@ class SalesController {
 
     @PostMapping
     fun create(@ModelAttribute sale: SaleBean): String {
-        saleService.save(sale)
+//        saleService.save(sale)
         return "redirect:/sales"
     }
 }
