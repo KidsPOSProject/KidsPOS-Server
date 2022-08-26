@@ -27,13 +27,18 @@ class SettingService {
     }
 
     fun findPrinterHostPortById(storeId: Int): Pair<String, Int>? {
-        val setting: SettingEntity? = repository.findByIdOrNull("${KEY_PRINTER}_$storeId")
+        val setting: SettingEntity? =
+            repository.findByIdOrNull("${KEY_PRINTER}_$storeId")
         return setting?.let {
-            val matchResult = REGEX_HOST_PORT.matchEntire(it.value) ?: return null
+            val matchResult =
+                REGEX_HOST_PORT.matchEntire(it.value) ?: return null
             return if (matchResult.groupValues.size != 2) {
                 null
             } else {
-                Pair(matchResult.groupValues[0], matchResult.groupValues[1].toInt())
+                Pair(
+                    matchResult.groupValues[0],
+                    matchResult.groupValues[1].toInt()
+                )
             }
         }
     }
@@ -45,7 +50,7 @@ class SettingService {
     }
 
     data class ApplicationSetting(
-            val serverHost: String,
-            val serverPort: Int
+        val serverHost: String,
+        val serverPort: Int
     )
 }

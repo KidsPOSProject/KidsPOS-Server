@@ -33,7 +33,8 @@ class ItemService {
         } catch (e: Throwable) {
             1
         }
-        val item = ItemEntity(id, itemBean.barcode, itemBean.name, itemBean.price)
+        val item =
+            ItemEntity(id, itemBean.barcode, itemBean.name, itemBean.price)
         return repository.save(item)
     }
 }

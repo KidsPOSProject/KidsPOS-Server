@@ -19,11 +19,20 @@ class TopController {
     @GetMapping
     fun index(model: Model): String {
         model.addAttribute("title", "top")
-        model.addAttribute("canonicalHostName", InetAddress.getLocalHost().canonicalHostName)
+        model.addAttribute(
+            "canonicalHostName",
+            InetAddress.getLocalHost().canonicalHostName
+        )
         model.addAttribute("address", InetAddress.getLocalHost().address)
         model.addAttribute("hostName", InetAddress.getLocalHost().hostName)
-        model.addAttribute("hostAddress", InetAddress.getLocalHost().hostAddress)
-        model.addAttribute("running_port", environment.getProperty("local.server.port"))
+        model.addAttribute(
+            "hostAddress",
+            InetAddress.getLocalHost().hostAddress
+        )
+        model.addAttribute(
+            "running_port",
+            environment.getProperty("local.server.port")
+        )
         return "index"
     }
 }

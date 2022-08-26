@@ -26,7 +26,10 @@ class IpController {
             val testInA = testNI.inetAddresses
             while (testInA.hasMoreElements()) {
                 val testIP = testInA.nextElement() as InetAddress
-                if (testIP.hostName.contains(":0:") || testIP.hostAddress.contains(":0:")) {
+                if (testIP.hostName.contains(":0:") || testIP.hostAddress.contains(
+                        ":0:"
+                    )
+                ) {
                     continue
                 }
                 hosts.add(HostBean(testIP.hostName, testIP.hostAddress))
@@ -34,7 +37,7 @@ class IpController {
         }
 
         model.addAttribute("title", "ip")
-        model.addAttribute("hosts", hosts)
+        model.addAttribute("hosts", hosts.filter { it.address.startsWith("192.") }.distinct())
         model.addAttribute("port", environment.getProperty("local.server.port"))
         return "ip/index"
     }

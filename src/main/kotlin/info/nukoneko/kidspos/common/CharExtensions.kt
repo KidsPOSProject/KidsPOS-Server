@@ -15,6 +15,6 @@ fun Char.toEm(): String {
         '(' -> "（"
         ')' -> "）"
         ' ' -> "　"
-        else -> Character.toString(this)
+        else -> this.toString()
     }
 }

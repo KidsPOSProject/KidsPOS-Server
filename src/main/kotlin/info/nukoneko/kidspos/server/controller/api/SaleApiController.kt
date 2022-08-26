@@ -37,29 +37,45 @@ class SaleApiController {
     fun createSale(@ModelAttribute sale: SaleBean): SaleEntity {
         // 汚い。時間があるときに直す
         val items: List<ItemBean> = sale.itemIds.split(",").map {
-            val itemEntity: ItemEntity = itemService.findItem(it.toInt()) ?: throw IOException("Unknown item.")
-            ItemBean(itemEntity.id, itemEntity.barcode, itemEntity.name, itemEntity.price)
+            val itemEntity: ItemEntity = itemService.findItem(it.toInt())
+                ?: throw IOException("Unknown item.")
+            ItemBean(
+                itemEntity.id,
+                itemEntity.barcode,
+                itemEntity.name,
+                itemEntity.price
+            )
         }
 
         val entity = service.save(sale, items)
 
         // レシート印刷
-        printReceipt(sale.storeId, ReceiptDetail(
-                items.map { ItemEntity(it.id!!, it.barcode, it.name, it.price) },
+        printReceipt(
+            sale.storeId, ReceiptDetail(
+                items.map {
+                    ItemEntity(
+                        it.id!!,
+                        it.barcode,
+                        it.name,
+                        it.price
+                    )
+                },
                 storeService.findStore(sale.storeId)?.name,
                 staffService.findStaff(sale.staffBarcode)?.name,
                 sale.deposit, null, Date()
-        ))
+            )
+        )
 
         return entity
     }
 
     private fun printReceipt(storeId: Int, receipt: ReceiptDetail) {
-        val printerIp = storeService.findStore(storeId)?.printerUri ?: kotlin.run {
-            println("$storeId の プリンタは設定されていない可能性があります。")
-            println("レシートの印刷はされません")
-            return
-        }
+        val printerIp =
+            storeService.findStore(storeId)?.printerUri ?: kotlin.run {
+                println("$storeId の プリンタは設定されていない可能性があります。")
+                println("レシートの印刷はされません")
+                return
+            }
 
         if (printerIp.isEmpty()) {
             println("$storeId の プリンタは設定されていない可能性があります。")

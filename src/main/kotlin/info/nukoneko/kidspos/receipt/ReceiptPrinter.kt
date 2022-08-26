@@ -8,9 +8,9 @@ import java.net.Socket
 import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 
-class ReceiptPrinter(private val ipOrHost: String,
-                     private val port: Int,
-                     private val detail: ReceiptDetail) {
+class ReceiptPrinter(
+    private val ipOrHost: String, private val port: Int, detail: ReceiptDetail
+) {
     private val command = PrintCommand(Charset.forName("SJIS"))
 
     init {
@@ -39,7 +39,7 @@ class ReceiptPrinter(private val ipOrHost: String,
         command.drawLine()
 
         // 小計
-        val total = detail.items.sumBy { it.price }
+        val total = detail.items.sumOf { it.price }
         writeKV("ごうけい", total)
         writeKV("あずかり", detail.deposit)
         writeKV("おつり", detail.deposit - total)
@@ -74,7 +74,8 @@ class ReceiptPrinter(private val ipOrHost: String,
         val valueLength = safeValue.length
         val prefixLength = safePrefix.length
 
-        val needSpaceNum = MAX_ROW_TEXT_NUM - keyLength - valueLength - prefixLength
+        val needSpaceNum =
+            MAX_ROW_TEXT_NUM - keyLength - valueLength - prefixLength
         val safeSpace = "　".repeat(needSpaceNum)
 
 //        command.writeBytes(0x1B, 0x24, 0x18, 0x00) // 先頭スペース
@@ -92,8 +93,8 @@ class ReceiptPrinter(private val ipOrHost: String,
     }
 
     companion object {
-        private val MAX_ROW_TEXT_NUM = 20
+        private const val MAX_ROW_TEXT_NUM = 20
         private val dateFormat =
-                SimpleDateFormat("yyyy年MM月dd日(E) HH時mm分ss秒")
+            SimpleDateFormat("yyyy年MM月dd日(E) HH時mm分ss秒")
     }
 }
