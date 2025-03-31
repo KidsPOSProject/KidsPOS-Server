@@ -2,6 +2,9 @@ spring:
   datasource:
     url: jdbc:sqlite:./kidspos.db
     driverClassName: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 1
 
   jpa:
     properties:
@@ -11,10 +14,33 @@ spring:
         temp:
           use_jdbc_metadata_defaults: false
         dialect: com.enigmabridge.hibernate.dialect.SQLiteDialect
+        # Memory optimization for hibernate
+        jdbc:
+          batch_size: 10
+        order_inserts: true
+        order_updates: true
+        generate_statistics: false
     generate-ddl: true
     hibernate:
       ddl-auto: update
   thymeleaf:
     mode: HTML
+    cache: true # Enable template caching
+  resources:
+    cache:
+      period: 86400 # Cache static resources for 1 day
+
 server:
   port: 8080
+  tomcat:
+    max-threads: 4
+    min-spare-threads: 1
+    max-connections: 20
+
+# Reduce logging to save memory
+logging:
+  level:
+    root: WARN
+    info.nukoneko.kidspos: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
