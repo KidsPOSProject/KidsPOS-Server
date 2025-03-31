@@ -7,7 +7,9 @@ import info.nukoneko.kidspos.server.controller.api.model.SaleBean
 import info.nukoneko.kidspos.server.entity.ItemEntity
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.service.*
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.scheduling.annotation.Async
 import org.springframework.web.bind.annotation.ModelAttribute
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
@@ -18,6 +20,8 @@ import java.util.*
 @RestController
 @RequestMapping("/api/sale")
 class SaleApiController {
+    private val logger = LoggerFactory.getLogger(SaleApiController::class.java)
+    
     @Autowired
     private lateinit var service: SaleService
 
@@ -36,21 +40,25 @@ class SaleApiController {
     @RequestMapping("create", method = [RequestMethod.POST])
     fun createSale(@ModelAttribute sale: SaleBean): SaleEntity {
         // 汚い。時間があるときに直す
-        val items: List<ItemBean> = sale.itemIds.split(",").map {
-            val itemEntity: ItemEntity = itemService.findItem(it.toInt())
+        // Preallocate the expected size of the list for memory efficiency
+        val itemIds = sale.itemIds.split(",")
+        val items = ArrayList<ItemBean>(itemIds.size)
+        
+        for (itemId in itemIds) {
+            val itemEntity: ItemEntity = itemService.findItem(itemId.toInt())
                 ?: throw IOException("Unknown item.")
-            ItemBean(
+            items.add(ItemBean(
                 itemEntity.id,
                 itemEntity.barcode,
                 itemEntity.name,
                 itemEntity.price
-            )
+            ))
         }
 
         val entity = service.save(sale, items)
 
-        // レシート印刷
-        printReceipt(
+        // レシート印刷 - Now asynchronous
+        printReceiptAsync(
             sale.storeId, ReceiptDetail(
                 items.map {
                     ItemEntity(
@@ -69,17 +77,18 @@ class SaleApiController {
         return entity
     }
 
-    private fun printReceipt(storeId: Int, receipt: ReceiptDetail) {
+    @Async
+    fun printReceiptAsync(storeId: Int, receipt: ReceiptDetail) {
         val printerIp =
             storeService.findStore(storeId)?.printerUri ?: kotlin.run {
-                println("$storeId の プリンタは設定されていない可能性があります。")
-                println("レシートの印刷はされません")
+                logger.warn("$storeId の プリンタは設定されていない可能性があります。")
+                logger.warn("レシートの印刷はされません")
                 return
             }
 
         if (printerIp.isEmpty()) {
-            println("$storeId の プリンタは設定されていない可能性があります。")
-            println("レシートの印刷はされません")
+            logger.warn("$storeId の プリンタは設定されていない可能性があります。")
+            logger.warn("レシートの印刷はされません")
             return
         }
 
@@ -87,9 +96,8 @@ class SaleApiController {
         try {
             printer.print()
         } catch (e: IOException) {
-            println("*** プリント失敗 ***")
-            e.localizedMessage
-            println("************")
+            logger.error("*** プリント失敗 ***", e)
+            logger.error("************")
         }
     }
 }
