@@ -1,7 +1,6 @@
 package info.nukoneko.kidspos.server.controller.api
 
 import info.nukoneko.kidspos.receipt.ReceiptDetail
-import info.nukoneko.kidspos.receipt.ReceiptPrinter
 import info.nukoneko.kidspos.server.controller.api.model.ItemBean
 import info.nukoneko.kidspos.server.controller.api.model.SaleBean
 import info.nukoneko.kidspos.server.entity.ItemEntity
@@ -32,6 +31,9 @@ class SaleApiController {
 
     @Autowired
     private lateinit var staffService: StaffService
+    
+    @Autowired
+    private lateinit var printService: PrintService
 
     @RequestMapping("create", method = [RequestMethod.POST])
     fun createSale(@ModelAttribute sale: SaleBean): SaleEntity {
@@ -49,8 +51,8 @@ class SaleApiController {
 
         val entity = service.save(sale, items)
 
-        // レシート印刷
-        printReceipt(
+        // レシート印刷を非同期処理に変更
+        printService.printReceipt(
             sale.storeId, ReceiptDetail(
                 items.map {
                     ItemEntity(
@@ -67,29 +69,5 @@ class SaleApiController {
         )
 
         return entity
-    }
-
-    private fun printReceipt(storeId: Int, receipt: ReceiptDetail) {
-        val printerIp =
-            storeService.findStore(storeId)?.printerUri ?: kotlin.run {
-                println("$storeId の プリンタは設定されていない可能性があります。")
-                println("レシートの印刷はされません")
-                return
-            }
-
-        if (printerIp.isEmpty()) {
-            println("$storeId の プリンタは設定されていない可能性があります。")
-            println("レシートの印刷はされません")
-            return
-        }
-
-        val printer = ReceiptPrinter(printerIp, 9100, receipt)
-        try {
-            printer.print()
-        } catch (e: IOException) {
-            println("*** プリント失敗 ***")
-            e.localizedMessage
-            println("************")
-        }
     }
 }
