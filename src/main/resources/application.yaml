@@ -11,10 +11,43 @@ spring:
         temp:
           use_jdbc_metadata_defaults: false
         dialect: com.enigmabridge.hibernate.dialect.SQLiteDialect
+        # メモリ最適化のための設定追加
+        jdbc:
+          batch_size: 10
+        order_inserts: true
+        order_updates: true
+        cache:
+          use_second_level_cache: false
     generate-ddl: true
     hibernate:
       ddl-auto: update
+      
   thymeleaf:
     mode: HTML
+    # キャッシュを有効化してリソース使用量を削減
+    cache: true
+    
+  # 静的リソースのキャッシュを有効化
+  resources:
+    cache:
+      period: 86400
+      
+  # 不要なJMXエンドポイントを無効化
+  jmx:
+    enabled: false
+      
 server:
   port: 8080
+  # Tomcatの設定を調整
+  tomcat:
+    max-threads: 4
+    min-spare-threads: 1
+    max-connections: 20
+    
+# ロギングレベルを制限
+logging:
+  level:
+    root: WARN
+    info.nukoneko.kidspos: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
