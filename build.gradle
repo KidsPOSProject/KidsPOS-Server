@@ -42,6 +42,9 @@ dependencies {
     implementation 'org.xerial:sqlite-jdbc'
     implementation 'org.webjars:jquery:3.6.0'
     implementation 'org.webjars:jquery-ui:1.13.2'
+    implementation 'com.itextpdf:itext7-core:7.2.3'
+    implementation 'com.google.zxing:core:3.5.1'
+    implementation 'com.google.zxing:javase:3.5.1'
 }
 
 compileKotlin {
