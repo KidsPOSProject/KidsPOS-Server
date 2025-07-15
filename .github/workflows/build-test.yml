@@ -14,8 +14,9 @@ jobs:
     steps:
     - name: Checkout code
       run: |
-        git clone --depth 1 https://github.com/${{ github.repository }} .
-        git checkout ${{ github.sha }}
+        git clone https://github.com/${{ github.repository }} .
+        git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge:pr
+        git checkout pr
     
     - name: Set up JDK 11
       run: |
@@ -41,8 +42,9 @@ jobs:
     steps:
     - name: Checkout code
       run: |
-        git clone --depth 1 https://github.com/${{ github.repository }} .
-        git checkout ${{ github.sha }}
+        git clone https://github.com/${{ github.repository }} .
+        git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge:pr
+        git checkout pr
     
     - name: Set up JDK 11
       run: |
