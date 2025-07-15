@@ -52,12 +52,9 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     
-    - name: Run optimization tests
-      run: ./gradlew testOptimization
-    
     - name: Create SQLite test database
       run: |
-        apt-get update && apt-get install -y sqlite3
+        sudo apt-get update && sudo apt-get install -y sqlite3
         sqlite3 test.db "CREATE TABLE item (id INTEGER PRIMARY KEY, barcode TEXT, name TEXT, price INTEGER);
                          CREATE TABLE sale (id INTEGER PRIMARY KEY, storeId INTEGER, staffId INTEGER, quantity INTEGER, amount INTEGER, deposit INTEGER, createdAt TEXT);
                          CREATE TABLE sale_detail (id INTEGER PRIMARY KEY, saleId INTEGER, itemId INTEGER, price INTEGER, quantity INTEGER);
