@@ -1,0 +1,210 @@
+# KidsPOS (キッズPOS)
+
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.3-green)
+![Kotlin](https://img.shields.io/badge/Kotlin-1.6.21-purple)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+子供向け教育用POSシステム - 楽しみながら商業活動を体験できる教育ツール
+
+## 概要
+
+KidsPOSは、子供たちが楽しみながら商業活動を体験できる教育用POSシステムです。学校のイベントや教育プログラムで、実際の小売業務を安全に体験できる環境を提供します。
+
+### 主要機能
+
+- **売上管理** - 商品の販売と売上記録を管理
+- **在庫管理** - 商品の登録、バーコード管理、価格設定
+- **スタッフ管理** - スタッフの登録とバーコードIDシステム
+- **店舗管理** - 複数店舗の設定と管理
+- **レシート印刷** - サーマルプリンター対応のレシート発行
+
+### 使用シナリオ
+
+- 学校の文化祭や学園祭での模擬店運営
+- 子供向けイベントでの体験型学習
+- 教育プログラムでの実践的な商業教育
+- サマーキャンプでのトークンエコノミー
+- 家族でのお店屋さんごっこ
+
+## 技術スタック
+
+### バックエンド
+- Spring Boot 2.7.3
+- Kotlin 1.6.21
+- SQLite (組み込みデータベース)
+
+### フロントエンド
+- Thymeleaf (テンプレートエンジン)
+- Bootstrap 4.1.1 (UIフレームワーク)
+- jQuery 3.6.0
+- DataTables 1.10.18 (高度なテーブル機能)
+
+### システム要件
+- Java 8以上
+- メモリ: 最小256MB（推奨512MB）
+- ポート: 8080（デフォルト）
+
+## インストールとセットアップ
+
+### 1. リポジトリのクローン
+
+```bash
+git clone https://github.com/KidsPOSProject/KidsPOS-Server.git
+cd KidsPOS-Server
+```
+
+### 2. ビルド
+
+```bash
+# アプリケーションのビルド
+./gradlew build
+
+# 実行可能JARファイルの作成
+./gradlew bootJar
+```
+
+### 3. 起動
+
+開発環境での起動:
+```bash
+./gradlew bootRun
+```
+
+本番環境での起動:
+```bash
+# JARファイルを作成してステージング
+./gradlew stage
+
+# アプリケーションを起動
+java -jar app.jar
+```
+
+### データベース設定
+SQLiteデータベース（`kidspos.db`）は初回起動時に自動生成されます。追加の設定は不要です。
+
+## 使用方法
+
+### アクセス
+ブラウザで以下のURLにアクセスしてください:
+```
+http://localhost:8080
+```
+
+### 主要画面
+
+| 機能 | URL | 説明 |
+|------|-----|------|
+| ホーム | `/` | ダッシュボード画面 |
+| 商品管理 | `/items` | 商品の登録・編集・削除 |
+| 売上管理 | `/sales` | 売上履歴の確認と管理 |
+| スタッフ管理 | `/staffs` | スタッフの登録と管理 |
+| 店舗管理 | `/stores` | 店舗情報の設定 |
+| 設定 | `/settings` | システム設定の管理 |
+
+### API
+REST APIは `/api/` プレフィックスで利用可能です:
+- `/api/items` - 商品API
+- `/api/sales` - 売上API
+- `/api/staffs` - スタッフAPI
+- `/api/stores` - 店舗API
+- `/api/settings` - 設定API
+
+### 基本操作フロー
+
+1. **商品を登録** - 商品管理画面から商品を追加
+2. **スタッフを登録** - スタッフ管理画面でスタッフを追加
+3. **店舗を設定** - 店舗管理画面で店舗情報を設定
+4. **売上処理を実行** - POSレジ画面から商品をスキャンして販売
+
+## 開発者向け情報
+
+### プロジェクト構造
+
+```
+src/main/kotlin/info/nukoneko/kidspos/
+├── common/          # 共通ユーティリティ
+│   ├── CharExtensions.kt
+│   ├── Commander.kt
+│   ├── IntExtensions.kt
+│   ├── PrintCommand.kt
+│   └── StringExtensions.kt
+├── receipt/         # レシート印刷機能
+│   ├── ReceiptDetail.kt
+│   └── ReceiptPrinter.kt
+└── server/
+    ├── controller/  # コントローラー層
+    │   ├── api/    # REST APIコントローラー
+    │   └── front/  # Web UIコントローラー
+    ├── entity/      # JPA エンティティ
+    ├── repository/  # データアクセス層
+    └── service/     # ビジネスロジック層
+```
+
+### 開発コマンド
+
+```bash
+# テスト実行
+./gradlew test
+
+# アプリケーションのビルド
+./gradlew build
+
+# デプロイ用JARファイルの準備
+./gradlew stage
+
+# ビルドのクリーンアップ
+./gradlew clean
+
+# ステージングJARのクリーンアップ
+./gradlew cleanJar
+```
+
+### コントリビューション
+
+#### 貢献方法
+
+1. **Issueを作成** - バグ報告や機能要望を[Issues](https://github.com/KidsPOSProject/KidsPOS-Server/issues)に投稿
+2. **フォーク＆ブランチ作成** - リポジトリをフォークし、機能ブランチを作成
+3. **変更をコミット** - 明確なコミットメッセージで変更を記録
+4. **プルリクエストを送信** - masterブランチへのPRを作成
+
+#### コーディング規約
+
+- Kotlin公式コーディング規約に準拠
+- Spring Bootのベストプラクティスを遵守
+- 明確で意味のある変数名・関数名を使用
+- 適切なコメントとドキュメンテーション
+
+## ライセンス
+
+MITライセンス - 詳細は[LICENSE](LICENSE)ファイルを参照してください。
+
+## サポート
+
+### 問題報告・要望
+- [GitHub Issues](https://github.com/KidsPOSProject/KidsPOS-Server/issues)で問題を報告してください
+
+### 連絡先
+プロジェクトメンテナーへの連絡は、GitHubのIssueを通じてお願いします。
+
+## 関連リソース
+
+- [プロジェクトWiki](https://github.com/KidsPOSProject/KidsPOS-Server/wiki)（準備中）
+- [APIドキュメント](docs/api.md)（準備中）
+- [デプロイメントガイド](docs/deployment.md)（準備中）
+
+## 今後の改善予定
+
+- テストカバレッジの向上
+- CI/CDパイプラインの構築
+- Swagger/OpenAPIによるAPI自動ドキュメント生成
+- 多言語対応
+- クラウドデプロイメントのサポート
+
+---
+
+<div align="center">
+
+**KidsPOS** - 子供たちに楽しい学びの体験を
+
+</div>
