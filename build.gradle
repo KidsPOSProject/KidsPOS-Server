@@ -183,3 +183,19 @@ tasks.withType(io.gitlab.arturbosch.detekt.Detekt).configureEach {
 
 // Temporarily disabled - coverage requirements
 // check.dependsOn jacocoTestCoverageVerification
+
+// カスタムタスク: ポートをクリアしてからアプリケーションを起動
+task runWithPortClean(type: Exec) {
+    group = 'application'
+    description = 'Kill existing process on port 8080 and run the application'
+
+    commandLine 'bash', '-c', '''
+        PORT_PID=$(lsof -ti:8080)
+        if [ ! -z "$PORT_PID" ]; then
+            echo "Killing process on port 8080 (PID: $PORT_PID)"
+            kill -9 $PORT_PID
+            sleep 2
+        fi
+        ./gradlew bootRun
+    '''
+}
