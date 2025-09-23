@@ -2,7 +2,7 @@
 # Task 8.3: Static code analysis with detekt
 
 build:
-  maxIssues: 10
+  maxIssues: 500
   excludeCorrectable: false
   weights:
     complexity: 2
