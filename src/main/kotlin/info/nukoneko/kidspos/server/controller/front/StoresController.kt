@@ -36,4 +36,24 @@ class StoresController {
         storeService.save(store)
         return "redirect:/stores"
     }
+
+    @PostMapping("{id}/update")
+    fun update(@PathVariable id: Int, @ModelAttribute store: StoreBean): String {
+        val existingStore = storeService.findStore(id)
+        if (existingStore != null) {
+            val updatedStore = StoreBean(
+                id = id,
+                name = store.name,
+                printerUri = store.printerUri
+            )
+            storeService.save(updatedStore)
+        }
+        return "redirect:/stores"
+    }
+
+    @PostMapping("{id}/delete")
+    fun delete(@PathVariable id: Int): String {
+        storeService.delete(id)
+        return "redirect:/stores"
+    }
 }
