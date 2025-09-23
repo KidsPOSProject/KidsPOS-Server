@@ -26,6 +26,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 
 - Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)
 - **API更新ルール**: API関連の作業（エンドポイントの追加・変更・削除）を行った際は、必ずOpenAPI仕様書（api.yaml）を更新すること
+- **ビルド確認ルール**: タスク完了時は必ずビルド（`./gradlew build -x detekt`）とアプリケーション起動（`./gradlew bootRun`）を確認すること
 
 ## Workflow
 
