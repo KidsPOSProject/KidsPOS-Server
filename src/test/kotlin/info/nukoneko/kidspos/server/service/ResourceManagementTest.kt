@@ -14,9 +14,8 @@ import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 
 @SpringBootTest
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class ResourceManagementTest {
-
     private lateinit var resourceManager: ResourceManager
 
     @TempDir

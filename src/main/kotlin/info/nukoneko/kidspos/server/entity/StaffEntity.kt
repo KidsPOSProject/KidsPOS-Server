@@ -3,6 +3,7 @@ package info.nukoneko.kidspos.server.entity
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.validation.constraints.NotBlank
 
 /**
  * スタッフエンティティ
@@ -13,4 +14,11 @@ import jakarta.persistence.Table
  */
 @Entity
 @Table(name = "staff")
-data class StaffEntity(@Id var barcode: String, val name: String)
+data class StaffEntity(
+    @Id
+    @field:NotBlank(message = "Barcode is required")
+    var barcode: String,
+
+    @field:NotBlank(message = "Name is required")
+    val name: String
+)

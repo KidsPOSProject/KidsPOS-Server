@@ -40,7 +40,9 @@ class StoreApiControllerUnitTest {
         val result = controller.getStores()
 
         // Assert
-        assertEquals(expectedStores, result)
+        assertNotNull(result)
+        assertEquals(200, result.statusCodeValue)
+        assertEquals(expectedStores, result.body)
         verify(storeService).findAll()
     }
 
@@ -54,7 +56,9 @@ class StoreApiControllerUnitTest {
         val result = controller.getStores()
 
         // Assert
-        assertTrue(result.isEmpty())
+        assertNotNull(result)
+        assertEquals(200, result.statusCodeValue)
+        assertTrue(result.body?.isEmpty() == true)
         verify(storeService).findAll()
     }
 }

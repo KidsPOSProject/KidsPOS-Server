@@ -26,9 +26,8 @@ import org.springframework.test.context.ActiveProfiles
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("StaffRepository Integration Tests")
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class StaffRepositoryTest {
-
     @Autowired
     private lateinit var staffRepository: StaffRepository
 

@@ -50,4 +50,14 @@ class StaffService(
         logger.debug("Fetching staff by barcode: {} from database", barcode)
         return repository.findByIdOrNull(barcode)
     }
+
+    fun save(staff: StaffEntity): StaffEntity {
+        logger.debug("Saving staff with barcode: {}", staff.barcode)
+        return repository.save(staff)
+    }
+
+    fun delete(barcode: String) {
+        logger.debug("Deleting staff with barcode: {}", barcode)
+        repository.deleteById(barcode)
+    }
 }

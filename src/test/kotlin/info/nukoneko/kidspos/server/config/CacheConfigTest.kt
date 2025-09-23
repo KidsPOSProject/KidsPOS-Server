@@ -17,9 +17,8 @@ import org.springframework.test.context.ActiveProfiles
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Cache Configuration Tests")
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class CacheConfigTest {
-
     @Autowired
     private lateinit var cacheManager: CacheManager
 

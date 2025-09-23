@@ -17,9 +17,8 @@ import org.springframework.test.context.ActiveProfiles
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("ItemRepository Integration Tests")
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class ItemRepositoryTest {
-
     @Autowired
     private lateinit var entityManager: TestEntityManager
 

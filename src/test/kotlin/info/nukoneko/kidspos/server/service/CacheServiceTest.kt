@@ -20,9 +20,8 @@ import java.util.Optional
 
 @SpringBootTest
 @EnableCaching
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class CacheServiceTest {
-
     @Autowired
     private lateinit var itemService: ItemService
 

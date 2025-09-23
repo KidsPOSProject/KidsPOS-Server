@@ -20,9 +20,8 @@ import org.junit.jupiter.api.DisplayName
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @DisplayName("Input Validation Security Tests")
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class InputValidationSecurityTest {
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 

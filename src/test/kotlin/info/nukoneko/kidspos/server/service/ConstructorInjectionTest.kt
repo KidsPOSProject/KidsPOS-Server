@@ -13,9 +13,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 
 @SpringBootTest
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class ConstructorInjectionTest {
-
     @Autowired
     private lateinit var applicationContext: ApplicationContext
 

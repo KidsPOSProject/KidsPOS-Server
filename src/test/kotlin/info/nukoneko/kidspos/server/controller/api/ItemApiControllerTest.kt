@@ -33,9 +33,8 @@ import org.springframework.context.annotation.Import
 )
 @AutoConfigureMockMvc(addFilters = false)
 @Import(info.nukoneko.kidspos.server.TestConfiguration::class)
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class ItemApiControllerTest {
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 

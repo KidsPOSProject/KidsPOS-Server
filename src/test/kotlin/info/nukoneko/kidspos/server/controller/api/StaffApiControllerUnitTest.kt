@@ -2,8 +2,10 @@ package info.nukoneko.kidspos.server.controller.api
 
 import info.nukoneko.kidspos.server.entity.StaffEntity
 import info.nukoneko.kidspos.server.service.StaffService
+import info.nukoneko.kidspos.server.domain.exception.ResourceNotFoundException
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
@@ -35,37 +37,39 @@ class StaffApiControllerUnitTest {
 
         // Assert
         assertNotNull(result)
-        assertEquals(expectedStaff, result)
-        assertEquals(barcode, result?.barcode)
-        assertEquals("Test Staff", result?.name)
+        assertEquals(200, result.statusCodeValue)
+        val body = result.body
+        assertNotNull(body)
+        assertEquals(barcode, body?.barcode)
+        assertEquals("Test Staff", body?.name)
         verify(staffService).findStaff(barcode)
     }
 
     @Test
-    fun `getStaff should return null when staff not found`() {
+    fun `getStaff should throw ResourceNotFoundException when staff not found`() {
         // Arrange
         val barcode = "NONEXISTENT"
         `when`(staffService.findStaff(barcode)).thenReturn(null)
 
-        // Act
-        val result = controller.getStaff(barcode)
-
-        // Assert
-        assertNull(result)
+        // Act & Assert
+        val exception = assertThrows<ResourceNotFoundException> {
+            controller.getStaff(barcode)
+        }
+        assertEquals("Staff with barcode $barcode not found", exception.message)
         verify(staffService).findStaff(barcode)
     }
 
     @Test
-    fun `getStaff should handle empty barcode`() {
+    fun `getStaff should throw ResourceNotFoundException for empty barcode`() {
         // Arrange
         val barcode = ""
         `when`(staffService.findStaff(barcode)).thenReturn(null)
 
-        // Act
-        val result = controller.getStaff(barcode)
-
-        // Assert
-        assertNull(result)
+        // Act & Assert
+        val exception = assertThrows<ResourceNotFoundException> {
+            controller.getStaff(barcode)
+        }
+        assertEquals("Staff with barcode  not found", exception.message)
         verify(staffService).findStaff(barcode)
     }
 }

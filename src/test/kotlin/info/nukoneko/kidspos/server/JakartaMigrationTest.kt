@@ -17,12 +17,10 @@ import kotlin.streams.toList
 class JakartaMigrationTest {
 
     @Test
-    @Disabled("Temporarily disabled for refactoring")
     @DisplayName("Should document javax.* imports for future migration")
     fun shouldDocumentJavaxImports() {
         val sourceDir = File("src/main/kotlin")
         val javaxImports = mutableListOf<String>()
-
         if (sourceDir.exists()) {
             Files.walk(Paths.get(sourceDir.path))
                 .filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
@@ -50,12 +48,10 @@ class JakartaMigrationTest {
     }
 
     @Test
-    @Disabled("Temporarily disabled for refactoring")
     @DisplayName("Should use Spring Boot 3.x with Java 21")
     fun shouldUseSpringBoot3Version() {
         val buildFile = File("build.gradle")
         assertTrue(buildFile.exists(), "build.gradle not found")
-
         val content = buildFile.readText()
         val versionPattern = Regex("springBootVersion = '([^']+)'")
         val match = versionPattern.find(content)
@@ -69,12 +65,10 @@ class JakartaMigrationTest {
     }
 
     @Test
-    @Disabled("Temporarily disabled for refactoring")
     @DisplayName("Should use compatible Kotlin version for Spring Boot 2.7.x")
     fun shouldUseCompatibleKotlinVersion() {
         val buildFile = File("build.gradle")
         assertTrue(buildFile.exists(), "build.gradle not found")
-
         val content = buildFile.readText()
         val versionPattern = Regex("kotlinVersion = '([^']+)'")
         val match = versionPattern.find(content)
@@ -91,12 +85,10 @@ class JakartaMigrationTest {
     }
 
     @Test
-    @Disabled("Temporarily disabled for refactoring")
     @DisplayName("Should use Java 21 for Spring Boot 3.x")
     fun shouldUseCompatibleJavaVersion() {
         val buildFile = File("build.gradle")
         assertTrue(buildFile.exists(), "build.gradle not found")
-
         val content = buildFile.readText()
 
         // Check sourceCompatibility
@@ -125,18 +117,16 @@ class JakartaMigrationTest {
             } else {
                 version.toIntOrNull() ?: 0
             }
-            assertTrue(versionNum >= 8 && versionNum <= 17,
-                "JVM target $version should be Java 8-17 for Spring Boot 2.7.x")
+            assertTrue(versionNum >= 17 && versionNum <= 21,
+                "JVM target $version should be Java 17-21 for Spring Boot 3.x")
         }
     }
 
     @Test
-    @Disabled("Temporarily disabled for refactoring")
     @DisplayName("Should have proper Jakarta dependencies")
     fun shouldHaveJakartaDependencies() {
         val buildFile = File("build.gradle")
         assertTrue(buildFile.exists(), "build.gradle not found")
-
         val content = buildFile.readText()
         val dependencies = content.lines()
             .filter { it.contains("implementation") || it.contains("compile") }

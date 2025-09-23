@@ -15,9 +15,8 @@ import jakarta.persistence.EntityManager
 
 @DataJpaTest
 @SpringJUnitConfig
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class QueryOptimizationTest {
-
     @Autowired
     private lateinit var entityManager: TestEntityManager
 

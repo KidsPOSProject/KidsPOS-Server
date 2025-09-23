@@ -27,6 +27,13 @@ group = 'info.nukoneko.kidspos'
 version = '1.0.0'
 sourceCompatibility = '21'
 
+// Java toolchain configuration
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 // Thymeleaf version managed by Spring Boot 3.x
 
 repositories {

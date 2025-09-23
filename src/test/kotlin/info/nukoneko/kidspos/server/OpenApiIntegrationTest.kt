@@ -19,33 +19,26 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(OpenApiTestConfiguration::class)
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class OpenApiIntegrationTest {
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 
     @Test
-    @Disabled("Temporarily disabled for refactoring")
     fun `Swagger UI should be accessible`() {
         mockMvc.perform(get("/swagger-ui/index.html"))
             .andExpect(status().isOk)
     }
-
     @Test
-    @Disabled("Temporarily disabled for refactoring")
     fun `OpenAPI JSON specification should be available`() {
         mockMvc.perform(get("/v3/api-docs"))
             .andExpect(status().isOk)
     }
-
     @Test
-    @Disabled("Temporarily disabled for refactoring")
     fun `OpenAPI specification should include all API endpoints`() {
         val result = mockMvc.perform(get("/v3/api-docs"))
             .andExpect(status().isOk)
             .andReturn()
-
         val content = result.response.contentAsString
 
         // Verify key endpoints are documented
@@ -56,12 +49,10 @@ class OpenApiIntegrationTest {
     }
 
     @Test
-    @Disabled("Temporarily disabled for refactoring")
     fun `OpenAPI specification should include request and response schemas`() {
         val result = mockMvc.perform(get("/v3/api-docs"))
             .andExpect(status().isOk)
             .andReturn()
-
         val content = result.response.contentAsString
 
         // Verify schemas are present

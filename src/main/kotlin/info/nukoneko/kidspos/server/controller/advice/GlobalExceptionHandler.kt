@@ -1,5 +1,6 @@
 package info.nukoneko.kidspos.server.controller.advice
 
+import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import info.nukoneko.kidspos.server.controller.dto.response.ErrorResponse
 import info.nukoneko.kidspos.server.domain.exception.*
 import org.slf4j.LoggerFactory
@@ -9,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
+import jakarta.validation.ConstraintViolationException
 import java.time.Instant
 
 @RestControllerAdvice
@@ -99,6 +101,48 @@ class GlobalExceptionHandler {
             ))
     }
 
+    @ExceptionHandler(ResourceNotFoundException::class)
+    fun handleResourceNotFound(
+        ex: ResourceNotFoundException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        logger.debug("Resource not found: ${ex.message}")
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ErrorResponse(
+                code = "RESOURCE_NOT_FOUND",
+                message = ex.message ?: "Resource not found",
+                path = request.getDescription(false)
+            ))
+    }
+
+    @ExceptionHandler(DuplicateResourceException::class)
+    fun handleDuplicateResource(
+        ex: DuplicateResourceException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        logger.debug("Duplicate resource: ${ex.message}")
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ErrorResponse(
+                code = "DUPLICATE_RESOURCE",
+                message = ex.message ?: "Duplicate resource",
+                path = request.getDescription(false)
+            ))
+    }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgument(
+        ex: IllegalArgumentException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        logger.debug("Validation error: ${ex.message}")
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ErrorResponse(
+                code = "VALIDATION_ERROR",
+                message = ex.message ?: "Invalid request",
+                path = request.getDescription(false)
+            ))
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleMethodArgumentNotValid(
         ex: MethodArgumentNotValidException,
@@ -113,6 +157,38 @@ class GlobalExceptionHandler {
             .body(ErrorResponse(
                 code = "VALIDATION_ERROR",
                 message = "Validation failed: $errors",
+                path = request.getDescription(false)
+            ))
+    }
+
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun handleConstraintViolation(
+        ex: ConstraintViolationException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val errors = ex.constraintViolations
+            .map { "${it.propertyPath}: ${it.message}" }
+            .joinToString(", ")
+        logger.debug("Constraint violation: $errors")
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ErrorResponse(
+                code = "VALIDATION_ERROR",
+                message = "Validation failed: $errors",
+                path = request.getDescription(false)
+            ))
+    }
+
+    @ExceptionHandler(MissingKotlinParameterException::class)
+    fun handleMissingKotlinParameter(
+        ex: MissingKotlinParameterException,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val parameterName = ex.parameter.name ?: "unknown"
+        logger.debug("Missing required parameter: $parameterName")
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ErrorResponse(
+                code = "MISSING_PARAMETER",
+                message = "Missing required parameter: $parameterName",
                 path = request.getDescription(false)
             ))
     }

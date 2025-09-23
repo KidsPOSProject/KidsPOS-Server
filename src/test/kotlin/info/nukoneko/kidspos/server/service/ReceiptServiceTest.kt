@@ -13,9 +13,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 
 @SpringBootTest
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class ReceiptServiceTest {
-
     @MockBean
     private lateinit var storeService: StoreService
 

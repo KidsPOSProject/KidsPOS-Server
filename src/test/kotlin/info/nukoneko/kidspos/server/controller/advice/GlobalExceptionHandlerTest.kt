@@ -36,9 +36,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 )
 @AutoConfigureMockMvc(addFilters = false)
 @Import(info.nukoneko.kidspos.server.TestConfiguration::class)
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class GlobalExceptionHandlerTest {
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 

@@ -18,9 +18,8 @@ import org.springframework.test.context.TestPropertySource
     "app.barcode.pdf.image-size=150",
     "app.network.allowed-ip-prefix=10."
 ])
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class AppPropertiesTest {
-
     @Autowired
     private lateinit var appProperties: AppProperties
 

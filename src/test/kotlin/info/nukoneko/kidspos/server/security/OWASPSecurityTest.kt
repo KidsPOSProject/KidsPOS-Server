@@ -21,9 +21,8 @@ import org.junit.jupiter.api.Nested
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class OWASPSecurityTest {
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 

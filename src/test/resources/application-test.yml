@@ -1,23 +1,30 @@
 spring:
-  main:
-    allow-bean-definition-overriding: true
   datasource:
-    url: "jdbc:sqlite::memory:"
+    url: jdbc:sqlite:file::memory:?cache=shared
     driver-class-name: org.sqlite.JDBC
+    username: sa
+    password:
   jpa:
-    database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
       ddl-auto: create-drop
-    show-sql: false
     properties:
       hibernate:
-        format_sql: false
-        use_sql_comments: false
-  flyway:
-    enabled: false
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+        format_sql: true
+    show-sql: false
+  sql:
+    init:
+      mode: never
 
 logging:
   level:
-    org.hibernate: WARN
-    org.springframework: WARN
+    root: WARN
     info.nukoneko.kidspos: INFO
+
+app:
+  receipt:
+    printer:
+      enabled: false
+  barcode:
+    pdf:
+      enabled: false

@@ -32,9 +32,8 @@ import java.util.*
 )
 @AutoConfigureMockMvc(addFilters = false)
 @Import(info.nukoneko.kidspos.server.TestConfiguration::class)
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class SaleApiControllerTest {
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 

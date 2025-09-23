@@ -12,9 +12,8 @@ import org.springframework.data.domain.PageRequest
 import java.util.*
 
 @DataJpaTest
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class SaleRepositoryTest {
-
     @Autowired
     private lateinit var entityManager: TestEntityManager
 

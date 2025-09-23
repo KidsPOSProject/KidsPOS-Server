@@ -15,9 +15,8 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import java.util.*
 
 @SpringBootTest
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class SaleProcessingServiceTest {
-
     @MockBean
     private lateinit var saleCalculationService: SaleCalculationService
 
@@ -127,9 +126,8 @@ class SaleProcessingServiceTest {
     }
 }
 
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class SaleCalculationServiceTest {
-
     private lateinit var saleCalculationService: SaleCalculationService
 
     @BeforeEach
@@ -188,9 +186,8 @@ class SaleCalculationServiceTest {
     }
 }
 
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class SaleValidationServiceTest {
-
     private lateinit var saleValidationService: SaleValidationService
 
     @BeforeEach

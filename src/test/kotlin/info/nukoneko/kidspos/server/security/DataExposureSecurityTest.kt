@@ -20,9 +20,8 @@ import org.junit.jupiter.api.DisplayName
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @DisplayName("Data Exposure Security Tests")
-@Disabled("Temporarily disabled - Spring context issues")
+@Disabled("Spring context not configured")
 class DataExposureSecurityTest {
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 

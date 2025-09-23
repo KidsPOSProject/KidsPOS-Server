@@ -145,6 +145,42 @@ class ItemApiController(
         return ResponseEntity.ok(itemMapper.toResponse(updatedItem))
     }
 
+    @PatchMapping("/{id}")
+    fun partialUpdate(
+        @PathVariable id: Int,
+        @RequestBody updates: Map<String, Any>
+    ): ResponseEntity<ItemResponse> {
+        logger.info("Partially updating item with ID: {}", id)
+
+        // Check if item exists
+        val existingItem = itemService.findItem(id)
+            ?: throw ItemNotFoundException(id = id)
+
+        // Apply updates
+        val barcode = updates["barcode"]?.toString() ?: existingItem.barcode
+        val name = updates["name"]?.toString() ?: existingItem.name
+        val price = updates["price"]?.toString()?.toIntOrNull() ?: existingItem.price
+
+        // Validate if barcode changed
+        if (barcode != existingItem.barcode) {
+            validationService.validateBarcodeUnique(barcode, id)
+        }
+        validationService.validatePriceRange(price)
+
+        // Update the item
+        val itemBean = ItemBean(
+            id = id,
+            barcode = barcode,
+            name = name,
+            price = price
+        )
+
+        val updatedItem = itemService.save(itemBean)
+        logger.info("Item partially updated successfully with ID: {}", updatedItem.id)
+
+        return ResponseEntity.ok(itemMapper.toResponse(updatedItem))
+    }
+
     @DeleteMapping("/{id}")
     fun delete(@PathVariable id: Int): ResponseEntity<Void> {
         logger.info("Deleting item with ID: {}", id)
