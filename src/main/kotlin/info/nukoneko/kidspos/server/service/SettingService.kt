@@ -85,7 +85,11 @@ class SettingService(
 
     @CacheEvict(value = [CacheConfig.SETTINGS_CACHE], allEntries = true)
     fun saveApplicationSetting(applicationSetting: ApplicationSetting) {
-        logger.info("Saving application settings: host={}, port={}", applicationSetting.serverHost, applicationSetting.serverPort)
+        logger.info(
+            "Saving application settings: host={}, port={}",
+            applicationSetting.serverHost,
+            applicationSetting.serverPort
+        )
         repository.save(SettingEntity("${KEY_APP}_host", applicationSetting.serverHost))
         repository.save(SettingEntity("${KEY_APP}_port", applicationSetting.serverPort.toString()))
     }
