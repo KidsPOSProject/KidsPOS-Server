@@ -7,14 +7,14 @@
 ### 推奨フォント
 
 1. **IPAフォント** (無料)
-   - ダウンロード: https://moji.or.jp/ipafont/
-   - ファイル名: `ipag.ttf` または `ipagp.ttf`
-   - ライセンス: IPAフォントライセンス
+    - ダウンロード: https://moji.or.jp/ipafont/
+    - ファイル名: `ipag.ttf` または `ipagp.ttf`
+    - ライセンス: IPAフォントライセンス
 
 2. **Noto Sans CJK JP** (無料)
-   - ダウンロード: https://github.com/googlefonts/noto-cjk
-   - ファイル名: `NotoSansCJKjp-Regular.otf`
-   - ライセンス: Open Font License
+    - ダウンロード: https://github.com/googlefonts/noto-cjk
+    - ファイル名: `NotoSansCJKjp-Regular.otf`
+    - ライセンス: Open Font License
 
 ### 設定方法
 

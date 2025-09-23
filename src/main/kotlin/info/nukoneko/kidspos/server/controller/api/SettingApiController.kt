@@ -58,7 +58,7 @@ class SettingApiController {
 
     @DeleteMapping("/{key}")
     fun deleteSetting(@PathVariable key: String): ResponseEntity<Void> {
-        val existingSetting = service.findSetting(key)
+        service.findSetting(key)
             ?: throw ResourceNotFoundException("Setting with key $key not found")
 
         service.deleteSetting(key)

@@ -5,7 +5,10 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.WriterException
 import com.google.zxing.client.j2se.MatrixToImageWriter
 import com.google.zxing.oned.Code39Writer
+import com.itextpdf.io.font.constants.StandardFonts
 import com.itextpdf.io.image.ImageDataFactory
+import com.itextpdf.kernel.font.PdfFont
+import com.itextpdf.kernel.font.PdfFontFactory
 import com.itextpdf.kernel.geom.PageSize
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
@@ -15,10 +18,6 @@ import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
 import com.itextpdf.layout.properties.TextAlignment
 import com.itextpdf.layout.properties.UnitValue
-import com.itextpdf.layout.borders.SolidBorder
-import com.itextpdf.kernel.font.PdfFont
-import com.itextpdf.kernel.font.PdfFontFactory
-import com.itextpdf.io.font.constants.StandardFonts
 import info.nukoneko.kidspos.server.entity.ItemEntity
 import org.springframework.stereotype.Service
 import java.io.ByteArrayOutputStream
@@ -47,14 +46,14 @@ class BarcodeService {
         val writer = PdfWriter(outputStream)
         val pdf = PdfDocument(writer)
         val document = Document(pdf, PageSize.A4)
-        
+
         // 日本語フォントの設定
         val font = try {
             // まず、クラスパスからフォントを探す（JARに含まれている場合）
             val fontInputStream = this.javaClass.getResourceAsStream("/fonts/japanese.ttf")
                 ?: this.javaClass.getResourceAsStream("/fonts/ipag.ttf")
                 ?: this.javaClass.getResourceAsStream("/fonts/NotoSansCJKjp-Regular.otf")
-            
+
             if (fontInputStream != null) {
                 // クラスパスからフォントを読み込み
                 val fontBytes = fontInputStream.use { it.readBytes() }
@@ -74,9 +73,10 @@ class BarcodeService {
                     // LinuxのIPAフォント
                     java.io.File("/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf").exists() ->
                         "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf"
+
                     else -> null
                 }
-                
+
                 if (fontPath != null) {
                     PdfFontFactory.createFont(fontPath, "Identity-H", PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED)
                 } else {
@@ -90,7 +90,7 @@ class BarcodeService {
             // エラー時のフォールバック
             PdfFontFactory.createFont(StandardFonts.HELVETICA)
         }
-        
+
         // マージンをミリメートル単位で設定（仕様書準拠・変更不可）
         document.setMargins(
             PAGE_MARGIN_TOP * 2.835f, // 上: 8mm
@@ -132,10 +132,14 @@ class BarcodeService {
      * @param item 商品エンティティ
      * @param showBorders 罫線を表示するかどうか
      */
-    private fun createBarcodeCell(item: ItemEntity, showBorders: Boolean = false, font: PdfFont): com.itextpdf.layout.element.Cell {
+    private fun createBarcodeCell(
+        item: ItemEntity,
+        showBorders: Boolean = false,
+        font: PdfFont
+    ): com.itextpdf.layout.element.Cell {
         val cellWidthPt = CELL_WIDTH * 2.835f  // 48.3mm → ポイント
         val cellHeightPt = CELL_HEIGHT * 2.835f // 25.4mm → ポイント
-        
+
         val cell = com.itextpdf.layout.element.Cell()
             .setPadding(0f) // パディングを0に
             .setWidth(cellWidthPt)  // セル幅を正確に設定
@@ -150,11 +154,13 @@ class BarcodeService {
         // 商品名（中央配置）
         innerTable.addCell(
             com.itextpdf.layout.element.Cell()
-                .add(Paragraph(item.name)
-                    .setFont(font)
-                    .setFontSize(10f)
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setMarginTop(3.0f * 2.835f))  // 上部に適度な余白
+                .add(
+                    Paragraph(item.name)
+                        .setFont(font)
+                        .setFontSize(10f)
+                        .setTextAlignment(TextAlignment.CENTER)
+                        .setMarginTop(3.0f * 2.835f)
+                )  // 上部に適度な余白
                 .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
                 .setPadding(0f)
         )
@@ -170,30 +176,34 @@ class BarcodeService {
                 .setHeight(originalHeight * 0.25f) // 縦幅を拡大
                 .setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.CENTER)
                 .setMarginTop(2.0f * 2.835f)
-            
+
             innerTable.addCell(
                 com.itextpdf.layout.element.Cell()
                     .add(image)
                     .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
                     .setPadding(0f)
             )
-            
+
             // バーコード番号を表示
             innerTable.addCell(
                 com.itextpdf.layout.element.Cell()
-                    .add(Paragraph(item.barcode)
-                        .setFont(font)
-                        .setFontSize(8f)
-                        .setTextAlignment(TextAlignment.CENTER)
-                        .setMarginTop(1.0f * 2.835f))
+                    .add(
+                        Paragraph(item.barcode)
+                            .setFont(font)
+                            .setFontSize(8f)
+                            .setTextAlignment(TextAlignment.CENTER)
+                            .setMarginTop(1.0f * 2.835f)
+                    )
                     .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
                     .setPadding(0f)
             )
         } else {
             innerTable.addCell(
                 com.itextpdf.layout.element.Cell()
-                    .add(Paragraph("バーコード生成エラー")
-                        .setFontSize(7f))
+                    .add(
+                        Paragraph("バーコード生成エラー")
+                            .setFontSize(7f)
+                    )
                     .setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
                     .setPadding(0f)
             )
