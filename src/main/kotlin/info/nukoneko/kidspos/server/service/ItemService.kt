@@ -74,14 +74,30 @@ class ItemService(
     )
     fun save(itemBean: ItemBean): ItemEntity {
         logger.info("Creating item with barcode: {}, name: {}", itemBean.barcode, itemBean.name)
-        val id = if (itemBean.id != null && itemBean.id > 0) {
-            itemBean.id
+        val itemId = itemBean.id
+        val generatedId = if (itemId != null && itemId > 0) {
+            itemId
         } else {
             idGenerationService.generateNextId(repository)
         }
-        val item = ItemEntity(id, itemBean.barcode, itemBean.name, itemBean.price)
+        val item = ItemEntity(generatedId, itemBean.barcode, itemBean.name, itemBean.price)
         val savedItem = repository.save(item)
         logger.info("Item created successfully with ID: {}", savedItem.id)
         return savedItem
+    }
+
+    @Caching(
+        evict = [
+            CacheEvict(value = [CacheConfig.ITEMS_CACHE], allEntries = true),
+            CacheEvict(value = [CacheConfig.ITEM_BY_ID_CACHE], key = "#id")
+        ]
+    )
+    fun delete(id: Int) {
+        logger.info("Deleting item with ID: {}", id)
+        val item = repository.findByIdOrNull(id)
+        if (item != null) {
+            repository.delete(item)
+            logger.info("Item deleted successfully with ID: {}", id)
+        }
     }
 }

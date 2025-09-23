@@ -14,7 +14,7 @@
         <th>商品名</th>
         <th>バーコード</th>
         <th>値段</th>
-        <th></th>
+        <th>操作</th>
     </tr>
     </thead>
     <tbody>
@@ -27,7 +27,7 @@
         <td th:text="${item.name}"></td>
         <td th:text="${item.barcode}"></td>
         <td th:text="${item.price}"></td>
-        <!--<td><a class="btn btn-default btn-xs" th:href="@{/items/{id}/edit(id=*{id})}">編集</a></td>-->
+        <td><a class="btn btn-primary btn-sm" th:href="@{/items/{id}/edit(id=${item.id})}">編集</a></td>
     </tr>
     </tbody>
 </table>

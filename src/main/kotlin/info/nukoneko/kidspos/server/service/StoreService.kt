@@ -65,11 +65,16 @@ class StoreService(
         ]
     )
     fun save(storeBean: StoreBean): StoreEntity {
-        logger.info("Creating store with name: {}", storeBean.name)
-        val id = idGenerationService.generateNextId(repository)
-        val store = StoreEntity(id, storeBean.name, storeBean.printerUri)
+        logger.info("Saving store with name: {}", storeBean.name)
+        val storeId = storeBean.id
+        val generatedId = if (storeId != null && storeId > 0) {
+            storeId
+        } else {
+            idGenerationService.generateNextId(repository)
+        }
+        val store = StoreEntity(generatedId, storeBean.name, storeBean.printerUri)
         val savedStore = repository.save(store)
-        logger.info("Store created successfully with ID: {}", savedStore.id)
+        logger.info("Store saved successfully with ID: {}", savedStore.id)
         return savedStore
     }
 

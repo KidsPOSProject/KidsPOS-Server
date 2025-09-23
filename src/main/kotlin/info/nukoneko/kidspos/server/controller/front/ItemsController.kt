@@ -38,4 +38,25 @@ class ItemsController {
         itemService.save(item)
         return "redirect:/items"
     }
+
+    @PostMapping("{id}/update")
+    fun update(@PathVariable id: Int, @ModelAttribute item: ItemBean): String {
+        val existingItem = itemService.findItem(id)
+        if (existingItem != null) {
+            val updatedItem = ItemBean(
+                id = id,
+                barcode = item.barcode,
+                name = item.name,
+                price = item.price
+            )
+            itemService.save(updatedItem)
+        }
+        return "redirect:/items"
+    }
+
+    @PostMapping("{id}/delete")
+    fun delete(@PathVariable id: Int): String {
+        itemService.delete(id)
+        return "redirect:/items"
+    }
 }
