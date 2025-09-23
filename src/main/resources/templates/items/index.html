@@ -7,6 +7,9 @@
 <table id="content" class="table table-bordered table-hover table-lg">
     <thead class="thead-light">
     <tr>
+        <th>
+            <input type="checkbox" id="selectAll" title="全選択">
+        </th>
         <th>ID</th>
         <th>商品名</th>
         <th>バーコード</th>
@@ -16,6 +19,10 @@
     </thead>
     <tbody>
     <tr th:each="item: ${data}">
+        <td>
+            <input type="checkbox" class="item-checkbox" th:data-id="${item.id}" th:data-barcode="${item.barcode}"
+                   th:data-name="${item.name}" th:data-price="${item.price}">
+        </td>
         <td th:text="${item.id}"></td>
         <td th:text="${item.name}"></td>
         <td th:text="${item.barcode}"></td>
@@ -27,7 +34,108 @@
 <footer>
     <a class="btn btn-outline-dark" role="button" href="/items/new">新規作成</a>
     <a class="btn btn-outline-primary" role="button" href="/api/item/barcode-pdf" target="_blank">バーコードPDF出力</a>
+    <button id="printSelected" class="btn btn-outline-success" disabled>選択した商品のバーコードを印刷</button>
+    <div class="form-check form-check-inline ms-3">
+        <input class="form-check-input" type="checkbox" id="showBorders">
+        <label class="form-check-label" for="showBorders">罫線を表示</label>
+    </div>
     <a class="btn btn-outline-warning" role="button" href="/">Back</a>
 </footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const itemCheckboxes = document.getElementsByClassName('item-checkbox');
+        const printButton = document.getElementById('printSelected');
+
+        // 全選択/全解除
+        selectAllCheckbox.addEventListener('change', function () {
+            for (let checkbox of itemCheckboxes) {
+                checkbox.checked = this.checked;
+            }
+            updatePrintButton();
+        });
+
+        // 個別チェックボックスの変更
+        for (let checkbox of itemCheckboxes) {
+            checkbox.addEventListener('change', function () {
+                updateSelectAll();
+                updatePrintButton();
+            });
+        }
+
+        // 全選択チェックボックスの状態を更新
+        function updateSelectAll() {
+            let allChecked = true;
+            let anyChecked = false;
+            for (let checkbox of itemCheckboxes) {
+                if (!checkbox.checked) {
+                    allChecked = false;
+                } else {
+                    anyChecked = true;
+                }
+            }
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = !allChecked && anyChecked;
+        }
+
+        // 印刷ボタンの有効/無効を更新
+        function updatePrintButton() {
+            let anyChecked = false;
+            for (let checkbox of itemCheckboxes) {
+                if (checkbox.checked) {
+                    anyChecked = true;
+                    break;
+                }
+            }
+            printButton.disabled = !anyChecked;
+        }
+
+        // 選択した商品を印刷
+        printButton.addEventListener('click', function () {
+            const selectedIds = [];
+            for (let checkbox of itemCheckboxes) {
+                if (checkbox.checked) {
+                    selectedIds.push(checkbox.dataset.id);
+                }
+            }
+
+            if (selectedIds.length > 0) {
+                const showBorders = document.getElementById('showBorders').checked;
+                const url = `/api/item/barcode-pdf/selected?showBorders=${showBorders}`;
+
+                // POSTでIDリストを送信してPDFを取得
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(selectedIds)
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('PDF生成に失敗しました');
+                        }
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        // PDFをダウンロード
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'selected_barcodes.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    })
+                    .catch(error => {
+                        alert('エラー: ' + error.message);
+                    });
+            }
+        });
+    });
+</script>
 </body>
 </html>
+

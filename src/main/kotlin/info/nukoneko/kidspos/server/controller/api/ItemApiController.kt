@@ -213,16 +213,58 @@ class ItemApiController {
     )
     fun generateBarcodePdf(): ResponseEntity<ByteArray> {
         logger.info("Generating barcode PDF for all items")
-        
+
         val items = itemService.findAll()
         val pdfBytes = barcodeService.generateBarcodePdf(items)
-        
+
         val headers = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_PDF
             setContentDispositionFormData("inline", "barcodes.pdf")
         }
-        
+
         logger.info("Barcode PDF generated successfully with {} items", items.size)
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(pdfBytes)
+    }
+
+    @PostMapping("/barcode-pdf/selected", produces = ["application/pdf"])
+    @Operation(
+        summary = "Generate barcode PDF for selected items",
+        description = "Generate a PDF document containing barcodes for selected items"
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "PDF generated successfully",
+        content = [Content(mediaType = "application/pdf")]
+    )
+    fun generateSelectedBarcodePdf(
+        @RequestBody itemIds: List<Int>,
+        @RequestParam(defaultValue = "false") showBorders: Boolean
+    ): ResponseEntity<ByteArray> {
+        logger.info("Generating barcode PDF for {} selected items", itemIds.size)
+
+        if (itemIds.isEmpty()) {
+            throw IllegalArgumentException("No items selected")
+        }
+
+        val items = itemIds.mapNotNull { id ->
+            itemService.findItem(id)
+        }
+
+        if (items.isEmpty()) {
+            throw ItemNotFoundException()
+        }
+
+        val pdfBytes = barcodeService.generateBarcodePdf(items, showBorders)
+
+        val headers = HttpHeaders().apply {
+            contentType = MediaType.APPLICATION_PDF
+            setContentDispositionFormData("attachment", "selected_barcodes.pdf")
+        }
+
+        logger.info("Selected barcode PDF generated successfully with {} items", items.size)
+
         return ResponseEntity.ok()
             .headers(headers)
             .body(pdfBytes)
