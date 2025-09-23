@@ -70,7 +70,7 @@ class StoreApiController {
         service.findStore(id)
             ?: throw ResourceNotFoundException("Store with ID $id not found")
 
-        // Note: Delete functionality needs to be implemented in service layer
+        service.delete(id)
         return ResponseEntity.noContent().build()
     }
 }

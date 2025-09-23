@@ -4,9 +4,7 @@ import info.nukoneko.kidspos.server.service.SettingService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.*
 
 @Controller
 @RequestMapping("/settings")
@@ -26,5 +24,18 @@ class SettingsController {
         val setting = settingService.findSetting(key)
         model.addAttribute("setting", setting)
         return "settings/edit"
+    }
+
+    @PostMapping("{key}")
+    fun update(
+        @PathVariable key: String,
+        @RequestParam value: String
+    ): String {
+        val setting = settingService.findSetting(key)
+        if (setting != null) {
+            setting.value = value
+            settingService.saveSetting(setting)
+        }
+        return "redirect:/settings"
     }
 }

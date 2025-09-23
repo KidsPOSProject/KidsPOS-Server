@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional
 class SettingService(
     private val repository: SettingRepository
+
 ) {
     private val logger = LoggerFactory.getLogger(SettingService::class.java)
 
@@ -44,6 +45,12 @@ class SettingService(
     fun findSetting(key: String): SettingEntity? {
         logger.debug("Fetching setting by key: {} from database", key)
         return repository.findByIdOrNull(key)
+    }
+
+    @CacheEvict(value = [CacheConfig.SETTINGS_CACHE], allEntries = true)
+    fun saveSetting(setting: SettingEntity): SettingEntity {
+        logger.info("Saving setting with key: {}", setting.key)
+        return repository.save(setting)
     }
 
     @CacheEvict(value = [CacheConfig.SETTINGS_CACHE], allEntries = true)
@@ -68,6 +75,12 @@ class SettingService(
                 )
             }
         }
+    }
+
+    @CacheEvict(value = [CacheConfig.SETTINGS_CACHE], allEntries = true)
+    fun deleteSetting(key: String) {
+        logger.info("Deleting setting with key: {}", key)
+        repository.deleteById(key)
     }
 
     private companion object {

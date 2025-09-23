@@ -90,4 +90,16 @@ class StoreService(
         logger.info("Store saved successfully with ID: {}", savedStore.id)
         return savedStore
     }
+
+    @Caching(
+        evict = [
+            CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
+            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#id")
+        ]
+    )
+    fun delete(id: Int) {
+        logger.info("Deleting store with ID: {}", id)
+        repository.deleteById(id)
+        logger.info("Store deleted successfully with ID: {}", id)
+    }
 }

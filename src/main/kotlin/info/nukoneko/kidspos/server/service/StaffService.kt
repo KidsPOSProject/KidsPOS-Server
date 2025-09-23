@@ -59,4 +59,9 @@ class StaffService(
         logger.debug("Deleting staff with barcode: {}", barcode)
         repository.deleteById(barcode)
     }
+
+    fun delete(staff: StaffEntity) {
+        logger.debug("Deleting staff entity with barcode: {}", staff.barcode)
+        repository.delete(staff)
+    }
 }

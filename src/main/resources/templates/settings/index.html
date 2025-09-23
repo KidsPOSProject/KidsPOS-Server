@@ -16,7 +16,7 @@
     <tr th:each="setting: ${settings}">
         <td th:text="${setting.key}"></td>
         <td th:text="${setting.value}"></td>
-        <td><a class="btn btn-default btn-xs" th:href="@{/settings/{id}/edit(id=*{key})}">編集</a></td>
+        <td><a class="btn btn-default btn-xs" th:href="@{/settings/{key}/edit(key=${setting.key})}">編集</a></td>
     </tr>
     </tbody>
 </table>
