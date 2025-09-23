@@ -18721,7 +18721,9 @@
      */
 
     return $.fn.dataTable;
-}));
+})
+)
+;
 
 
 /*! DataTables Bootstrap 4 integration

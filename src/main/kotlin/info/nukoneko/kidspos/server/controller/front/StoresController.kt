@@ -1,6 +1,6 @@
 package info.nukoneko.kidspos.server.controller.front
 
-import info.nukoneko.kidspos.server.controller.api.model.StoreBean
+import info.nukoneko.kidspos.server.controller.dto.request.StoreBean
 import info.nukoneko.kidspos.server.service.StoreService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller

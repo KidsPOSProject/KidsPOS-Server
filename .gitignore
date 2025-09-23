@@ -30,3 +30,8 @@
 
 ## heroku
 app.jar
+
+logs/
+*.log
+migration-plan.md
+

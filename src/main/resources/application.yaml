@@ -10,11 +10,52 @@ spring:
           new_generator_mappings=false: false
         temp:
           use_jdbc_metadata_defaults: false
-        dialect: com.enigmabridge.hibernate.dialect.SQLiteDialect
-    generate-ddl: true
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+        format_sql: false
+        show_sql: false
+    generate-ddl: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
+    # Disable open-in-view to avoid performance issues
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
   thymeleaf:
     mode: HTML
+
 server:
   port: 8080
+
+# Application-specific configuration
+app:
+  receipt:
+    printer:
+      host: ${RECEIPT_PRINTER_HOST:localhost}
+      port: ${RECEIPT_PRINTER_PORT:9100}
+  barcode:
+    qr-size: ${QR_CODE_SIZE:200}
+    pdf:
+      margin: ${PDF_MARGIN:20}
+      image-size: ${PDF_IMAGE_SIZE:100}
+  network:
+    allowed-ip-prefix: ${ALLOWED_IP_PREFIX:192.}
+  security:
+    encryption-key: ${ENCRYPTION_KEY:DefaultKidsPOSKey123!@#}
+
+# OpenAPI/Swagger configuration
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    try-it-out-enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: false
+  packages-to-scan: info.nukoneko.kidspos.server.controller.api

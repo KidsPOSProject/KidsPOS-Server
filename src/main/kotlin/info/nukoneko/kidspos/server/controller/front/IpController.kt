@@ -1,6 +1,6 @@
 package info.nukoneko.kidspos.server.controller.front
 
-import org.springframework.beans.factory.annotation.Autowired
+import info.nukoneko.kidspos.server.config.AppProperties
 import org.springframework.core.env.Environment
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
@@ -12,10 +12,10 @@ import java.util.*
 
 @Controller
 @RequestMapping("/ip")
-class IpController {
-
-    @Autowired
-    private lateinit var environment: Environment
+class IpController(
+    private val environment: Environment,
+    private val appProperties: AppProperties
+) {
 
     @GetMapping
     fun index(model: Model): String {
@@ -37,7 +37,10 @@ class IpController {
         }
 
         model.addAttribute("title", "ip")
-        model.addAttribute("hosts", hosts.filter { it.address.startsWith("192.") }.distinct())
+        model.addAttribute(
+            "hosts",
+            hosts.filter { it.address.startsWith(appProperties.network.allowedIpPrefix) }.distinct()
+        )
         model.addAttribute("port", environment.getProperty("local.server.port"))
         return "ip/index"
     }

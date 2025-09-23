@@ -1,8 +1,12 @@
 name: Claude Auto Review
 
+# Temporarily disabled auto-review
+# To re-enable, uncomment the 'on' section below
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
 on:
-  pull_request:
-    types: [opened, synchronize]
+  workflow_dispatch: # Manual trigger only
 
 jobs:
   auto-review:

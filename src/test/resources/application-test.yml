@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:file::memory:?cache=shared
+    driver-class-name: org.sqlite.JDBC
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+        format_sql: true
+    show-sql: false
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    root: WARN
+    info.nukoneko.kidspos: INFO
+
+app:
+  receipt:
+    printer:
+      enabled: false
+  barcode:
+    pdf:
+      enabled: false

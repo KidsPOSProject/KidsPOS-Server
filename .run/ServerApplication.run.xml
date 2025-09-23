@@ -1,10 +1,16 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ServerApplication" type="JetRunConfigurationType">
-    <option name="MAIN_CLASS_NAME" value="info.nukoneko.kidspos.server.ServerApplicationKt" />
-    <module name="server.main" />
-    <shortenClasspath name="NONE" />
-    <method v="2">
-      <option name="Make" enabled="true" />
-    </method>
-  </configuration>
+    <configuration default="false" name="ServerApplication" type="JetRunConfigurationType">
+        <option name="ALTERNATIVE_JRE_PATH" value="21"/>
+        <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true"/>
+        <option name="MAIN_CLASS_NAME" value="info.nukoneko.kidspos.server.ServerApplicationKt"/>
+        <module name="server.main"/>
+        <shortenClasspath name="NONE"/>
+        <envs>
+            <env name="JAVA_HOME" value="$USER_HOME$/.local/share/mise/installs/java/openjdk-21.0.2"/>
+        </envs>
+        <method v="2">
+            <option name="Gradle.BeforeRunTask" enabled="true" tasks="clean build" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="-x detekt"/>
+            <option name="Make" enabled="true"/>
+        </method>
+    </configuration>
 </component>

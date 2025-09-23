@@ -1,0 +1,124 @@
+# Version Catalog for Dependency Management
+# Part of Task 9.4: Gradle build system optimization
+
+[versions]
+# Core versions
+java = "21"
+kotlin = "2.2.20"
+spring-boot = "3.2.0"
+gradle = "8.10"
+
+# Testing
+junit = "5.10.1"
+mockk = "1.13.8"
+assertj = "3.24.2"
+
+# Database
+sqlite-jdbc = "3.44.1.0"
+hibernate-sqlite = "0.1.2"
+flyway = "9.22.3"
+
+# Documentation
+springdoc = "2.2.0"
+
+# Code Quality
+detekt = "1.23.4"
+jacoco = "0.8.11"
+
+# Libraries
+jackson = "2.16.0"
+itext7 = "7.2.5"
+zxing = "3.5.2"
+
+# Web
+jquery = "3.7.1"
+jquery-ui = "1.13.2"
+bootstrap = "5.3.2"
+
+[libraries]
+# Kotlin
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+
+# Spring Boot Starters
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web", version.ref = "spring-boot" }
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa", version.ref = "spring-boot" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation", version.ref = "spring-boot" }
+spring-boot-starter-thymeleaf = { module = "org.springframework.boot:spring-boot-starter-thymeleaf", version.ref = "spring-boot" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "spring-boot" }
+spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "spring-boot" }
+
+# Database
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
+hibernate-sqlite-dialect = { module = "com.enigmabridge:hibernate4-sqlite-dialect", version.ref = "hibernate-sqlite" }
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+
+# Jackson
+jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+
+# PDF and Barcode
+itext7-core = { module = "com.itextpdf:itext7-core", version.ref = "itext7" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
+zxing-javase = { module = "com.google.zxing:javase", version.ref = "zxing" }
+
+# Web Libraries
+jquery = { module = "org.webjars:jquery", version.ref = "jquery" }
+jquery-ui = { module = "org.webjars:jquery-ui", version.ref = "jquery-ui" }
+
+# Documentation
+springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+
+# Testing
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+
+[plugins]
+# Spring Boot and Kotlin plugins
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version = "1.1.4" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
+
+# Code Quality
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+
+[bundles]
+# Spring Boot Web Bundle
+spring-web = [
+    "spring-boot-starter-web",
+    "spring-boot-starter-thymeleaf",
+    "spring-boot-starter-validation",
+    "spring-boot-configuration-processor"
+]
+
+# Database Bundle
+database = [
+    "spring-boot-starter-data-jpa",
+    "sqlite-jdbc",
+    "hibernate-sqlite-dialect",
+    "flyway-core"
+]
+
+# Kotlin Bundle
+kotlin = [
+    "kotlin-stdlib",
+    "kotlin-reflect",
+    "jackson-module-kotlin"
+]
+
+# Document Processing Bundle
+document = [
+    "itext7-core",
+    "zxing-core",
+    "zxing-javase"
+]
+
+# Testing Bundle
+testing = [
+    "spring-boot-starter-test",
+    "junit-jupiter",
+    "mockk",
+    "assertj-core"
+]

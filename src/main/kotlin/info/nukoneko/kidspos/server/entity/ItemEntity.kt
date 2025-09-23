@@ -1,9 +1,18 @@
 package info.nukoneko.kidspos.server.entity
 
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 
+/**
+ * 商品エンティティ
+ *
+ * 商品情報を表現するデータベースエンティティ
+ * @property id 商品ID
+ * @property barcode バーコード
+ * @property name 商品名
+ * @property price 価格
+ */
 @Entity
 @Table(name = "item")
 data class ItemEntity(
