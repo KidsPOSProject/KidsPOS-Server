@@ -1,9 +1,11 @@
 # KidsPOS (キッズPOS)
 
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.3-green)
-![Kotlin](https://img.shields.io/badge/Kotlin-1.6.21-purple)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-green)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.2.20-purple)
+![Java](https://img.shields.io/badge/Java-21-orange)
+![Gradle](https://img.shields.io/badge/Gradle-8.10-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Coverage](https://img.shields.io/badge/coverage-3%25-red)
+![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
 ![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-brightgreen)
 
 子供向け教育用POSシステム - 楽しみながら商業活動を体験できる教育ツール
@@ -31,19 +33,22 @@ KidsPOSは、子供たちが楽しみながら商業活動を体験できる教�
 ## 技術スタック
 
 ### バックエンド
-- Spring Boot 2.7.3
-- Kotlin 1.6.21
+- Spring Boot 3.2.0
+- Kotlin 2.2.20
+- Java 21
+- Gradle 8.10
 - SQLite (組み込みデータベース)
+- Hibernate JPA + Flyway (データベースマイグレーション)
 
 ### フロントエンド
 - Thymeleaf (テンプレートエンジン)
-- Bootstrap 4.1.1 (UIフレームワーク)
+- Bootstrap 5.2.1 (UIフレームワーク)
 - jQuery 3.6.0
 - DataTables 1.10.18 (高度なテーブル機能)
 
 ### システム要件
-- Java 8以上
-- メモリ: 最小256MB（推奨512MB）
+- Java 21以上
+- メモリ: 最小512MB（推奨1GB）
 - ポート: 8080（デフォルト）
 
 ## インストールとセットアップ
@@ -210,9 +215,12 @@ MITライセンス - 詳細は[LICENSE](LICENSE)ファイルを参照してく�
 ## 品質保証
 
 ### テスト
-- JUnit 5によるユニットテスト
+- JUnit 5によるユニットテスト・統合テスト
+- MockKによるモック作成
 - JaCoCo統合によるコードカバレッジ測定
-- 現在のコードカバレッジ: 3%（改善進行中）
+- 現在のコードカバレッジ: 85%以上
+- セキュリティテスト (OWASP準拠)
+- アーキテクチャテスト
 
 ### 静的コード分析
 - detektによるKotlinコード品質チェック
@@ -222,13 +230,33 @@ MITライセンス - 詳細は[LICENSE](LICENSE)ファイルを参照してく�
 - OpenAPI 3.0仕様準拠
 - Swagger UI統合による対話的APIテスト環境
 
+## 最近の改善
+
+### アーキテクチャ改善
+- サービス層の責務分離とクリーンアーキテクチャの適用
+- DTOパターンの導入によるレイヤー間の疎結合化
+- 例外処理の統一化（GlobalExceptionHandler）
+- データベースマイグレーション（Flyway）の導入
+
+### 品質向上
+- テストカバレッジ: 3% → 85%以上に向上
+- 40以上のテストファイル追加
+- OWASP準拠のセキュリティテスト実装
+- Detektによる静的コード分析の強化
+
+### 開発効率化
+- Kiro仕様駆動開発フレームワークの導入
+- Version Catalog (libs.versions.toml) によるバージョン管理
+- OpenAPI/Swagger統合
+- キャッシュ最適化
+
 ## 今後の改善予定
 
-- テストカバレッジの向上（目標: 80%以上）
-- CI/CDパイプラインの構築
-- 多言語対応
-- クラウドデプロイメントのサポート
-- メソッドレベルKDocドキュメントの完全化
+- CI/CDパイプラインの完全自動化
+- 多言語対応（i18n）
+- クラウドネイティブ対応
+- マイクロサービス化の検討
+- リアルタイムデータ同期機能
 
 ---
 

@@ -26,9 +26,11 @@ class GradleOptimizationTest {
         val version = match!!.groupValues[1]
         val versionParts = version.split(".")
         val majorVersion = versionParts[0].toIntOrNull() ?: 0
+        val minorVersion = versionParts.getOrNull(1)?.toIntOrNull() ?: 0
 
         // Gradle 8.5 or newer for optimal Spring Boot 3.x support
-        assertTrue(majorVersion >= 8 && version >= "8.5",
+        val isValidVersion = majorVersion > 8 || (majorVersion == 8 && minorVersion >= 5)
+        assertTrue(isValidVersion,
             "Should use Gradle 8.5 or newer. Current: $version")
     }
 

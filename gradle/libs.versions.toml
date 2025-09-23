@@ -4,9 +4,9 @@
 [versions]
 # Core versions
 java = "21"
-kotlin = "1.9.21"
+kotlin = "2.2.20"
 spring-boot = "3.2.0"
-gradle = "8.5"
+gradle = "8.10"
 
 # Testing
 junit = "5.10.1"

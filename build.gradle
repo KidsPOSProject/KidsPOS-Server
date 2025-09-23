@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        kotlinVersion = '1.9.21'
+        kotlinVersion = '2.2.20'
         springBootVersion = '3.2.0'
     }
     repositories {
@@ -25,13 +25,14 @@ apply plugin: 'io.gitlab.arturbosch.detekt'
 
 group = 'info.nukoneko.kidspos'
 version = '1.0.0'
-sourceCompatibility = '21'
 
 // Java toolchain configuration
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 // Thymeleaf version managed by Spring Boot 3.x
@@ -85,7 +86,7 @@ bootJar {
 }
 
 task stage(type: Copy, dependsOn: [clean, build]) {
-    from jar.archivePath
+    from tasks.jar.archiveFile
     into project.rootDir
     rename {
         'app.jar'
