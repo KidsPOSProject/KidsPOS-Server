@@ -89,18 +89,26 @@ class BarcodeServiceTest {
             assertNotNull(pdfBytes)
             assertTrue(pdfBytes.isNotEmpty())
 
-            // Verify all items are included
+            // Verify PDF structure - should have 3 pages (one per item)
             val pdfReader = PdfReader(ByteArrayInputStream(pdfBytes))
             val pdfDocument = PdfDocument(pdfReader)
-            val pageText = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(1))
+            assertEquals(3, pdfDocument.numberOfPages, "Should have 3 pages for 3 items")
 
-            assertTrue(pageText.contains("Item 1"))
-            // PDFのテキスト抽出で日本語文字のエンコーディングに問題があるため、通貨部分の検証を一時的にスキップ
-            // assertTrue(pageText.contains("100リバー"))
-            assertTrue(pageText.contains("Item 2"))
-            // assertTrue(pageText.contains("200リバー"))
-            assertTrue(pageText.contains("Item 3"))
-            // assertTrue(pageText.contains("300リバー"))
+            // Each page should contain only one item name (repeated 44 times)
+            val page1Text = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(1))
+            assertTrue(page1Text.contains("Item 1"))
+            assertFalse(page1Text.contains("Item 2"))
+            assertFalse(page1Text.contains("Item 3"))
+
+            val page2Text = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(2))
+            assertTrue(page2Text.contains("Item 2"))
+            assertFalse(page2Text.contains("Item 1"))
+            assertFalse(page2Text.contains("Item 3"))
+
+            val page3Text = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(3))
+            assertTrue(page3Text.contains("Item 3"))
+            assertFalse(page3Text.contains("Item 1"))
+            assertFalse(page3Text.contains("Item 2"))
 
             pdfDocument.close()
         }
