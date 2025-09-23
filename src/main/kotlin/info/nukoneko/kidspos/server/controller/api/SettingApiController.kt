@@ -65,8 +65,48 @@ class SettingApiController {
         return ResponseEntity.noContent().build()
     }
 
+    @PostMapping("/printer/{storeId}")
+    fun savePrinterSettings(
+        @PathVariable storeId: Int,
+        @RequestBody printerSettings: PrinterSettingsRequest
+    ): ResponseEntity<Map<String, Any>> {
+        service.savePrinterHostPort(storeId, printerSettings.host, printerSettings.port)
+        return ResponseEntity.ok(
+            mapOf(
+                "storeId" to storeId,
+                "host" to printerSettings.host,
+                "port" to printerSettings.port,
+                "message" to "Printer settings saved successfully"
+            )
+        )
+    }
+
+    @GetMapping("/printer/{storeId}")
+    fun getPrinterSettings(@PathVariable storeId: Int): ResponseEntity<Map<String, Any>> {
+        val settings = service.findPrinterHostPortById(storeId)
+        return if (settings != null) {
+            ResponseEntity.ok(
+                mapOf(
+                    "storeId" to storeId,
+                    "host" to settings.first,
+                    "port" to settings.second
+                )
+            )
+        } else {
+            throw ResourceNotFoundException("Printer settings for store $storeId not found")
+        }
+    }
+
     /**
      * ステータス情報を表現するデータクラス
      */
     class StatusBean(val status: String)
+
+    /**
+     * プリンタ設定のリクエストDTO
+     */
+    data class PrinterSettingsRequest(
+        val host: String,
+        val port: Int
+    )
 }

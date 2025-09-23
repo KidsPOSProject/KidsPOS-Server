@@ -66,12 +66,12 @@ class SettingService(
         return setting?.let {
             val matchResult =
                 REGEX_HOST_PORT.matchEntire(it.value) ?: return null
-            return if (matchResult.groupValues.size != 2) {
+            return if (matchResult.groupValues.size != 3) {
                 null
             } else {
                 Pair(
-                    matchResult.groupValues[0],
-                    matchResult.groupValues[1].toInt()
+                    matchResult.groupValues[1],
+                    matchResult.groupValues[2].toInt()
                 )
             }
         }
