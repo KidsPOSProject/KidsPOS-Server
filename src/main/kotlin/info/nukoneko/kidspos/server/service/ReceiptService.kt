@@ -131,12 +131,12 @@ class ReceiptService(
             appendLine("Date: ${Date()}")
             appendLine("-----------------------------")
             items.forEach { item ->
-                appendLine("${item.name} - ¥${item.price}")
+                appendLine("${item.name} - ${item.price}リバー")
             }
             appendLine("-----------------------------")
-            appendLine("Total: ¥$totalAmount")
-            appendLine("Deposit: ¥$deposit")
-            appendLine("Change: ¥$change")
+            appendLine("Total: ${totalAmount}リバー")
+            appendLine("Deposit: ${deposit}リバー")
+            appendLine("Change: ${change}リバー")
             appendLine("=============================")
         }
     }

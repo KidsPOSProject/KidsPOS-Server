@@ -80,7 +80,7 @@ class BarcodeService {
             }
 
             table.addCell(
-                Paragraph("${item.name}\n¥${item.price}")
+                Paragraph("${item.name}\n${item.price}リバー")
                     .setTextAlignment(TextAlignment.LEFT)
             )
         }

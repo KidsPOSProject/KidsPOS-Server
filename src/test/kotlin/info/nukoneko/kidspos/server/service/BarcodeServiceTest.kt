@@ -95,11 +95,11 @@ class BarcodeServiceTest {
             val pageText = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(1))
 
             assertTrue(pageText.contains("Item 1"))
-            assertTrue(pageText.contains("¥100"))
+            assertTrue(pageText.contains("100リバー"))
             assertTrue(pageText.contains("Item 2"))
-            assertTrue(pageText.contains("¥200"))
+            assertTrue(pageText.contains("200リバー"))
             assertTrue(pageText.contains("Item 3"))
-            assertTrue(pageText.contains("¥300"))
+            assertTrue(pageText.contains("300リバー"))
 
             pdfDocument.close()
         }
