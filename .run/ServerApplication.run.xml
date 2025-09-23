@@ -6,7 +6,7 @@
         <module name="server.main"/>
         <shortenClasspath name="NONE"/>
         <envs>
-            <env name="JAVA_HOME" value="$USER_HOME$/.local/share/mise/installs/java/openjdk-21.0.2"/>
+            <!-- JAVA_HOMEは環境に応じて設定 -->
         </envs>
         <method v="2">
             <option name="Gradle.BeforeRunTask" enabled="true" tasks="clean build" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="-x detekt"/>

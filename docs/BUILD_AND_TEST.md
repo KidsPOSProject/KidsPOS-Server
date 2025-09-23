@@ -4,17 +4,17 @@
 
 ### 通常ビルド
 ```bash
-JAVA_HOME=/Users/atsumi/.local/share/mise/installs/java/openjdk-21.0.2 ./gradlew build -x detekt
+./gradlew build -x detekt
 ```
 
 ### クリーンビルド
 ```bash
-JAVA_HOME=/Users/atsumi/.local/share/mise/installs/java/openjdk-21.0.2 ./gradlew clean build -x detekt
+./gradlew clean build -x detekt
 ```
 
 ### テストのみ実行
 ```bash
-JAVA_HOME=/Users/atsumi/.local/share/mise/installs/java/openjdk-21.0.2 ./gradlew test
+./gradlew test
 ```
 
 ## 重要なルール
@@ -33,7 +33,7 @@ JAVA_HOME=/Users/atsumi/.local/share/mise/installs/java/openjdk-21.0.2 ./gradlew
 ## Java環境
 
 - **必須**: Java 21
-- **環境変数**: `JAVA_HOME=/Users/atsumi/.local/share/mise/installs/java/openjdk-21.0.2`
+- **環境変数**: `JAVA_HOME` をJava 21のインストールディレクトリに設定
 
 ## ビルド成果物
 

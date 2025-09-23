@@ -39,7 +39,7 @@ Web server failed to start. Port 8080 was already in use.
 Java 21が必要です。環境変数が設定されていない場合は：
 
 ```bash
-export JAVA_HOME=/Users/atsumi/.local/share/mise/installs/java/openjdk-21.0.2
+export JAVA_HOME={Java 21のインストールディレクトリ}
 ```
 
 ## 開発時の注意事項
