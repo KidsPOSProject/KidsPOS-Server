@@ -1,8 +1,8 @@
 package info.nukoneko.kidspos.server.config
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.SpringBootTest
@@ -10,14 +10,16 @@ import org.springframework.test.context.TestPropertySource
 
 @SpringBootTest(classes = [AppPropertiesTest::class])
 @EnableConfigurationProperties(AppProperties::class)
-@TestPropertySource(properties = [
-    "app.receipt.printer.host=test-printer",
-    "app.receipt.printer.port=9999",
-    "app.barcode.qr-size=250",
-    "app.barcode.pdf.margin=30",
-    "app.barcode.pdf.image-size=150",
-    "app.network.allowed-ip-prefix=10."
-])
+@TestPropertySource(
+    properties = [
+        "app.receipt.printer.host=test-printer",
+        "app.receipt.printer.port=9999",
+        "app.barcode.qr-size=250",
+        "app.barcode.pdf.margin=30",
+        "app.barcode.pdf.image-size=150",
+        "app.network.allowed-ip-prefix=10."
+    ]
+)
 @Disabled("Spring context not configured")
 class AppPropertiesTest {
     @Autowired

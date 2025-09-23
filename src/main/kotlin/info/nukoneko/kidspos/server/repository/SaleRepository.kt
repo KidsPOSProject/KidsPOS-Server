@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
-import java.util.Date
+import java.util.*
 
 /**
  * 販売エンティティのリポジトリインターフェース
@@ -38,7 +38,8 @@ interface SaleRepository : JpaRepository<SaleEntity, Int> {
     /**
      * Sales summary projection for dashboard
      */
-    @Query("""
+    @Query(
+        """
         SELECT s.storeId as storeId,
                COUNT(s.id) as totalSales,
                SUM(s.amount) as totalAmount,
@@ -46,7 +47,8 @@ interface SaleRepository : JpaRepository<SaleEntity, Int> {
         FROM SaleEntity s
         WHERE s.createdAt >= :fromDate
         GROUP BY s.storeId
-    """)
+    """
+    )
     fun findSalesSummaryByStore(fromDate: Date): List<SalesSummary>
 
     /**

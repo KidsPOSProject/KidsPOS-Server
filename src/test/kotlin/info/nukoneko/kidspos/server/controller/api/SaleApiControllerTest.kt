@@ -3,23 +3,23 @@ package info.nukoneko.kidspos.server.controller.api
 import com.fasterxml.jackson.databind.ObjectMapper
 import info.nukoneko.kidspos.server.controller.dto.request.CreateSaleRequest
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
-import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
 import info.nukoneko.kidspos.server.controller.dto.response.SaleResponse
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.service.*
 import info.nukoneko.kidspos.server.service.mapper.SaleMapper
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.context.annotation.Import
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.util.*
 
@@ -98,9 +98,11 @@ class SaleApiControllerTest {
         `when`(receiptService.printReceipt(any(), any(), any(), any())).thenReturn(true)
 
         // When & Then
-        mockMvc.perform(post("/api/sales")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(
+            post("/api/sales")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
 
@@ -123,9 +125,11 @@ class SaleApiControllerTest {
             .thenReturn(SaleResult.ValidationError("Insufficient deposit"))
 
         // When & Then
-        mockMvc.perform(post("/api/sales")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(
+            post("/api/sales")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
             .andExpect(status().isBadRequest)
 
         verify(itemParsingService).parseItemsFromIds("1,2")
@@ -148,9 +152,11 @@ class SaleApiControllerTest {
             .thenReturn(SaleResult.ProcessingError("Database error"))
 
         // When & Then
-        mockMvc.perform(post("/api/sales")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(
+            post("/api/sales")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
             .andExpect(status().isInternalServerError)
 
         verify(itemParsingService).parseItemsFromIds("1,2")
@@ -171,9 +177,11 @@ class SaleApiControllerTest {
             .thenThrow(RuntimeException("Parsing error"))
 
         // When & Then
-        mockMvc.perform(post("/api/sales")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(
+            post("/api/sales")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
             .andExpect(status().isInternalServerError)
 
         verify(itemParsingService).parseItemsFromIds("1,2")
@@ -286,9 +294,11 @@ class SaleApiControllerTest {
         """.trimIndent()
 
         // When & Then
-        mockMvc.perform(post("/api/sales")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(invalidRequest))
+        mockMvc.perform(
+            post("/api/sales")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(invalidRequest)
+        )
             .andExpect(status().isBadRequest)
     }
 
@@ -303,9 +313,11 @@ class SaleApiControllerTest {
         )
 
         // When & Then
-        mockMvc.perform(post("/api/sales")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(invalidRequest)))
+        mockMvc.perform(
+            post("/api/sales")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidRequest))
+        )
             .andExpect(status().isBadRequest)
 
         verify(itemParsingService, never()).parseItemsFromIds(any<String>())

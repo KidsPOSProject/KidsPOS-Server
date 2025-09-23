@@ -4,7 +4,6 @@ import info.nukoneko.kidspos.server.config.CacheConfig
 import info.nukoneko.kidspos.server.entity.StaffEntity
 import info.nukoneko.kidspos.server.repository.StaffRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service

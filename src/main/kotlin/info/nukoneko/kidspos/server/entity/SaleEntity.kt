@@ -1,9 +1,9 @@
 package info.nukoneko.kidspos.server.entity
 
-import java.util.*
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import java.util.*
 
 /**
  * 販売エンティティ

@@ -1,19 +1,22 @@
 package info.nukoneko.kidspos.server.security
 
-import org.junit.jupiter.api.Test
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpMethod
+import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.http.HttpMethod
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import org.springframework.http.MediaType
-import com.fasterxml.jackson.databind.ObjectMapper
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Nested
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+
 /**
  * OWASP Top 10セキュリティテストスイート
  *
@@ -88,8 +91,10 @@ class OWASPSecurityTest {
             // SQLインジェクション攻撃を防ぐ
             val maliciousQuery = "'; DROP TABLE item; --"
 
-            mockMvc.perform(get("/api/items/search")
-                .param("query", maliciousQuery))
+            mockMvc.perform(
+                get("/api/items/search")
+                    .param("query", maliciousQuery)
+            )
                 .andExpect { result ->
                     val status = result.response.status
                     assertTrue(status == 200 || status == 400)
@@ -111,9 +116,11 @@ class OWASPSecurityTest {
                 }
             """.trimIndent()
 
-            mockMvc.perform(post("/api/items/search")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(maliciousJson))
+            mockMvc.perform(
+                post("/api/items/search")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(maliciousJson)
+            )
                 .andExpect { result ->
                     val status = result.response.status
                     assertTrue(status == 200 || status == 400)
@@ -138,9 +145,11 @@ class OWASPSecurityTest {
                 "price" to 100
             )
 
-            val result = mockMvc.perform(post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(xssPayload)))
+            val result = mockMvc.perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(xssPayload))
+            )
                 .andReturn()
 
             val response = result.response.contentAsString
@@ -162,7 +171,7 @@ class OWASPSecurityTest {
             }
 
             // 大量のリクエストの一部が制限されることを確認
-            val limitedRequests = results.count { it == 429 }
+            results.count { it == 429 }
             assertTrue(true, "Rate limiting check - would need actual implementation")
         }
 
@@ -176,9 +185,11 @@ class OWASPSecurityTest {
                 "payment" to -1000  // 負の支払い金額
             )
 
-            mockMvc.perform(post("/api/sales")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidSale)))
+            mockMvc.perform(
+                post("/api/sales")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidSale))
+            )
                 .andExpect(status().isBadRequest())
         }
     }
@@ -193,10 +204,14 @@ class OWASPSecurityTest {
             mockMvc.perform(get("/api/invalid/endpoint"))
                 .andExpect { result ->
                     val response = result.response.contentAsString
-                    assertFalse(response.contains("java.lang."),
-                        "Stack traces should not be exposed")
-                    assertFalse(response.contains("at "),
-                        "Stack trace details should not be exposed")
+                    assertFalse(
+                        response.contains("java.lang."),
+                        "Stack traces should not be exposed"
+                    )
+                    assertFalse(
+                        response.contains("at "),
+                        "Stack trace details should not be exposed"
+                    )
                 }
         }
 
@@ -253,15 +268,17 @@ class OWASPSecurityTest {
                     "password" to "wrong$attempt"
                 )
 
-                mockMvc.perform(post("/api/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(credentials)))
+                mockMvc.perform(
+                    post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(credentials))
+                )
                     .andReturn()
                     .response.status
             }
 
             // 複数回の失敗後にアカウントがロックされるか確認
-            val lockedResponses = loginAttempts.count { it == 429 || it == 403 }
+            loginAttempts.count { it == 429 || it == 403 }
             assertTrue(true, "Authentication check - would need actual implementation")
         }
 
@@ -284,9 +301,11 @@ class OWASPSecurityTest {
                 "price" to "not_a_number"  // 不正なデータ型
             )
 
-            mockMvc.perform(post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(tamperedData)))
+            mockMvc.perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(tamperedData))
+            )
                 .andExpect(status().isBadRequest())
         }
 
@@ -300,9 +319,11 @@ class OWASPSecurityTest {
                 }
             """.trimIndent()
 
-            mockMvc.perform(post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(maliciousPayload))
+            mockMvc.perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(maliciousPayload)
+            )
                 .andExpect(status().isBadRequest())
         }
     }
@@ -330,9 +351,11 @@ class OWASPSecurityTest {
                 "creditCard" to "4111111111111111"
             )
 
-            mockMvc.perform(post("/api/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(sensitiveData)))
+            mockMvc.perform(
+                post("/api/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(sensitiveData))
+            )
                 .andReturn()
 
             // ログに機密情報が含まれていないことを確認
@@ -349,8 +372,10 @@ class OWASPSecurityTest {
             // SSRF攻撃を防ぐ
             val maliciousUrl = "http://169.254.169.254/latest/meta-data/"
 
-            mockMvc.perform(post("/api/items/import")
-                .param("url", maliciousUrl))
+            mockMvc.perform(
+                post("/api/items/import")
+                    .param("url", maliciousUrl)
+            )
                 .andExpect(status().is4xxClientError())
         }
 
@@ -359,8 +384,10 @@ class OWASPSecurityTest {
             // URLの検証とサニタイズ
             val internalUrl = "file:///etc/passwd"
 
-            mockMvc.perform(get("/api/proxy")
-                .param("url", internalUrl))
+            mockMvc.perform(
+                get("/api/proxy")
+                    .param("url", internalUrl)
+            )
                 .andExpect(status().is4xxClientError())
         }
     }

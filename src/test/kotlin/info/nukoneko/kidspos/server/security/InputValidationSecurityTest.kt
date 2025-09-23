@@ -1,17 +1,19 @@
 package info.nukoneko.kidspos.server.security
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Disabled
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import org.springframework.http.MediaType
-import com.fasterxml.jackson.databind.ObjectMapper
-import org.junit.jupiter.api.DisplayName
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+
 /**
  * 入力検証セキュリティテスト
  *
@@ -75,9 +77,11 @@ class InputValidationSecurityTest {
                 "price" to 100
             )
 
-            val result = mockMvc.perform(post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(item)))
+            val result = mockMvc.perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(item))
+            )
                 .andReturn()
 
             val response = result.response.contentAsString
@@ -140,9 +144,11 @@ class InputValidationSecurityTest {
                 "price" to 100
             )
 
-            mockMvc.perform(post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(item)))
+            mockMvc.perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(item))
+            )
                 .andExpect(status().isBadRequest())
         }
     }
@@ -161,8 +167,10 @@ class InputValidationSecurityTest {
         )
 
         ldapInjectionPayloads.forEach { payload ->
-            mockMvc.perform(get("/api/staff/search")
-                .param("name", payload))
+            mockMvc.perform(
+                get("/api/staff/search")
+                    .param("name", payload)
+            )
                 .andExpect { result ->
                     val status = result.response.status
                     assertTrue(status == 200 || status == 400)
@@ -181,9 +189,11 @@ class InputValidationSecurityTest {
             "price" to 100
         )
 
-        mockMvc.perform(post("/api/items")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(oversizedItem)))
+        mockMvc.perform(
+            post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(oversizedItem))
+        )
             .andExpect(status().isBadRequest())
     }
 
@@ -205,15 +215,19 @@ class InputValidationSecurityTest {
                 "price" to price
             )
 
-            val result = mockMvc.perform(post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(item)))
+            val result = mockMvc.perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(item))
+            )
                 .andReturn()
 
             // 負の価格や極端な値は拒否されるべき
             if (price < 0 || price > 1000000) {
-                assertEquals(400, result.response.status,
-                    "Should reject invalid price: $price")
+                assertEquals(
+                    400, result.response.status,
+                    "Should reject invalid price: $price"
+                )
             }
         }
     }
@@ -252,9 +266,11 @@ class InputValidationSecurityTest {
                 "price" to 100
             )
 
-            mockMvc.perform(post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(item)))
+            mockMvc.perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(item))
+            )
                 .andExpect { result ->
                     val status = result.response.status
                     assertTrue(status == 201 || status == 400)
@@ -282,9 +298,11 @@ class InputValidationSecurityTest {
                 "email" to email
             )
 
-            mockMvc.perform(post("/api/staff")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(staff)))
+            mockMvc.perform(
+                post("/api/staff")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(staff))
+            )
                 .andExpect { result ->
                     val status = result.response.status
                     assertTrue(status == 201 || status == 400)
@@ -304,9 +322,11 @@ class InputValidationSecurityTest {
             <foo>&xxe;</foo>
         """.trimIndent()
 
-        mockMvc.perform(post("/api/items/import")
-            .contentType(MediaType.APPLICATION_XML)
-            .content(xxePayload))
+        mockMvc.perform(
+            post("/api/items/import")
+                .contentType(MediaType.APPLICATION_XML)
+                .content(xxePayload)
+        )
             .andExpect(status().is4xxClientError())
     }
 
@@ -320,9 +340,11 @@ class InputValidationSecurityTest {
         )
 
         jsonInjectionPayloads.forEach { payload ->
-            mockMvc.perform(post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(payload))
+            mockMvc.perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(payload)
+            )
                 .andExpect { result ->
                     val status = result.response.status
                     assertTrue(status == 201 || status == 400)
@@ -343,8 +365,10 @@ class InputValidationSecurityTest {
         )
 
         invalidDates.forEach { date ->
-            mockMvc.perform(get("/api/sales/report")
-                .param("date", date))
+            mockMvc.perform(
+                get("/api/sales/report")
+                    .param("date", date)
+            )
                 .andExpect { result ->
                     val status = result.response.status
                     assertTrue(status == 200 || status == 400)
@@ -357,15 +381,19 @@ class InputValidationSecurityTest {
         // バッファオーバーフロー攻撃を防ぐ
         val bufferOverflowPayload = "A".repeat(1000000)
 
-        mockMvc.perform(post("/api/items")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
+        mockMvc.perform(
+            post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
                 {
                     "barcode": "$bufferOverflowPayload",
                     "name": "Test",
                     "price": 100
                 }
-            """.trimIndent()))
+            """.trimIndent()
+                )
+        )
             .andExpect(status().is4xxClientError())
     }
 }

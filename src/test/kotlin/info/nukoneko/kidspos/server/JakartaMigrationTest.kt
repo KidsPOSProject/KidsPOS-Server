@@ -1,13 +1,11 @@
 package info.nukoneko.kidspos.server
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
-import kotlin.streams.toList
 
 /**
  * Tests to verify Jakarta EE migration readiness
@@ -30,7 +28,8 @@ class JakartaMigrationTest {
                         if (line.contains("import javax.persistence") ||
                             line.contains("import javax.validation") ||
                             line.contains("import javax.servlet") ||
-                            line.contains("import javax.annotation")) {
+                            line.contains("import javax.annotation")
+                        ) {
                             javaxImports.add("${file.fileName}: $line")
                         }
                     }
@@ -60,8 +59,10 @@ class JakartaMigrationTest {
         val version = match!!.groupValues[1]
 
         // Verify we're on Spring Boot 3.x
-        assertTrue(version.startsWith("3."),
-            "Should use Spring Boot 3.x with Java 21. Current version: $version")
+        assertTrue(
+            version.startsWith("3."),
+            "Should use Spring Boot 3.x with Java 21. Current version: $version"
+        )
     }
 
     @Test
@@ -80,8 +81,10 @@ class JakartaMigrationTest {
         val minor = parts[1].toInt()
 
         // Spring Boot 2.7.x works with Kotlin 1.6.x
-        assertTrue(major > 1 || (major == 1 && minor >= 6),
-            "Kotlin version $version should be 1.6+ for Spring Boot 2.7.x")
+        assertTrue(
+            major > 1 || (major == 1 && minor >= 6),
+            "Kotlin version $version should be 1.6+ for Spring Boot 2.7.x"
+        )
     }
 
     @Test
@@ -102,8 +105,10 @@ class JakartaMigrationTest {
             } else {
                 version.toIntOrNull() ?: 0
             }
-            assertEquals(21, versionNum,
-                "Source compatibility should be Java 21 for Spring Boot 3.x")
+            assertEquals(
+                21, versionNum,
+                "Source compatibility should be Java 21 for Spring Boot 3.x"
+            )
         }
 
         // Check Kotlin JVM target
@@ -117,8 +122,10 @@ class JakartaMigrationTest {
             } else {
                 version.toIntOrNull() ?: 0
             }
-            assertTrue(versionNum >= 17 && versionNum <= 21,
-                "JVM target $version should be Java 17-21 for Spring Boot 3.x")
+            assertTrue(
+                versionNum >= 17 && versionNum <= 21,
+                "JVM target $version should be Java 17-21 for Spring Boot 3.x"
+            )
         }
     }
 
@@ -134,11 +141,17 @@ class JakartaMigrationTest {
 
         // For Spring Boot 3.x, these should be automatically included
         // but we check if old javax dependencies are not explicitly added
-        assertFalse(dependencies.contains("javax.servlet"),
-            "Found javax.servlet dependency, should use jakarta.servlet")
-        assertFalse(dependencies.contains("javax.persistence"),
-            "Found javax.persistence dependency, should use jakarta.persistence")
-        assertFalse(dependencies.contains("javax.validation"),
-            "Found javax.validation dependency, should use jakarta.validation")
+        assertFalse(
+            dependencies.contains("javax.servlet"),
+            "Found javax.servlet dependency, should use jakarta.servlet"
+        )
+        assertFalse(
+            dependencies.contains("javax.persistence"),
+            "Found javax.persistence dependency, should use jakarta.persistence"
+        )
+        assertFalse(
+            dependencies.contains("javax.validation"),
+            "Found javax.validation dependency, should use jakarta.validation"
+        )
     }
 }

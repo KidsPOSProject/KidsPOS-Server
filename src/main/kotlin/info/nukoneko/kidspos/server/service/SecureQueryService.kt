@@ -1,11 +1,11 @@
 package info.nukoneko.kidspos.server.service
 
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 import jakarta.persistence.EntityManager
 import jakarta.persistence.TypedQuery
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 
 /**
  * Service for building secure, parameterized queries
@@ -45,7 +45,12 @@ class SecureQueryService(
             .replace("*/", "")
 
         // Remove common SQL injection patterns
-        sanitized = sanitized.replace(Regex("\\b(union|select|insert|update|delete|drop|create|alter|exec|execute|script|javascript)\\b", RegexOption.IGNORE_CASE), "")
+        sanitized = sanitized.replace(
+            Regex(
+                "\\b(union|select|insert|update|delete|drop|create|alter|exec|execute|script|javascript)\\b",
+                RegexOption.IGNORE_CASE
+            ), ""
+        )
 
         // Escape single quotes for string literals
         sanitized = sanitized.replace("'", "''")

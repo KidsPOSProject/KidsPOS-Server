@@ -1,11 +1,9 @@
 package info.nukoneko.kidspos.server.service
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import org.springframework.boot.test.context.SpringBootTest
-import java.io.File
 import java.nio.file.Path
 
 /**

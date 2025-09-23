@@ -1,7 +1,10 @@
 package info.nukoneko.kidspos.server
 
 import info.nukoneko.kidspos.server.repository.*
-import info.nukoneko.kidspos.server.service.*
+import info.nukoneko.kidspos.server.service.SaleService
+import info.nukoneko.kidspos.server.service.SettingService
+import info.nukoneko.kidspos.server.service.StaffService
+import info.nukoneko.kidspos.server.service.StoreService
 import org.mockito.Mockito.mock
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean

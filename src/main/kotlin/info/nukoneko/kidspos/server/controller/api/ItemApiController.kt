@@ -6,22 +6,22 @@ import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
 import info.nukoneko.kidspos.server.domain.exception.InvalidBarcodeException
 import info.nukoneko.kidspos.server.domain.exception.ItemNotFoundException
 import info.nukoneko.kidspos.server.service.ItemService
-import info.nukoneko.kidspos.server.service.mapper.ItemMapper
 import info.nukoneko.kidspos.server.service.ValidationService
+import info.nukoneko.kidspos.server.service.mapper.ItemMapper
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.ArraySchema
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.Schema
-import io.swagger.v3.oas.annotations.media.ArraySchema
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
-import jakarta.validation.Valid
 
 /**
  * 商品APIコントローラー
@@ -54,11 +54,15 @@ class ItemApiController(
 
     @GetMapping("/{id}")
     @Operation(summary = "Get item by ID", description = "Retrieve a specific item by its ID")
-    @ApiResponses(value = [
-        ApiResponse(responseCode = "200", description = "Item found",
-            content = [Content(schema = Schema(implementation = ItemResponse::class))]),
-        ApiResponse(responseCode = "404", description = "Item not found")
-    ])
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200", description = "Item found",
+                content = [Content(schema = Schema(implementation = ItemResponse::class))]
+            ),
+            ApiResponse(responseCode = "404", description = "Item not found")
+        ]
+    )
     fun findById(
         @Parameter(description = "Item ID", required = true)
         @PathVariable id: Int
@@ -71,12 +75,16 @@ class ItemApiController(
 
     @GetMapping("/barcode/{barcode}")
     @Operation(summary = "Get item by barcode", description = "Retrieve a specific item by its barcode")
-    @ApiResponses(value = [
-        ApiResponse(responseCode = "200", description = "Item found",
-            content = [Content(schema = Schema(implementation = ItemResponse::class))]),
-        ApiResponse(responseCode = "400", description = "Invalid barcode format"),
-        ApiResponse(responseCode = "404", description = "Item not found")
-    ])
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200", description = "Item found",
+                content = [Content(schema = Schema(implementation = ItemResponse::class))]
+            ),
+            ApiResponse(responseCode = "400", description = "Invalid barcode format"),
+            ApiResponse(responseCode = "404", description = "Item not found")
+        ]
+    )
     fun findByBarcode(
         @Parameter(description = "Item barcode (4+ digits)", required = true, example = "1234567890")
         @PathVariable barcode: String

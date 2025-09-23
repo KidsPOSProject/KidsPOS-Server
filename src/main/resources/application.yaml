@@ -13,9 +13,9 @@ spring:
         dialect: org.hibernate.community.dialect.SQLiteDialect
         format_sql: false
         show_sql: false
-    generate-ddl: true
+    generate-ddl: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     # Disable open-in-view to avoid performance issues
     open-in-view: false
 

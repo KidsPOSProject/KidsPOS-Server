@@ -1,7 +1,5 @@
 package info.nukoneko.kidspos.common.service
 
-import info.nukoneko.kidspos.server.entity.ItemEntity
-import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.repository.ItemRepository
 import info.nukoneko.kidspos.server.repository.SaleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -11,7 +9,6 @@ import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.springframework.dao.EmptyResultDataAccessException
-import java.util.Date
 
 class IdGenerationServiceTest {
 

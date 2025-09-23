@@ -2,14 +2,12 @@ package info.nukoneko.kidspos.server.service
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.io.*
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
-import kotlin.system.measureTimeMillis
 
 /**
  * Service for managing resources efficiently
@@ -166,8 +164,10 @@ class ResourceManager(
             }
         }
 
-        logger.info("Batch processing completed: {} items in {} batches, max memory: {} bytes",
-                   processedCount, batchCount, maxMemoryUsed)
+        logger.info(
+            "Batch processing completed: {} items in {} batches, max memory: {} bytes",
+            processedCount, batchCount, maxMemoryUsed
+        )
 
         return BatchResult(processedCount, batchCount, maxMemoryUsed)
     }

@@ -1,9 +1,9 @@
 package info.nukoneko.kidspos.server
 
 import info.nukoneko.kidspos.server.config.OpenApiTestConfiguration
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -29,11 +29,13 @@ class OpenApiIntegrationTest {
         mockMvc.perform(get("/swagger-ui/index.html"))
             .andExpect(status().isOk)
     }
+
     @Test
     fun `OpenAPI JSON specification should be available`() {
         mockMvc.perform(get("/v3/api-docs"))
             .andExpect(status().isOk)
     }
+
     @Test
     fun `OpenAPI specification should include all API endpoints`() {
         val result = mockMvc.perform(get("/v3/api-docs"))

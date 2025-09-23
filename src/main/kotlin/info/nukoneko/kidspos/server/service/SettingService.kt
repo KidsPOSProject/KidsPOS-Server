@@ -4,7 +4,6 @@ import info.nukoneko.kidspos.server.config.CacheConfig
 import info.nukoneko.kidspos.server.entity.SettingEntity
 import info.nukoneko.kidspos.server.repository.SettingRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.repository.findByIdOrNull

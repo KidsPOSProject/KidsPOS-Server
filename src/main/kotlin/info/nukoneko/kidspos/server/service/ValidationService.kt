@@ -3,8 +3,8 @@ package info.nukoneko.kidspos.server.service
 import info.nukoneko.kidspos.common.Constants
 import info.nukoneko.kidspos.server.domain.exception.ValidationException
 import info.nukoneko.kidspos.server.repository.ItemRepository
-import info.nukoneko.kidspos.server.repository.StoreRepository
 import info.nukoneko.kidspos.server.repository.StaffRepository
+import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 

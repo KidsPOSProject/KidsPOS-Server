@@ -9,7 +9,6 @@ import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.repository.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
@@ -77,7 +76,8 @@ class SaleService(
         items.forEach {
             logger.debug("Item - ID: {}, Name: {}, Price: {}", it.id, it.name, it.price)
         }
-        val sale = SaleEntity(id, saleBean.storeId, staffId,
+        val sale = SaleEntity(
+            id, saleBean.storeId, staffId,
             items.size, items.sumOf { it.price }, saleBean.deposit, Date()
         )
 

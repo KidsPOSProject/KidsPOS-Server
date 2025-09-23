@@ -1,17 +1,15 @@
 package info.nukoneko.kidspos.server.service
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.boot.test.context.SpringBootTest
-import java.io.*
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
-import java.util.stream.Stream
 
 @SpringBootTest
 @Disabled("Spring context not configured")
@@ -34,9 +32,6 @@ class ResourceManagementTest {
         // Given
         val testFile = tempDir.resolve("test.txt")
         Files.write(testFile, "Test content".toByteArray())
-
-        var _streamClosed = false
-        var _readerClosed = false
 
         // When - Use try-with-resources pattern
         val content = resourceManager.readFileContent(testFile.toString())

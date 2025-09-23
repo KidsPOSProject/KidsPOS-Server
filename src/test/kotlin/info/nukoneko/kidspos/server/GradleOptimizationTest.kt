@@ -1,8 +1,8 @@
 package info.nukoneko.kidspos.server
 
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 import java.io.File
 
 /**
@@ -30,16 +30,20 @@ class GradleOptimizationTest {
 
         // Gradle 8.5 or newer for optimal Spring Boot 3.x support
         val isValidVersion = majorVersion > 8 || (majorVersion == 8 && minorVersion >= 5)
-        assertTrue(isValidVersion,
-            "Should use Gradle 8.5 or newer. Current: $version")
+        assertTrue(
+            isValidVersion,
+            "Should use Gradle 8.5 or newer. Current: $version"
+        )
     }
 
     @Test
     @DisplayName("Should use version catalog for dependency management")
     fun shouldUseVersionCatalog() {
         val catalogFile = File("gradle/libs.versions.toml")
-        assertTrue(catalogFile.exists(),
-            "Version catalog (libs.versions.toml) should exist for centralized dependency management")
+        assertTrue(
+            catalogFile.exists(),
+            "Version catalog (libs.versions.toml) should exist for centralized dependency management"
+        )
 
         val content = catalogFile.readText()
 
@@ -69,7 +73,7 @@ class GradleOptimizationTest {
         // Check for build optimization configurations
         assertTrue(
             content.contains("parallel = true") ||
-            content.contains("org.gradle.parallel=true"),
+                    content.contains("org.gradle.parallel=true"),
             "Should enable parallel execution for faster builds"
         )
 
@@ -79,7 +83,7 @@ class GradleOptimizationTest {
             val properties = gradleProperties.readText()
             assertTrue(
                 properties.contains("org.gradle.configuration-cache=true") ||
-                properties.contains("org.gradle.unsafe.configuration-cache=true"),
+                        properties.contains("org.gradle.unsafe.configuration-cache=true"),
                 "Should enable configuration cache for faster builds"
             )
         }
@@ -113,7 +117,7 @@ class GradleOptimizationTest {
             // Check for JVM memory settings
             assertTrue(
                 content.contains("org.gradle.jvmargs") &&
-                content.contains("-Xmx"),
+                        content.contains("-Xmx"),
                 "Should configure JVM heap size for better performance"
             )
 
@@ -175,8 +179,8 @@ class GradleOptimizationTest {
         // Check for lazy configuration patterns
         assertTrue(
             content.contains("tasks.withType") ||
-            content.contains("tasks.named") ||
-            content.contains("tasks.register"),
+                    content.contains("tasks.named") ||
+                    content.contains("tasks.register"),
             "Should use task configuration avoidance patterns"
         )
     }

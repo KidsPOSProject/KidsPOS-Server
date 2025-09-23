@@ -37,7 +37,10 @@ class IpController(
         }
 
         model.addAttribute("title", "ip")
-        model.addAttribute("hosts", hosts.filter { it.address.startsWith(appProperties.network.allowedIpPrefix) }.distinct())
+        model.addAttribute(
+            "hosts",
+            hosts.filter { it.address.startsWith(appProperties.network.allowedIpPrefix) }.distinct()
+        )
         model.addAttribute("port", environment.getProperty("local.server.port"))
         return "ip/index"
     }

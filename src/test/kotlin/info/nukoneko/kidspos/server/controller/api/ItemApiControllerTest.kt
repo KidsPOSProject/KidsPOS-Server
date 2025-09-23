@@ -4,25 +4,23 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import info.nukoneko.kidspos.server.controller.dto.request.CreateItemRequest
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
-import info.nukoneko.kidspos.server.domain.exception.InvalidBarcodeException
-import info.nukoneko.kidspos.server.domain.exception.ItemNotFoundException
 import info.nukoneko.kidspos.server.entity.ItemEntity
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
 import info.nukoneko.kidspos.server.service.mapper.ItemMapper
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import org.springframework.context.annotation.Import
 
 @WebMvcTest(
     controllers = [ItemApiController::class],
@@ -188,9 +186,11 @@ class ItemApiControllerTest {
         `when`(itemMapper.toResponse(savedItem)).thenReturn(savedResponse)
 
         // When & Then
-        mockMvc.perform(post("/api/items")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(
+            post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
             .andExpect(status().isCreated)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.id").value(2))
@@ -212,9 +212,11 @@ class ItemApiControllerTest {
         )
 
         // When & Then
-        mockMvc.perform(post("/api/items")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(
+            post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
             .andExpect(status().isBadRequest)
 
         verify(itemService, never()).save(any<ItemBean>())
@@ -248,9 +250,11 @@ class ItemApiControllerTest {
         `when`(itemMapper.toResponse(updatedItem)).thenReturn(updatedResponse)
 
         // When & Then
-        mockMvc.perform(put("/api/items/1")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(
+            put("/api/items/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.name").value("Updated Item"))
@@ -275,9 +279,11 @@ class ItemApiControllerTest {
         `when`(itemService.findItem(999)).thenReturn(null)
 
         // When & Then
-        mockMvc.perform(put("/api/items/999")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(
+            put("/api/items/999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+        )
             .andExpect(status().isNotFound)
 
         verify(itemService).findItem(999)
@@ -296,18 +302,22 @@ class ItemApiControllerTest {
     @Test
     fun `should handle empty request body`() {
         // When & Then
-        mockMvc.perform(post("/api/items")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(""))
+        mockMvc.perform(
+            post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("")
+        )
             .andExpect(status().isBadRequest)
     }
 
     @Test
     fun `should handle malformed JSON`() {
         // When & Then
-        mockMvc.perform(post("/api/items")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{invalid json"))
+        mockMvc.perform(
+            post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{invalid json")
+        )
             .andExpect(status().isBadRequest)
     }
 }

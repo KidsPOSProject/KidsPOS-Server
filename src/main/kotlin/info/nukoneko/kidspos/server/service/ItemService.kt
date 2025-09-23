@@ -6,7 +6,6 @@ import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.entity.ItemEntity
 import info.nukoneko.kidspos.server.repository.ItemRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.cache.annotation.Caching
@@ -66,11 +65,13 @@ class ItemService(
         return repository.findByBarcode(barcode)
     }
 
-    @Caching(evict = [
-        CacheEvict(value = [CacheConfig.ITEMS_CACHE], allEntries = true),
-        CacheEvict(value = [CacheConfig.ITEM_BY_ID_CACHE], key = "#result.id"),
-        CacheEvict(value = [CacheConfig.ITEM_BY_BARCODE_CACHE], key = "#result.barcode")
-    ])
+    @Caching(
+        evict = [
+            CacheEvict(value = [CacheConfig.ITEMS_CACHE], allEntries = true),
+            CacheEvict(value = [CacheConfig.ITEM_BY_ID_CACHE], key = "#result.id"),
+            CacheEvict(value = [CacheConfig.ITEM_BY_BARCODE_CACHE], key = "#result.barcode")
+        ]
+    )
     fun save(itemBean: ItemBean): ItemEntity {
         logger.info("Creating item with barcode: {}, name: {}", itemBean.barcode, itemBean.name)
         val id = if (itemBean.id != null && itemBean.id > 0) {

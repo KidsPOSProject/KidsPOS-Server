@@ -2,11 +2,7 @@ package info.nukoneko.kidspos.server.repository
 
 import info.nukoneko.kidspos.server.entity.StaffEntity
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
@@ -279,11 +275,13 @@ class StaffRepositoryTest {
             assertThat(staffRepository.count()).isEqualTo(0)
 
             // When
-            staffRepository.saveAll(listOf(
-                StaffEntity("COUNT001", "Staff 1"),
-                StaffEntity("COUNT002", "Staff 2"),
-                StaffEntity("COUNT003", "Staff 3")
-            ))
+            staffRepository.saveAll(
+                listOf(
+                    StaffEntity("COUNT001", "Staff 1"),
+                    StaffEntity("COUNT002", "Staff 2"),
+                    StaffEntity("COUNT003", "Staff 3")
+                )
+            )
             entityManager.flush()
             entityManager.clear()
 
@@ -295,12 +293,14 @@ class StaffRepositoryTest {
         @DisplayName("Should delete batch by IDs")
         fun shouldDeleteBatchByIds() {
             // Given
-            staffRepository.saveAll(listOf(
-                StaffEntity("BATCH001", "Staff 1"),
-                StaffEntity("BATCH002", "Staff 2"),
-                StaffEntity("BATCH003", "Staff 3"),
-                StaffEntity("BATCH004", "Staff 4")
-            ))
+            staffRepository.saveAll(
+                listOf(
+                    StaffEntity("BATCH001", "Staff 1"),
+                    StaffEntity("BATCH002", "Staff 2"),
+                    StaffEntity("BATCH003", "Staff 3"),
+                    StaffEntity("BATCH004", "Staff 4")
+                )
+            )
             entityManager.flush()
             entityManager.clear()
 
@@ -323,12 +323,14 @@ class StaffRepositoryTest {
         @DisplayName("Should find all by IDs")
         fun shouldFindAllByIds() {
             // Given
-            staffRepository.saveAll(listOf(
-                StaffEntity("FINDALL001", "Staff A"),
-                StaffEntity("FINDALL002", "Staff B"),
-                StaffEntity("FINDALL003", "Staff C"),
-                StaffEntity("FINDALL004", "Staff D")
-            ))
+            staffRepository.saveAll(
+                listOf(
+                    StaffEntity("FINDALL001", "Staff A"),
+                    StaffEntity("FINDALL002", "Staff B"),
+                    StaffEntity("FINDALL003", "Staff C"),
+                    StaffEntity("FINDALL004", "Staff D")
+                )
+            )
             entityManager.flush()
             entityManager.clear()
 

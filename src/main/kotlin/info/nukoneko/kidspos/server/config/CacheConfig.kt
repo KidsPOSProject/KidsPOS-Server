@@ -1,12 +1,12 @@
 package info.nukoneko.kidspos.server.config
 
+import org.slf4j.LoggerFactory
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.CachingConfigurerSupport
 import org.springframework.cache.annotation.EnableCaching
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.slf4j.LoggerFactory
 
 /**
  * Cache configuration for improving performance
@@ -45,7 +45,7 @@ class CacheConfig : CachingConfigurerSupport() {
             SETTINGS_CACHE
         ).apply {
             // Allow null values to handle non-existent items
-            setAllowNullValues(true)
+            isAllowNullValues = true
             logger.info("Cache manager initialized with {} caches", cacheNames.size)
         }
     }

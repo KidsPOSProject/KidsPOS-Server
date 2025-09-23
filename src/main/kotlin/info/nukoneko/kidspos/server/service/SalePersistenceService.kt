@@ -46,8 +46,10 @@ class SalePersistenceService(
         )
 
         val savedSale = saleRepository.save(sale)
-        logger.info("Sale saved successfully: ID={}, amount={}, items={}",
-                   savedSale.id, savedSale.amount, savedSale.quantity)
+        logger.info(
+            "Sale saved successfully: ID={}, amount={}, items={}",
+            savedSale.id, savedSale.amount, savedSale.quantity
+        )
 
         return savedSale
     }
@@ -75,8 +77,10 @@ class SalePersistenceService(
             val savedDetail = saleDetailRepository.save(saleDetail)
             savedDetails.add(savedDetail)
 
-            logger.debug("Sale detail saved: item={}, quantity={}, price={}",
-                        itemId, quantity, unitPrice)
+            logger.debug(
+                "Sale detail saved: item={}, quantity={}, price={}",
+                itemId, quantity, unitPrice
+            )
         }
 
         logger.info("Saved {} sale detail records for sale ID: {}", savedDetails.size, saleId)

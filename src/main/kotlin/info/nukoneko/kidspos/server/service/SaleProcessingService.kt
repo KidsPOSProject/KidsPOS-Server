@@ -1,14 +1,13 @@
 package info.nukoneko.kidspos.server.service
 
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
-
 import info.nukoneko.kidspos.common.Constants
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
-import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.entity.SaleDetailEntity
+import info.nukoneko.kidspos.server.entity.SaleEntity
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * Main sale processing service that orchestrates the sale creation process
@@ -56,8 +55,10 @@ class SaleProcessingService(
         // Step 3: Save sale details
         salePersistenceService.saveSaleDetails(savedSale.id, items)
 
-        logger.info("Sale processed successfully: ID={}, total={}",
-                   savedSale.id, savedSale.amount)
+        logger.info(
+            "Sale processed successfully: ID={}, total={}",
+            savedSale.id, savedSale.amount
+        )
 
         return savedSale
     }

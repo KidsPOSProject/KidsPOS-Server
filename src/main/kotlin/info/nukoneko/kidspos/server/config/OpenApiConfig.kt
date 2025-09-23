@@ -1,8 +1,8 @@
 package info.nukoneko.kidspos.server.config
 
 import io.swagger.v3.oas.models.OpenAPI
-import io.swagger.v3.oas.models.info.Info
 import io.swagger.v3.oas.models.info.Contact
+import io.swagger.v3.oas.models.info.Info
 import io.swagger.v3.oas.models.info.License
 import io.swagger.v3.oas.models.servers.Server
 import org.springframework.context.annotation.Bean
@@ -31,11 +31,13 @@ class OpenApiConfig {
                 Info()
                     .title("KidsPOS Server API")
                     .version("1.0.0")
-                    .description("""
+                    .description(
+                        """
                         KidsPOS (キッズPOS) is a simplified Point of Sale system designed for
                         educational and entertainment purposes. This API provides endpoints for
                         managing sales, inventory, staff, and store operations.
-                    """.trimIndent())
+                    """.trimIndent()
+                    )
                     .contact(
                         Contact()
                             .name("KidsPOS Development Team")

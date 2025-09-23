@@ -2,15 +2,9 @@ package info.nukoneko.kidspos.server.architecture
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.springframework.stereotype.Controller
-import org.springframework.stereotype.Service
-import org.springframework.stereotype.Repository
-import org.springframework.web.bind.annotation.RestController
-import jakarta.persistence.Entity
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.streams.toList
 
 class PackageStructureTest {
 

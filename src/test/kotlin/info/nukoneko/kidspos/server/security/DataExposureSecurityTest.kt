@@ -1,17 +1,19 @@
 package info.nukoneko.kidspos.server.security
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Disabled
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import org.springframework.http.MediaType
-import com.fasterxml.jackson.databind.ObjectMapper
-import org.junit.jupiter.api.DisplayName
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+
 /**
  * データ漏洩防止セキュリティテスト
  *
@@ -52,9 +54,11 @@ class DataExposureSecurityTest {
             "invalid_field" to "value"
         )
 
-        val result = mockMvc.perform(post("/api/items")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(invalidItem)))
+        val result = mockMvc.perform(
+            post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidItem))
+        )
             .andReturn()
 
         val response = result.response.contentAsString
@@ -77,10 +81,14 @@ class DataExposureSecurityTest {
         val response = result.response
 
         // 技術スタック情報が含まれていないことを確認
-        assertFalse(response.getHeader("X-Powered-By") != null,
-            "Should not expose X-Powered-By header")
-        assertFalse(response.getHeader("Server")?.contains("version") == true,
-            "Should not expose server version")
+        assertFalse(
+            response.getHeader("X-Powered-By") != null,
+            "Should not expose X-Powered-By header"
+        )
+        assertFalse(
+            response.getHeader("Server")?.contains("version") == true,
+            "Should not expose server version"
+        )
 
         val body = response.contentAsString
         assertFalse(body.contains("Spring Boot"), "Should not expose Spring Boot")
@@ -116,8 +124,10 @@ class DataExposureSecurityTest {
             val result = mockMvc.perform(get(path))
                 .andReturn()
 
-            assertEquals(404, result.response.status,
-                "Should return 404 for non-existent resources")
+            assertEquals(
+                404, result.response.status,
+                "Should return 404 for non-existent resources"
+            )
 
             val response = result.response.contentAsString
             assertFalse(response.contains("SQL"), "Should not expose SQL info")
@@ -132,7 +142,7 @@ class DataExposureSecurityTest {
             .andExpect(status().isOk())
             .andReturn()
 
-        val response = result.response.contentAsString
+        result.response.contentAsString
 
         // レスポンスに含まれるIDが適切にマスクされているか確認
         // （このテストは実装に依存するため、具体的な検証は調整が必要）
@@ -151,9 +161,11 @@ class DataExposureSecurityTest {
             "ssn" to "123-45-6789"
         )
 
-        mockMvc.perform(post("/api/items")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(sensitiveData)))
+        mockMvc.perform(
+            post("/api/items")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sensitiveData))
+        )
             .andReturn()
 
         // ログに機密情報が記録されていないことを確認
@@ -164,8 +176,10 @@ class DataExposureSecurityTest {
     @Test
     fun `should not expose session IDs in URLs`() {
         // URLにセッションIDを露出しない
-        val result = mockMvc.perform(get("/api/items")
-            .param("jsessionid", "ABC123DEF456"))
+        val result = mockMvc.perform(
+            get("/api/items")
+                .param("jsessionid", "ABC123DEF456")
+        )
             .andReturn()
 
         val response = result.response
@@ -173,10 +187,14 @@ class DataExposureSecurityTest {
         // リダイレクトURLにセッションIDが含まれていないことを確認
         val location = response.getHeader("Location")
         if (location != null) {
-            assertFalse(location.contains("jsessionid"),
-                "Should not include session ID in URL")
-            assertFalse(location.contains("sessionid"),
-                "Should not include session ID in URL")
+            assertFalse(
+                location.contains("jsessionid"),
+                "Should not include session ID in URL"
+            )
+            assertFalse(
+                location.contains("sessionid"),
+                "Should not include session ID in URL"
+            )
         }
     }
 
@@ -189,10 +207,14 @@ class DataExposureSecurityTest {
         val response = result.response
 
         // セキュリティヘッダーの確認
-        assertNotNull(response.getHeader("X-Content-Type-Options"),
-            "Should include X-Content-Type-Options")
-        assertEquals("nosniff", response.getHeader("X-Content-Type-Options"),
-            "X-Content-Type-Options should be nosniff")
+        assertNotNull(
+            response.getHeader("X-Content-Type-Options"),
+            "Should include X-Content-Type-Options"
+        )
+        assertEquals(
+            "nosniff", response.getHeader("X-Content-Type-Options"),
+            "X-Content-Type-Options should be nosniff"
+        )
 
         // その他の推奨セキュリティヘッダー
         // X-Frame-Options, X-XSS-Protection, Content-Security-Policy など
@@ -226,8 +248,10 @@ class DataExposureSecurityTest {
         val timeDifference = Math.abs(avgValid - avgInvalid)
 
         // タイミングの差が100ms以内であることを確認（調整可能）
-        assertTrue(timeDifference < 100,
-            "Timing difference should be minimal to prevent timing attacks")
+        assertTrue(
+            timeDifference < 100,
+            "Timing difference should be minimal to prevent timing attacks"
+        )
     }
 
     @Test
@@ -236,8 +260,10 @@ class DataExposureSecurityTest {
         val result = mockMvc.perform(get("/api/debug"))
             .andReturn()
 
-        assertEquals(404, result.response.status,
-            "Debug endpoints should not be accessible")
+        assertEquals(
+            404, result.response.status,
+            "Debug endpoints should not be accessible"
+        )
 
         // Actuatorエンドポイントへのアクセスも確認
         mockMvc.perform(get("/actuator/beans"))
@@ -261,14 +287,18 @@ class DataExposureSecurityTest {
             if (staff.containsKey("email")) {
                 val email = staff["email"] as? String
                 if (email != null && email.contains("@")) {
-                    assertTrue(email.contains("***") || email.length < email.count { it == '@' },
-                        "Email should be partially masked")
+                    assertTrue(
+                        email.contains("***") || email.length < email.count { it == '@' },
+                        "Email should be partially masked"
+                    )
                 }
             }
 
             // パスワードフィールドが含まれていないことを確認
-            assertFalse(staff.containsKey("password"),
-                "Password should never be included in response")
+            assertFalse(
+                staff.containsKey("password"),
+                "Password should never be included in response"
+            )
         }
     }
 

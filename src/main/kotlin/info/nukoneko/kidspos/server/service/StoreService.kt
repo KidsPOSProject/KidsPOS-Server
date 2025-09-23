@@ -6,7 +6,6 @@ import info.nukoneko.kidspos.server.controller.dto.request.StoreBean
 import info.nukoneko.kidspos.server.entity.StoreEntity
 import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.cache.annotation.Caching
@@ -59,10 +58,12 @@ class StoreService(
         return repository.findByIdOrNull(id)
     }
 
-    @Caching(evict = [
-        CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
-        CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#result.id")
-    ])
+    @Caching(
+        evict = [
+            CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
+            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#result.id")
+        ]
+    )
     fun save(storeBean: StoreBean): StoreEntity {
         logger.info("Creating store with name: {}", storeBean.name)
         val id = idGenerationService.generateNextId(repository)
@@ -72,10 +73,12 @@ class StoreService(
         return savedStore
     }
 
-    @Caching(evict = [
-        CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
-        CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#result.id")
-    ])
+    @Caching(
+        evict = [
+            CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
+            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#result.id")
+        ]
+    )
     fun save(store: StoreEntity): StoreEntity {
         logger.info("Saving store: {}", store.name)
         val savedStore = if (store.id == 0) {

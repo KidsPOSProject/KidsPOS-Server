@@ -6,15 +6,16 @@ import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.service.*
 import info.nukoneko.kidspos.server.service.mapper.SaleMapper
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.http.HttpStatus
-import org.junit.jupiter.api.Assertions.*
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)

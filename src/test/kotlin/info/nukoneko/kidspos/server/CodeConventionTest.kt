@@ -1,8 +1,7 @@
 package info.nukoneko.kidspos.server
 
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Assertions.*
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -25,8 +24,10 @@ class CodeConventionTest {
             violations.addAll(importViolations)
         }
 
-        assertTrue(violations.isEmpty(),
-            "Import order violations found:\n${violations.joinToString("\n")}")
+        assertTrue(
+            violations.isEmpty(),
+            "Import order violations found:\n${violations.joinToString("\n")}"
+        )
     }
 
     @Test
@@ -39,8 +40,10 @@ class CodeConventionTest {
             violations.addAll(commentedCodeBlocks)
         }
 
-        assertTrue(violations.isEmpty(),
-            "Commented out code blocks found:\n${violations.joinToString("\n")}")
+        assertTrue(
+            violations.isEmpty(),
+            "Commented out code blocks found:\n${violations.joinToString("\n")}"
+        )
     }
 
     @Test
@@ -53,8 +56,10 @@ class CodeConventionTest {
             violations.addAll(namingViolations)
         }
 
-        assertTrue(violations.isEmpty(),
-            "Naming convention violations found:\n${violations.joinToString("\n")}")
+        assertTrue(
+            violations.isEmpty(),
+            "Naming convention violations found:\n${violations.joinToString("\n")}"
+        )
     }
 
     @Test
@@ -67,8 +72,10 @@ class CodeConventionTest {
             violations.addAll(deprecatedUsages)
         }
 
-        assertTrue(violations.isEmpty(),
-            "Deprecated API usage found:\n${violations.joinToString("\n")}")
+        assertTrue(
+            violations.isEmpty(),
+            "Deprecated API usage found:\n${violations.joinToString("\n")}"
+        )
     }
 
     @Test
@@ -81,8 +88,10 @@ class CodeConventionTest {
             violations.addAll(formattingIssues)
         }
 
-        assertTrue(violations.isEmpty(),
-            "Code formatting issues found:\n${violations.joinToString("\n")}")
+        assertTrue(
+            violations.isEmpty(),
+            "Code formatting issues found:\n${violations.joinToString("\n")}"
+        )
     }
 
     private fun findAllKotlinFiles(): List<File> {
@@ -105,7 +114,8 @@ class CodeConventionTest {
 
         if (importLines.isEmpty()) return violations
 
-        val expectedOrder = listOf("java.", "javax.", "kotlin.", "org.springframework.", "org.", "com.", "info.nukoneko.kidspos.")
+        val expectedOrder =
+            listOf("java.", "javax.", "kotlin.", "org.springframework.", "org.", "com.", "info.nukoneko.kidspos.")
         var lastOrderIndex = -1
 
         importLines.forEach { importLine ->
@@ -143,11 +153,11 @@ class CodeConventionTest {
         val codeContent = line.removePrefix("//").trim()
         // Check for common code patterns
         return codeContent.contains("fun ") ||
-               codeContent.contains("class ") ||
-               codeContent.contains("val ") ||
-               codeContent.contains("var ") ||
-               (codeContent.contains("(") && codeContent.contains(")")) ||
-               codeContent.contains("return ")
+                codeContent.contains("class ") ||
+                codeContent.contains("val ") ||
+                codeContent.contains("var ") ||
+                (codeContent.contains("(") && codeContent.contains(")")) ||
+                codeContent.contains("return ")
     }
 
     private fun checkNamingConventions(file: File, content: String): List<String> {

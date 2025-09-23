@@ -2,11 +2,11 @@ package info.nukoneko.kidspos.server.service
 
 import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.repository.ItemRepository
-import info.nukoneko.kidspos.server.repository.SaleRepository
 import info.nukoneko.kidspos.server.repository.SaleDetailRepository
+import info.nukoneko.kidspos.server.repository.SaleRepository
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest

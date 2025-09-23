@@ -1,11 +1,8 @@
 package info.nukoneko.kidspos.server.repository.specification
 
 import info.nukoneko.kidspos.server.entity.ItemEntity
-import org.springframework.data.jpa.domain.Specification
-import jakarta.persistence.criteria.CriteriaBuilder
-import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.Predicate
-import jakarta.persistence.criteria.Root
+import org.springframework.data.jpa.domain.Specification
 
 object ItemSpecification {
 

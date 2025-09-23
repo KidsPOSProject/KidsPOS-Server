@@ -2,9 +2,9 @@ package info.nukoneko.kidspos.server.validation
 
 import info.nukoneko.kidspos.common.Constants
 import jakarta.validation.Constraint
-import jakarta.validation.Payload
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
+import jakarta.validation.Payload
 import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
@@ -23,6 +23,6 @@ class BarcodeValidator : ConstraintValidator<ValidBarcode, String> {
         }
 
         return value.matches(Regex(Constants.Validation.BARCODE_PATTERN)) &&
-               value.length >= Constants.Barcode.MIN_LENGTH
+                value.length >= Constants.Barcode.MIN_LENGTH
     }
 }

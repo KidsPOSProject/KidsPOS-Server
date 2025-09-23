@@ -3,13 +3,16 @@ package info.nukoneko.kidspos.server.controller.api
 import info.nukoneko.kidspos.server.controller.dto.request.CreateSaleRequest
 import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
 import info.nukoneko.kidspos.server.controller.dto.response.SaleResponse
-import info.nukoneko.kidspos.server.service.*
+import info.nukoneko.kidspos.server.service.ItemParsingService
+import info.nukoneko.kidspos.server.service.ReceiptService
+import info.nukoneko.kidspos.server.service.SaleProcessingService
+import info.nukoneko.kidspos.server.service.SaleResult
 import info.nukoneko.kidspos.server.service.mapper.SaleMapper
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
-import jakarta.validation.Valid
 
 /**
  * 販売APIコントローラー
@@ -43,9 +46,7 @@ class SaleApiController(
                 itemIds = request.itemIds,
                 deposit = request.deposit
             )
-            val result = saleProcessingService.processSaleWithValidation(saleBean, items)
-
-            when (result) {
+            when (val result = saleProcessingService.processSaleWithValidation(saleBean, items)) {
                 is SaleResult.Success -> {
                     // Print receipt
                     receiptService.printReceipt(
@@ -68,14 +69,17 @@ class SaleApiController(
                     logger.info("Sale created successfully: ID={}", sale.id)
                     ResponseEntity.status(201).body(response)
                 }
+
                 is SaleResult.Error -> {
                     logger.error("Sale creation failed: {}", result.message)
                     ResponseEntity.badRequest().body(mapOf("error" to result.message))
                 }
+
                 is SaleResult.ValidationError -> {
                     logger.warn("Sale validation failed: {}", result.message)
                     ResponseEntity.badRequest().body(mapOf("error" to result.message))
                 }
+
                 is SaleResult.ProcessingError -> {
                     logger.error("Sale processing failed: {}", result.message)
                     ResponseEntity.status(500).body(mapOf("error" to result.message))
@@ -96,9 +100,7 @@ class SaleApiController(
             val items = itemParsingService.parseItemsFromIds(saleBean.itemIds)
 
             // Process the sale
-            val result = saleProcessingService.processSaleWithValidation(saleBean, items)
-
-            when (result) {
+            when (val result = saleProcessingService.processSaleWithValidation(saleBean, items)) {
                 is SaleResult.Success -> {
                     // Print receipt
                     receiptService.printReceipt(
@@ -112,14 +114,17 @@ class SaleApiController(
                     logger.info("Sale created successfully: ID={}", result.sale.id)
                     ResponseEntity.ok(response)
                 }
+
                 is SaleResult.ValidationError -> {
                     logger.warn("Sale validation failed: {}", result.message)
                     ResponseEntity.badRequest().build()
                 }
+
                 is SaleResult.ProcessingError -> {
                     logger.error("Sale processing failed: {}", result.message)
                     ResponseEntity.internalServerError().build()
                 }
+
                 is SaleResult.Error -> {
                     logger.error("Sale creation failed: {}", result.message)
                     ResponseEntity.badRequest().build()

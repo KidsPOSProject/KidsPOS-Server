@@ -1,8 +1,6 @@
 package info.nukoneko.kidspos.server
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Assertions.*
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -226,9 +224,9 @@ class KDocComplianceTest {
 
             // Check if method throws exceptions
             val throwsException = methodBody.contains("throw ") ||
-                                 methodBody.contains("RuntimeException") ||
-                                 methodBody.contains("IllegalArgumentException") ||
-                                 methodBody.contains("Exception")
+                    methodBody.contains("RuntimeException") ||
+                    methodBody.contains("IllegalArgumentException") ||
+                    methodBody.contains("Exception")
 
             if (throwsException && !kdocComment.contains("@throws")) {
                 violations.add("${file.name}: Method '$methodName' throws exceptions but missing @throws documentation")
