@@ -1,9 +1,17 @@
 package info.nukoneko.kidspos.server.entity
 
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 
+/**
+ * 店舗エンティティ
+ *
+ * 店舗情報を表現するデータベースエンティティ
+ * @property id 店舗ID
+ * @property name 店舗名
+ * @property printerUri プリンターURI
+ */
 @Entity
 @Table(name = "store")
 data class StoreEntity(

@@ -17,6 +17,8 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 ### Active Specifications
 - Check `.kiro/specs/` for active specifications
 - Use `/kiro:spec-status [feature-name]` to check progress
+- **readme-creation**: プロジェクトのREADME.mdファイルを作成
+- **code-refactoring**: プロジェクト全体のコードリファクタリング
 
 ## Development Guidelines
 - Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)

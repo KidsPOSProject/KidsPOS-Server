@@ -7,6 +7,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * 店舗APIコントローラー
+ *
+ * 店舗情報の取得と管理を行うREST APIエンドポイントを提供
+ */
 @RestController
 @RequestMapping("/api/store")
 class StoreApiController {

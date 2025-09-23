@@ -3,6 +3,8 @@
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.3-green)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.6.21-purple)
 ![License](https://img.shields.io/badge/license-MIT-blue)
+![Coverage](https://img.shields.io/badge/coverage-3%25-red)
+![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-brightgreen)
 
 子供向け教育用POSシステム - 楽しみながら商業活動を体験できる教育ツール
 
@@ -103,11 +105,16 @@ http://localhost:8080
 
 ### API
 REST APIは `/api/` プレフィックスで利用可能です:
-- `/api/items` - 商品API
-- `/api/sales` - 売上API
-- `/api/staffs` - スタッフAPI
-- `/api/stores` - 店舗API
-- `/api/settings` - 設定API
+- `/api/item` - 商品API
+- `/api/sale` - 売上API
+- `/api/staff` - スタッフAPI
+- `/api/store` - 店舗API
+- `/api/setting` - 設定API
+
+#### APIドキュメント
+Swagger UIが利用可能です:
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- OpenAPI仕様: http://localhost:8080/v3/api-docs
 
 ### 基本操作フロー
 
@@ -146,6 +153,12 @@ src/main/kotlin/info/nukoneko/kidspos/
 # テスト実行
 ./gradlew test
 
+# コードカバレッジレポート生成
+./gradlew jacocoTestReport
+
+# 静的コード分析
+./gradlew detekt
+
 # アプリケーションのビルド
 ./gradlew build
 
@@ -173,7 +186,8 @@ src/main/kotlin/info/nukoneko/kidspos/
 - Kotlin公式コーディング規約に準拠
 - Spring Bootのベストプラクティスを遵守
 - 明確で意味のある変数名・関数名を使用
-- 適切なコメントとドキュメンテーション
+- KDocによる包括的なドキュメンテーション
+- detektによる静的コード分析の実施
 
 ## ライセンス
 
@@ -193,13 +207,28 @@ MITライセンス - 詳細は[LICENSE](LICENSE)ファイルを参照してく�
 - [APIドキュメント](docs/api.md)（準備中）
 - [デプロイメントガイド](docs/deployment.md)（準備中）
 
+## 品質保証
+
+### テスト
+- JUnit 5によるユニットテスト
+- JaCoCo統合によるコードカバレッジ測定
+- 現在のコードカバレッジ: 3%（改善進行中）
+
+### 静的コード分析
+- detektによるKotlinコード品質チェック
+- カスタムルールセット適用（`config/detekt/detekt.yml`）
+
+### APIドキュメント
+- OpenAPI 3.0仕様準拠
+- Swagger UI統合による対話的APIテスト環境
+
 ## 今後の改善予定
 
-- テストカバレッジの向上
+- テストカバレッジの向上（目標: 80%以上）
 - CI/CDパイプラインの構築
-- Swagger/OpenAPIによるAPI自動ドキュメント生成
 - 多言語対応
 - クラウドデプロイメントのサポート
+- メソッドレベルKDocドキュメントの完全化
 
 ---
 

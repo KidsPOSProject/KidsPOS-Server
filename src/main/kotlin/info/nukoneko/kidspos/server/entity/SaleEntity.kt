@@ -1,10 +1,22 @@
 package info.nukoneko.kidspos.server.entity
 
 import java.util.*
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 
+/**
+ * 販売エンティティ
+ *
+ * 販売取引情報を表現するデータベースエンティティ
+ * @property id 売上げID
+ * @property storeId 店舗ID
+ * @property staffId スタッフID
+ * @property quantity 数量
+ * @property amount 売上げ金額
+ * @property deposit 預かり金
+ * @property createdAt 作成日時
+ */
 @Entity
 @Table(name = "sale")
 data class SaleEntity(

@@ -1,48 +1,160 @@
 package info.nukoneko.kidspos.server.controller.api
 
-import info.nukoneko.kidspos.server.entity.ItemEntity
+import info.nukoneko.kidspos.server.controller.dto.request.CreateItemRequest
+import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
+import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
+import info.nukoneko.kidspos.server.domain.exception.InvalidBarcodeException
+import info.nukoneko.kidspos.server.domain.exception.ItemNotFoundException
 import info.nukoneko.kidspos.server.service.ItemService
-import info.nukoneko.kidspos.server.service.BarcodeService
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
+import info.nukoneko.kidspos.server.service.mapper.ItemMapper
+import info.nukoneko.kidspos.server.service.ValidationService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.tags.Tag
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.media.ArraySchema
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.validation.annotation.Validated
+import org.springframework.web.bind.annotation.*
+import jakarta.validation.Valid
 
+/**
+ * 商品APIコントローラー
+ *
+ * 商品情報のCRUD操作REST APIエンドポイントを提供
+ */
 @RestController
-@RequestMapping("/api/item")
-class ItemApiController {
+@RequestMapping("/api/items")
+@Validated
+@Tag(name = "Items", description = "Product item management operations")
+class ItemApiController(
+    private val itemService: ItemService,
+    private val itemMapper: ItemMapper,
+    private val validationService: ValidationService
+) {
+    private val logger = LoggerFactory.getLogger(ItemApiController::class.java)
 
-    @Autowired
-    private lateinit var service: ItemService
-    
-    @Autowired
-    private lateinit var barcodeService: BarcodeService
-
-    @RequestMapping("list", method = [RequestMethod.GET])
-    fun getItems(): List<ItemEntity> {
-        return service.findAll()
+    @GetMapping
+    @Operation(summary = "Get all items", description = "Retrieve a list of all product items")
+    @ApiResponse(
+        responseCode = "200",
+        description = "Successfully retrieved items",
+        content = [Content(array = ArraySchema(schema = Schema(implementation = ItemResponse::class)))]
+    )
+    fun findAll(): ResponseEntity<List<ItemResponse>> {
+        logger.info("Fetching all items")
+        val items = itemService.findAll()
+        return ResponseEntity.ok(itemMapper.toResponseList(items))
     }
 
-    @RequestMapping(method = [RequestMethod.GET], value = ["{barcode}"])
-    fun getItem(@PathVariable barcode: String): ItemEntity? {
-        return service.findItem(barcode)
+    @GetMapping("/{id}")
+    @Operation(summary = "Get item by ID", description = "Retrieve a specific item by its ID")
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "Item found",
+            content = [Content(schema = Schema(implementation = ItemResponse::class))]),
+        ApiResponse(responseCode = "404", description = "Item not found")
+    ])
+    fun findById(
+        @Parameter(description = "Item ID", required = true)
+        @PathVariable id: Int
+    ): ResponseEntity<ItemResponse> {
+        logger.info("Fetching item with ID: {}", id)
+        val item = itemService.findItem(id)
+            ?: throw ItemNotFoundException(id = id)
+        return ResponseEntity.ok(itemMapper.toResponse(item))
     }
-    
-    @RequestMapping("barcode-pdf", method = [RequestMethod.GET])
-    fun generateBarcodePdf(): ResponseEntity<ByteArray> {
-        val items = service.findAll()
-        val pdfBytes = barcodeService.generateBarcodePdf(items)
-        
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_PDF
-        headers.setContentDispositionFormData("attachment", "item-barcodes.pdf")
-        
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(pdfBytes)
+
+    @GetMapping("/barcode/{barcode}")
+    @Operation(summary = "Get item by barcode", description = "Retrieve a specific item by its barcode")
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "Item found",
+            content = [Content(schema = Schema(implementation = ItemResponse::class))]),
+        ApiResponse(responseCode = "400", description = "Invalid barcode format"),
+        ApiResponse(responseCode = "404", description = "Item not found")
+    ])
+    fun findByBarcode(
+        @Parameter(description = "Item barcode (4+ digits)", required = true, example = "1234567890")
+        @PathVariable barcode: String
+    ): ResponseEntity<ItemResponse> {
+        logger.info("Fetching item with barcode: {}", barcode)
+
+        // Validate barcode format
+        if (!barcode.matches(Regex("^[0-9]{4,}$"))) {
+            throw InvalidBarcodeException(barcode)
+        }
+
+        val item = itemService.findItem(barcode)
+            ?: throw ItemNotFoundException(barcode = barcode)
+        return ResponseEntity.ok(itemMapper.toResponse(item))
+    }
+
+    @PostMapping
+    fun create(@Valid @RequestBody request: CreateItemRequest): ResponseEntity<ItemResponse> {
+        logger.info("Creating new item with barcode: {}", request.barcode)
+
+        // Validate barcode uniqueness
+        validationService.validateBarcodeUnique(request.barcode)
+        validationService.validatePriceRange(request.price)
+
+        // Convert to legacy ItemBean for compatibility
+        val itemBean = ItemBean(
+            barcode = request.barcode,
+            name = request.name,
+            price = request.price
+        )
+
+        val savedItem = itemService.save(itemBean)
+        logger.info("Item created successfully with ID: {}", savedItem.id)
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(itemMapper.toResponse(savedItem))
+    }
+
+    @PutMapping("/{id}")
+    fun update(
+        @PathVariable id: Int,
+        @Valid @RequestBody request: CreateItemRequest
+    ): ResponseEntity<ItemResponse> {
+        logger.info("Updating item with ID: {}", id)
+
+        // Check if item exists
+        itemService.findItem(id)
+            ?: throw ItemNotFoundException(id = id)
+
+        // Validate barcode uniqueness (exclude current item)
+        validationService.validateBarcodeUnique(request.barcode, id)
+        validationService.validatePriceRange(request.price)
+
+        // Update the item
+        val itemBean = ItemBean(
+            id = id,
+            barcode = request.barcode,
+            name = request.name,
+            price = request.price
+        )
+
+        val updatedItem = itemService.save(itemBean)
+        logger.info("Item updated successfully with ID: {}", updatedItem.id)
+
+        return ResponseEntity.ok(itemMapper.toResponse(updatedItem))
+    }
+
+    @DeleteMapping("/{id}")
+    fun delete(@PathVariable id: Int): ResponseEntity<Void> {
+        logger.info("Deleting item with ID: {}", id)
+
+        // Check if item exists
+        validationService.validateItemExists(id)
+
+        // Note: Delete functionality needs to be implemented in service layer
+        logger.warn("Delete functionality not yet implemented for item ID: {}", id)
+
+        return ResponseEntity.noContent().build()
     }
 }

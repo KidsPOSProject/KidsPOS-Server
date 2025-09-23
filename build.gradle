@@ -1,7 +1,7 @@
 buildscript {
     ext {
-        kotlinVersion = '1.6.21'
-        springBootVersion = '2.7.3'
+        kotlinVersion = '1.9.21'
+        springBootVersion = '3.2.0'
     }
     repositories {
         mavenCentral()
@@ -11,6 +11,7 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
         classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}")
         classpath("org.jetbrains.kotlin:kotlin-noarg:${kotlinVersion}")
+        classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.4")
     }
 }
 
@@ -19,13 +20,14 @@ apply plugin: 'kotlin-spring'
 apply plugin: 'kotlin-jpa'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
+apply plugin: 'jacoco'
+apply plugin: 'io.gitlab.arturbosch.detekt'
 
 group = 'info.nukoneko.kidspos'
 version = '1.0.0'
-sourceCompatibility = '1.8'
+sourceCompatibility = '21'
 
-ext['thymeleaf.version'] = '3.0.15.RELEASE'
-ext['thymeleaf-layout-dialect.version'] = '3.1.0'
+// Thymeleaf version managed by Spring Boot 3.x
 
 repositories {
     mavenCentral()
@@ -34,30 +36,38 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-configuration-processor'
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "org.jetbrains.kotlin:kotlin-reflect"
-    implementation "com.enigmabridge:hibernate4-sqlite-dialect:0.1.2"
+    implementation "org.hibernate.orm:hibernate-community-dialects:6.3.1.Final"
     implementation 'org.xerial:sqlite-jdbc'
+    implementation 'org.flywaydb:flyway-core'
     implementation 'org.webjars:jquery:3.6.0'
     implementation 'org.webjars:jquery-ui:1.13.2'
-    implementation 'com.itextpdf:itext7-core:7.2.3'
+    implementation 'com.itextpdf:itext7-core:7.2.5'
     implementation 'com.google.zxing:core:3.5.1'
     implementation 'com.google.zxing:javase:3.5.1'
+
+    // OpenAPI/Swagger dependencies for API documentation
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 compileKotlin {
     kotlinOptions {
         freeCompilerArgs = ['-Xjsr305=strict']
-        jvmTarget = '1.8'
+        jvmTarget = '21'
     }
 }
 
 compileTestKotlin {
     kotlinOptions {
         freeCompilerArgs = ['-Xjsr305=strict']
-        jvmTarget = '1.8'
+        jvmTarget = '21'
     }
 }
 
@@ -81,3 +91,86 @@ task cleanJar {
         project.file('app.jar').delete()
     }
 }
+
+// JaCoCo configuration
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.80
+            }
+        }
+
+        rule {
+            element = 'CLASS'
+            includes = ['info.nukoneko.kidspos.server.service.*']
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.85
+            }
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = false
+    }
+    systemProperty 'spring.profiles.active', 'test'
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = file("${buildDir}/jacocoHtml")
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/ServerApplicationKt*',
+                '**/config/**',
+                '**/dto/**',
+                '**/entity/**',
+                '**/exception/**'
+            ])
+        }))
+    }
+}
+
+// Detekt configuration for static code analysis
+detekt {
+    buildUponDefaultConfig = true
+    allRules = false
+    config = files("$projectDir/config/detekt/detekt.yml")
+    baseline = file("$projectDir/config/detekt/baseline.xml")
+    parallel = true
+
+    reports {
+        html.required = true
+        xml.required = false
+        txt.required = false
+    }
+}
+
+tasks.withType(io.gitlab.arturbosch.detekt.Detekt).configureEach {
+    jvmTarget = "21"
+    exclude("**/test/**")
+    exclude("**/build/**")
+    exclude("**/*.kts")
+}
+
+check.dependsOn jacocoTestCoverageVerification

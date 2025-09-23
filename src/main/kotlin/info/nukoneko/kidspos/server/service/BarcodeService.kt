@@ -20,6 +20,26 @@ import org.springframework.stereotype.Service
 import java.io.ByteArrayOutputStream
 import java.util.*
 
+/**
+ * Service for generating barcodes and QR codes for items
+ *
+ * Provides functionality to generate printable PDF documents containing
+ * QR codes for product barcodes. Uses iText PDF library for document generation
+ * and ZXing library for QR code generation. The service creates formatted
+ * PDF reports suitable for printing barcode labels.
+ *
+ * Key responsibilities:
+ * - Generating QR codes from barcode strings
+ * - Creating PDF documents with barcode grids
+ * - Formatting product information alongside barcodes
+ * - Handling QR code generation errors gracefully
+ *
+ * Technical implementation:
+ * - Uses ZXing QRCodeWriter for QR code matrix generation
+ * - Uses iText PDF library for document layout and formatting
+ * - Generates A4-sized PDF documents with proper margins
+ * - Creates table-based layout for organized barcode presentation
+ */
 @Service
 class BarcodeService {
 
