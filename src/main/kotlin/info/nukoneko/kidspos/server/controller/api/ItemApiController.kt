@@ -5,6 +5,7 @@ import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
 import info.nukoneko.kidspos.server.domain.exception.InvalidBarcodeException
 import info.nukoneko.kidspos.server.domain.exception.ItemNotFoundException
+import info.nukoneko.kidspos.server.service.BarcodeService
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
 import info.nukoneko.kidspos.server.service.mapper.ItemMapper
@@ -18,7 +19,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
@@ -29,13 +32,14 @@ import org.springframework.web.bind.annotation.*
  * 商品情報のCRUD操作REST APIエンドポイントを提供
  */
 @RestController
-@RequestMapping("/api/items")
+@RequestMapping("/api/item")
 @Validated
 @Tag(name = "Items", description = "Product item management operations")
 class ItemApiController(
     private val itemService: ItemService,
     private val itemMapper: ItemMapper,
-    private val validationService: ValidationService
+    private val validationService: ValidationService,
+    private val barcodeService: BarcodeService
 ) {
     private val logger = LoggerFactory.getLogger(ItemApiController::class.java)
 
@@ -187,6 +191,33 @@ class ItemApiController(
         logger.info("Item partially updated successfully with ID: {}", updatedItem.id)
 
         return ResponseEntity.ok(itemMapper.toResponse(updatedItem))
+    }
+
+    @GetMapping("/barcode-pdf", produces = ["application/pdf"])
+    @Operation(
+        summary = "Generate barcode PDF",
+        description = "Generate a PDF document containing barcodes for all items"
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "PDF generated successfully",
+        content = [Content(mediaType = "application/pdf")]
+    )
+    fun generateBarcodePdf(): ResponseEntity<ByteArray> {
+        logger.info("Generating barcode PDF for all items")
+        
+        val items = itemService.findAll()
+        val pdfBytes = barcodeService.generateBarcodePdf(items)
+        
+        val headers = HttpHeaders().apply {
+            contentType = MediaType.APPLICATION_PDF
+            setContentDispositionFormData("inline", "barcodes.pdf")
+        }
+        
+        logger.info("Barcode PDF generated successfully with {} items", items.size)
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(pdfBytes)
     }
 
     @DeleteMapping("/{id}")
