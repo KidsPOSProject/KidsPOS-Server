@@ -33,6 +33,7 @@ KidsPOSは、子供たちが楽しみながら商業活動を体験できる教�
 ## 技術スタック
 
 ### バックエンド
+
 - Spring Boot 3.2.0
 - Kotlin 2.2.20
 - Java 21
@@ -41,12 +42,14 @@ KidsPOSは、子供たちが楽しみながら商業活動を体験できる教�
 - Hibernate JPA + Flyway (データベースマイグレーション)
 
 ### フロントエンド
+
 - Thymeleaf (テンプレートエンジン)
 - Bootstrap 5.2.1 (UIフレームワーク)
 - jQuery 3.6.0
 - DataTables 1.10.18 (高度なテーブル機能)
 
 ### システム要件
+
 - Java 21以上
 - メモリ: 最小512MB（推奨1GB）
 - ポート: 8080（デフォルト）
@@ -73,11 +76,13 @@ cd KidsPOS-Server
 ### 3. 起動
 
 開発環境での起動:
+
 ```bash
 ./gradlew bootRun
 ```
 
 本番環境での起動:
+
 ```bash
 # JARファイルを作成してステージング
 ./gradlew stage
@@ -87,29 +92,34 @@ java -jar app.jar
 ```
 
 ### データベース設定
+
 SQLiteデータベース（`kidspos.db`）は初回起動時に自動生成されます。追加の設定は不要です。
 
 ## 使用方法
 
 ### アクセス
+
 ブラウザで以下のURLにアクセスしてください:
+
 ```
 http://localhost:8080
 ```
 
 ### 主要画面
 
-| 機能 | URL | 説明 |
-|------|-----|------|
-| ホーム | `/` | ダッシュボード画面 |
-| 商品管理 | `/items` | 商品の登録・編集・削除 |
-| 売上管理 | `/sales` | 売上履歴の確認と管理 |
-| スタッフ管理 | `/staffs` | スタッフの登録と管理 |
-| 店舗管理 | `/stores` | 店舗情報の設定 |
-| 設定 | `/settings` | システム設定の管理 |
+| 機能     | URL         | 説明          |
+|--------|-------------|-------------|
+| ホーム    | `/`         | ダッシュボード画面   |
+| 商品管理   | `/items`    | 商品の登録・編集・削除 |
+| 売上管理   | `/sales`    | 売上履歴の確認と管理  |
+| スタッフ管理 | `/staffs`   | スタッフの登録と管理  |
+| 店舗管理   | `/stores`   | 店舗情報の設定     |
+| 設定     | `/settings` | システム設定の管理   |
 
 ### API
+
 REST APIは `/api/` プレフィックスで利用可能です:
+
 - `/api/item` - 商品API
 - `/api/sale` - 売上API
 - `/api/staff` - スタッフAPI
@@ -117,7 +127,9 @@ REST APIは `/api/` プレフィックスで利用可能です:
 - `/api/setting` - 設定API
 
 #### APIドキュメント
+
 Swagger UIが利用可能です:
+
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - OpenAPI仕様: http://localhost:8080/v3/api-docs
 
@@ -201,9 +213,11 @@ MITライセンス - 詳細は[LICENSE](LICENSE)ファイルを参照してく�
 ## サポート
 
 ### 問題報告・要望
+
 - [GitHub Issues](https://github.com/KidsPOSProject/KidsPOS-Server/issues)で問題を報告してください
 
 ### 連絡先
+
 プロジェクトメンテナーへの連絡は、GitHubのIssueを通じてお願いします。
 
 ## 関連リソース
@@ -215,6 +229,7 @@ MITライセンス - 詳細は[LICENSE](LICENSE)ファイルを参照してく�
 ## 品質保証
 
 ### テスト
+
 - JUnit 5によるユニットテスト・統合テスト
 - MockKによるモック作成
 - JaCoCo統合によるコードカバレッジ測定
@@ -223,28 +238,33 @@ MITライセンス - 詳細は[LICENSE](LICENSE)ファイルを参照してく�
 - アーキテクチャテスト
 
 ### 静的コード分析
+
 - detektによるKotlinコード品質チェック
 - カスタムルールセット適用（`config/detekt/detekt.yml`）
 
 ### APIドキュメント
+
 - OpenAPI 3.0仕様準拠
 - Swagger UI統合による対話的APIテスト環境
 
 ## 最近の改善
 
 ### アーキテクチャ改善
+
 - サービス層の責務分離とクリーンアーキテクチャの適用
 - DTOパターンの導入によるレイヤー間の疎結合化
 - 例外処理の統一化（GlobalExceptionHandler）
 - データベースマイグレーション（Flyway）の導入
 
 ### 品質向上
+
 - テストカバレッジ: 3% → 85%以上に向上
 - 40以上のテストファイル追加
 - OWASP準拠のセキュリティテスト実装
 - Detektによる静的コード分析の強化
 
 ### 開発効率化
+
 - Kiro仕様駆動開発フレームワークの導入
 - Version Catalog (libs.versions.toml) によるバージョン管理
 - OpenAPI/Swagger統合

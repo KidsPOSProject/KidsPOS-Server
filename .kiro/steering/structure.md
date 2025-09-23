@@ -54,6 +54,7 @@ info/nukoneko/kidspos/
 ### Controller Layer (`server/controller/`)
 
 #### API Controllers (`controller/api/`)
+
 ```
 api/
 ├── ItemApiController.kt        # Item CRUD operations
@@ -70,6 +71,7 @@ api/
 ```
 
 #### Frontend Controllers (`controller/front/`)
+
 ```
 front/
 ├── IpController.kt             # IP address display
@@ -82,6 +84,7 @@ front/
 ```
 
 ### Entity Layer (`server/entity/`)
+
 ```
 entity/
 ├── ItemEntity.kt               # Product/item entity
@@ -93,6 +96,7 @@ entity/
 ```
 
 ### Repository Layer (`server/repository/`)
+
 ```
 repository/
 ├── ItemRepository.kt           # Item data access
@@ -104,6 +108,7 @@ repository/
 ```
 
 ### Service Layer (`server/service/`)
+
 ```
 service/
 ├── BarcodeService.kt           # Barcode generation/scanning
@@ -140,17 +145,20 @@ resources/
 ## Code Organization Patterns
 
 ### Layered Architecture
+
 1. **Controller Layer**: HTTP request handling and response formatting
 2. **Service Layer**: Business logic and transaction management
 3. **Repository Layer**: Database access and queries
 4. **Entity Layer**: Domain models and database mapping
 
 ### Package Organization
+
 - **By Feature**: Each feature has its own controller, service, repository
 - **By Layer**: Clear separation between layers within features
 - **Common Package**: Shared utilities isolated from business logic
 
 ### Dependency Flow
+
 ```
 Controller → Service → Repository → Entity
      ↓          ↓           ↓
@@ -160,6 +168,7 @@ Controller → Service → Repository → Entity
 ## File Naming Conventions
 
 ### Kotlin Files
+
 - **Entities**: `{Name}Entity.kt` (e.g., `ItemEntity.kt`)
 - **Controllers**: `{Name}Controller.kt` or `{Name}ApiController.kt`
 - **Services**: `{Name}Service.kt` (e.g., `ItemService.kt`)
@@ -168,12 +177,14 @@ Controller → Service → Repository → Entity
 - **Extensions**: `{Type}Extensions.kt` (e.g., `StringExtensions.kt`)
 
 ### Resource Files
+
 - **Templates**: `{feature}/{action}.html` (e.g., `items/list.html`)
 - **Fragments**: `fragments/{name}.html` (e.g., `fragments/header.html`)
 - **Static Assets**: Maintain original library structure
 - **Configuration**: `application.yaml` (Spring Boot convention)
 
 ### Database Conventions
+
 - **Table Names**: Lowercase, singular (e.g., `item`, `sale`)
 - **Column Names**: Lowercase with underscores (e.g., `store_id`)
 - **Entity Mapping**: Match table names via `@Table` annotation
@@ -181,6 +192,7 @@ Controller → Service → Repository → Entity
 ## Import Organization
 
 ### Standard Import Order
+
 1. Java standard library (`java.*`, `javax.*`)
 2. Kotlin standard library (`kotlin.*`)
 3. Spring Framework (`org.springframework.*`)
@@ -188,6 +200,7 @@ Controller → Service → Repository → Entity
 5. Project imports (`info.nukoneko.kidspos.*`)
 
 ### Import Examples
+
 ```kotlin
 // Standard libraries
 import java.util.Date
@@ -211,27 +224,32 @@ import info.nukoneko.kidspos.server.repository.ItemRepository
 ## Key Architectural Principles
 
 ### Separation of Concerns
+
 - **Clear Layer Boundaries**: Each layer has distinct responsibilities
 - **No Cross-layer Skipping**: Controllers don't directly access repositories
 - **Single Responsibility**: Each class focuses on one aspect
 
 ### Spring Boot Conventions
+
 - **Annotation-based Configuration**: Use Spring annotations consistently
 - **Dependency Injection**: `@Autowired` for dependencies
 - **Component Scanning**: Rely on Spring's automatic component discovery
 
 ### Data Access Patterns
+
 - **Repository Pattern**: Abstract database operations
 - **Entity-first Design**: Entities define database schema
 - **JPA Conventions**: Follow JPA/Hibernate best practices
 
 ### Code Style Guidelines
+
 - **Kotlin Idioms**: Use Kotlin features (data classes, extensions)
 - **Immutability**: Prefer `val` over `var` where possible
 - **Null Safety**: Leverage Kotlin's null safety features
 - **Expression Bodies**: Use expression syntax for simple functions
 
 ### Testing Structure (Future)
+
 ```
 src/test/kotlin/                # Test source root
 └── info/nukoneko/kidspos/
@@ -241,6 +259,7 @@ src/test/kotlin/                # Test source root
 ```
 
 ### Configuration Management
+
 - **Environment-specific**: Use Spring profiles for different environments
 - **Externalized Config**: Keep configuration in `application.yaml`
 - **Secure Defaults**: Never commit sensitive data to repository
@@ -249,11 +268,13 @@ src/test/kotlin/                # Test source root
 ## Module Dependencies
 
 ### Core Dependencies
+
 - `common` → Used by all modules
 - `receipt` → Depends on `common`
 - `server` → Depends on `common` and `receipt`
 
 ### External Dependencies
+
 - Spring Boot Starter Web
 - Spring Boot Starter Data JPA
 - Spring Boot Starter Thymeleaf

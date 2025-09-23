@@ -11,6 +11,7 @@ Show current status and progress for feature: **$1**
 ## Spec Context
 
 ### Spec Files
+
 - Spec directory: !`ls -la .kiro/specs/$1/`
 - Spec metadata: `.kiro/specs/$1/spec.json`
 - Requirements: `.kiro/specs/$1/requirements.md`
@@ -18,68 +19,83 @@ Show current status and progress for feature: **$1**
 - Tasks: `.kiro/specs/$1/tasks.md`
 
 ### All Specs Overview
+
 - Available specs: !`ls -la .kiro/specs/`
 - Active specs: !`find .kiro/specs/ -name "spec.json" -exec grep -l "implementation_ready.*true" {} \;`
 
 ## Task: Generate Status Report
 
-Create comprehensive status report for the specification in the language specified in spec.json (check `.kiro/specs/$1/spec.json` for "language" field):
+Create comprehensive status report for the specification in the language specified in spec.json (check
+`.kiro/specs/$1/spec.json` for "language" field):
 
 ### 1. Specification Overview
+
 Display:
+
 - Feature name and description
 - Creation date and last update
 - Current phase (requirements/design/tasks/implementation)
 - Overall completion percentage
 
 ### 2. Phase Status
+
 For each phase, show:
+
 - ✅ **Requirements Phase**: [completion %]
-  - Requirements count: [number]
-  - Acceptance criteria defined: [yes/no]
-  - Requirements coverage: [complete/partial/missing]
+    - Requirements count: [number]
+    - Acceptance criteria defined: [yes/no]
+    - Requirements coverage: [complete/partial/missing]
 
 - ✅ **Design Phase**: [completion %]
-  - Architecture documented: [yes/no]
-  - Components defined: [yes/no]
-  - Diagrams created: [yes/no]
-  - Integration planned: [yes/no]
+    - Architecture documented: [yes/no]
+    - Components defined: [yes/no]
+    - Diagrams created: [yes/no]
+    - Integration planned: [yes/no]
 
 - ✅ **Tasks Phase**: [completion %]
-  - Total tasks: [number]
-  - Completed tasks: [number]
-  - Remaining tasks: [number]
-  - Blocked tasks: [number]
+    - Total tasks: [number]
+    - Completed tasks: [number]
+    - Remaining tasks: [number]
+    - Blocked tasks: [number]
 
 ### 3. Implementation Progress
+
 If in implementation phase:
+
 - Task completion breakdown
 - Current blockers or issues
 - Estimated time to completion
 - Next actions needed
 
 #### Task Completion Tracking
+
 - Parse tasks.md checkbox status: `- [x]` (completed) vs `- [ ]` (pending)
 - Count completed vs total tasks
 - Show completion percentage
 - Identify next uncompleted task
 
 ### 4. Quality Metrics
+
 Show:
+
 - Requirements coverage: [percentage]
 - Design completeness: [percentage]
 - Task granularity: [appropriate/too large/too small]
 - Dependencies resolved: [yes/no]
 
 ### 5. Recommendations
+
 Based on status, provide:
+
 - Next steps to take
 - Potential issues to address
 - Suggested improvements
 - Missing elements to complete
 
 ### 6. Steering Alignment
+
 Check alignment with steering documents:
+
 - Architecture consistency: [aligned/misaligned]
 - Technology stack compliance: [compliant/non-compliant]
 - Product requirements alignment: [aligned/misaligned]
