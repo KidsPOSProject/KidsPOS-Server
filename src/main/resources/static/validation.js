@@ -35,7 +35,7 @@ function initializeValidation() {
         const printerUriInput = storeForm.querySelector('input[name="printerUri"]');
         if (printerUriInput) {
             // IPアドレスフィールドのバリデーション
-            printerUriInput.addEventListener('blur', function() {
+            printerUriInput.addEventListener('blur', function () {
                 const value = this.value.trim();
                 if (value && !validateIPAddress(value)) {
                     this.classList.add('is-invalid');
@@ -47,7 +47,7 @@ function initializeValidation() {
             });
 
             // フォーム送信時のバリデーション
-            storeForm.addEventListener('submit', function(e) {
+            storeForm.addEventListener('submit', function (e) {
                 const value = printerUriInput.value.trim();
                 if (value && !validateIPAddress(value)) {
                     e.preventDefault();
@@ -65,7 +65,7 @@ function initializeValidation() {
         const barcodeInput = itemForm.querySelector('input[name="barcode"]');
         if (barcodeInput) {
             // バーコードフィールドのバリデーション
-            barcodeInput.addEventListener('blur', function() {
+            barcodeInput.addEventListener('blur', function () {
                 const value = this.value.trim();
                 if (value && !validateBarcode(value)) {
                     this.classList.add('is-invalid');
@@ -77,7 +77,7 @@ function initializeValidation() {
             });
 
             // フォーム送信時のバリデーション
-            itemForm.addEventListener('submit', function(e) {
+            itemForm.addEventListener('submit', function (e) {
                 const value = barcodeInput.value.trim();
                 if (value && !validateBarcode(value)) {
                     e.preventDefault();
