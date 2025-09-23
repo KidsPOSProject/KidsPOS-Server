@@ -83,8 +83,28 @@ class SettingService(
         repository.deleteById(key)
     }
 
+    @CacheEvict(value = [CacheConfig.SETTINGS_CACHE], allEntries = true)
+    fun saveApplicationSetting(applicationSetting: ApplicationSetting) {
+        logger.info("Saving application settings: host={}, port={}", applicationSetting.serverHost, applicationSetting.serverPort)
+        repository.save(SettingEntity("${KEY_APP}_host", applicationSetting.serverHost))
+        repository.save(SettingEntity("${KEY_APP}_port", applicationSetting.serverPort.toString()))
+    }
+
+    @Cacheable(value = [CacheConfig.SETTINGS_CACHE], key = "'application'")
+    fun getApplicationSetting(): ApplicationSetting? {
+        val host = repository.findByIdOrNull("${KEY_APP}_host")?.value
+        val port = repository.findByIdOrNull("${KEY_APP}_port")?.value?.toIntOrNull()
+
+        return if (host != null && port != null) {
+            ApplicationSetting(host, port)
+        } else {
+            null
+        }
+    }
+
     private companion object {
         private const val KEY_PRINTER = "printer"
+        private const val KEY_APP = "application"
 
         private val REGEX_HOST_PORT = "(.*):([0-9]{2,5})".toRegex()
     }

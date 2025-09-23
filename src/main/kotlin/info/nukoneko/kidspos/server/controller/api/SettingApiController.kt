@@ -97,6 +97,27 @@ class SettingApiController {
         }
     }
 
+    @PostMapping("/application")
+    fun saveApplicationSettings(
+        @RequestBody applicationSettings: SettingService.ApplicationSetting
+    ): ResponseEntity<Map<String, Any>> {
+        service.saveApplicationSetting(applicationSettings)
+        return ResponseEntity.ok(
+            mapOf(
+                "serverHost" to applicationSettings.serverHost,
+                "serverPort" to applicationSettings.serverPort,
+                "message" to "Application settings saved successfully"
+            )
+        )
+    }
+
+    @GetMapping("/application")
+    fun getApplicationSettings(): ResponseEntity<SettingService.ApplicationSetting> {
+        val settings = service.getApplicationSetting()
+            ?: throw ResourceNotFoundException("Application settings not found")
+        return ResponseEntity.ok(settings)
+    }
+
     /**
      * ステータス情報を表現するデータクラス
      */
