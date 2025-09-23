@@ -72,7 +72,8 @@ class SaleValidationService {
      * Validate individual item
      */
     private fun validateItem(item: ItemBean) {
-        if (item.id == null || item.id <= 0) {
+        val itemId = item.id
+        if (itemId == null || itemId <= 0) {
             throw IllegalArgumentException("Item ID must be positive")
         }
 
