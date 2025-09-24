@@ -4,28 +4,35 @@
 <head th:replace="~{layout::base_header(${title})}">
 </head>
 <body>
-<div class="container">
-    <h1>New Item</h1>
-    <form th:action="@{/items}" th:method="post">
-        <div class="form-group">
-            <label class="control-label">名前</label>
-            <input class="form-control" name="name" type="text" required/>
-        </div>
-        <div class="form-group">
-            <label class="control-label">バーコード</label>
-            <input class="form-control" name="barcode" type="text"
-                   placeholder="8〜13桁の数字"
-                   pattern="^\d{8,13}$"
-                   title="バーコードは8〜13桁の数字で入力してください"/>
-        </div>
-        <div class="form-group">
-            <label class="control-label">値段</label>
-            <input class="form-control" name="price" type="number" min="0" required/>
-        </div>
-        <button class="btn btn-outline-primary" type="submit">作成</button>
-    </form>
-    <div class="pull-right">
-        <a class="btn btn-outline-warning" href="/items">一覧画面へ</a>
+<div class="page-container">
+    <div class="form-container">
+        <h1><i class="fas fa-plus-circle"></i> 新規商品作成</h1>
+        <form th:action="@{/items}" th:method="post">
+            <div class="form-group">
+                <label>商品名</label>
+                <input name="name" type="text" required placeholder="商品名を入力してください"/>
+            </div>
+            <div class="form-group">
+                <label>バーコード</label>
+                <input name="barcode" type="text"
+                       placeholder="8〜13桁の数字で入力"
+                       pattern="^\d{8,13}$"
+                       title="バーコードは8〜13桁の数字で入力してください"/>
+            </div>
+            <div class="form-group">
+                <label>価格 (円)</label>
+                <input name="price" type="number" min="0" required placeholder="価格を入力してください"/>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-modern btn-modern-primary" type="submit">
+                    <i class="fas fa-save"></i> 作成
+                </button>
+                <a class="btn btn-modern btn-modern-secondary" href="/items">
+                    <i class="fas fa-list"></i> 一覧に戻る
+                </a>
+            </div>
+        </form>
     </div>
 </div>
 <script src="/validation.js"></script>

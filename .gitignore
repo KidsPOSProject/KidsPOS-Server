@@ -39,3 +39,5 @@ migration-plan.md
 *.pkl
 
 local.properties
+
+.playwright-mcp

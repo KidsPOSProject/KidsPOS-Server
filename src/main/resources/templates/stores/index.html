@@ -1,30 +1,61 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
-<!--suppress HtmlRequiredTitleElement -->
-<head th:replace="~{layout::base_header(${title})}">
-</head>
+<head th:replace="~{layout::base_header(${title})}"></head>
 <body>
-<table id="content" class="table table-bordered table-hover table-lg">
-    <thead class="thead-light">
-    <tr>
-        <th>ID</th>
-        <th>店名</th>
-        <th>プリンタ</th>
-        <th>操作</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="store: ${data}">
-        <td th:text="${store.id}"></td>
-        <td th:text="${store.name}"></td>
-        <td th:text="${store.printerUri}"></td>
-        <td><a class="btn btn-primary btn-sm" th:href="@{/stores/{id}/edit(id=${store.id})}">編集</a></td>
-    </tr>
-    </tbody>
-</table>
-<footer>
-    <a class="btn btn-outline-dark" role="button" href="/stores/new">新規作成</a>
-    <a class="btn btn-outline-warning" role="button" href="/">Back</a>
-</footer>
+    <div class="container-wrapper">
+        <div class="mt-4">
+        <!-- Page Header -->
+        <div class="page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-store-alt"></i> 店舗管理
+                    </h1>
+                    <p class="page-subtitle text-muted">店舗情報の登録・編集</p>
+                </div>
+                <a href="/stores/new" class="btn btn-modern btn-modern-primary">
+                    <i class="fas fa-plus"></i> 新規作成
+                </a>
+            </div>
+        </div>
+        
+        <!-- Table -->
+        <div class="table-modern">
+            <table id="content" class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>店名</th>
+                        <th>プリンタ</th>
+                        <th width="100">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="store: ${data}">
+                        <td style="font-weight: 500;" th:text="${store.id}"></td>
+                        <td style="font-size: 1rem;">
+                            <strong th:text="${store.name}"></strong>
+                        </td>
+                        <td>
+                            <code style="font-size: 0.9rem; background: #f3f4f6; color: #000; padding: 0.25rem 0.5rem; border-radius: 4px;" th:text="${store.printerUri}"></code>
+                        </td>
+                        <td>
+                            <a class="btn btn-action btn-primary" th:href="@{/stores/{id}/edit(id=${store.id})}">
+                                <i class="fas fa-edit"></i> 編集
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Back Button -->
+        <div class="mt-4">
+            <a class="btn btn-modern btn-modern-secondary" href="/">
+                <i class="fas fa-arrow-left"></i> 戻る
+            </a>
+        </div>
+            </div>
+    </div>
 </body>
 </html>

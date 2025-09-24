@@ -28,6 +28,7 @@ class CacheConfig : CachingConfigurerSupport() {
         const val STAFF_CACHE = "staff"
         const val STAFF_BY_ID_CACHE = "staffById"
         const val SETTINGS_CACHE = "settings"
+        const val NETWORK_HOSTS_CACHE = "networkHosts"
     }
 
     @Bean
@@ -42,7 +43,8 @@ class CacheConfig : CachingConfigurerSupport() {
             STORE_BY_ID_CACHE,
             STAFF_CACHE,
             STAFF_BY_ID_CACHE,
-            SETTINGS_CACHE
+            SETTINGS_CACHE,
+            NETWORK_HOSTS_CACHE
         ).apply {
             // Allow null values to handle non-existent items
             isAllowNullValues = true

@@ -42,7 +42,7 @@ app:
       margin: ${PDF_MARGIN:20}
       image-size: ${PDF_IMAGE_SIZE:100}
   network:
-    allowed-ip-prefix: ${ALLOWED_IP_PREFIX:192.}
+    allowed-ip-prefix: ${ALLOWED_IP_PREFIX:192.168.}
   security:
     encryption-key: ${ENCRYPTION_KEY:DefaultKidsPOSKey123!@#}
 
