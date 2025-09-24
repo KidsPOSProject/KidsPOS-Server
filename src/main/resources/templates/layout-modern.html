@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="base_header(title)">
+    <meta charset="UTF-8">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+    <title th:text="${title + ' - KidsPOS'}"></title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    
+    <!-- Modern Custom Styles -->
+    <link rel="stylesheet" th:href="@{/css/modern-style.css}">
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    
+    <!-- QR Code Generator -->
+    <script th:src="@{/QrCode/js/qrcode.min.js}"></script>
+    
+    <!-- SweetAlert2 for modern alerts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom Scripts -->
+    <script th:src="@{/js/modern-scripts.js}" defer></script>
+</head>
+<body>
+    <!-- Navigation Fragment -->
+    <nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-modern">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-store"></i>
+                KidsPOS System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                            <i class="fas fa-cog"></i> 設定
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="darkModeToggle">
+                            <i class="fas fa-moon"></i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Fragment -->
+    <aside th:fragment="sidebar" class="sidebar">
+        <ul class="sidebar-menu">
+            <li>
+                <a href="/" th:classappend="${#request.requestURI == '/'} ? 'active' : ''">
+                    <i class="fas fa-home"></i>
+                    <span>ダッシュボード</span>
+                </a>
+            </li>
+            <li>
+                <a href="/items" th:classappend="${#strings.contains(#request.requestURI, '/items')} ? 'active' : ''">
+                    <i class="fas fa-box"></i>
+                    <span>商品管理</span>
+                </a>
+            </li>
+            <li>
+                <a href="/stores" th:classappend="${#strings.contains(#request.requestURI, '/stores')} ? 'active' : ''">
+                    <i class="fas fa-store-alt"></i>
+                    <span>店舗管理</span>
+                </a>
+            </li>
+            <li>
+                <a href="/staffs" th:classappend="${#strings.contains(#request.requestURI, '/staffs')} ? 'active' : ''">
+                    <i class="fas fa-users"></i>
+                    <span>スタッフ管理</span>
+                </a>
+            </li>
+            <li>
+                <a href="/sales" th:classappend="${#strings.contains(#request.requestURI, '/sales')} ? 'active' : ''">
+                    <i class="fas fa-chart-line"></i>
+                    <span>売上管理</span>
+                </a>
+            </li>
+            <li>
+                <a href="/settings" th:classappend="${#strings.contains(#request.requestURI, '/settings')} ? 'active' : ''">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>システム設定</span>
+                </a>
+            </li>
+            <li>
+                <a href="/ip" th:classappend="${#strings.contains(#request.requestURI, '/ip')} ? 'active' : ''">
+                    <i class="fas fa-network-wired"></i>
+                    <span>IPアドレス</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+</body>
+</html>
