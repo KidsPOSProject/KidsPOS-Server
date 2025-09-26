@@ -12,13 +12,12 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.Mockito.*
+import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.test.util.ReflectionTestUtils
 import org.springframework.web.multipart.MultipartFile
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
@@ -26,7 +25,6 @@ import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 class ApkVersionServiceTest {
-
     @Mock
     private lateinit var apkVersionRepository: ApkVersionRepository
 
@@ -47,7 +45,8 @@ class ApkVersionServiceTest {
         // テスト用ディレクトリをクリーンアップ
         val testDir = Paths.get(testUploadDir)
         if (Files.exists(testDir)) {
-            Files.walk(testDir)
+            Files
+                .walk(testDir)
                 .sorted(Comparator.reverseOrder())
                 .forEach { Files.deleteIfExists(it) }
         }
@@ -70,17 +69,18 @@ class ApkVersionServiceTest {
         whenever(apkVersionRepository.existsByVersion(version)).thenReturn(false)
         whenever(apkVersionRepository.existsByVersionCode(versionCode)).thenReturn(false)
 
-        val savedEntity = ApkVersionEntity(
-            id = 1L,
-            version = version,
-            versionCode = versionCode,
-            fileName = "kidspos-v$version.apk",
-            fileSize = 1000L,
-            filePath = "$testUploadDir/kidspos-v$version.apk",
-            releaseNotes = releaseNotes,
-            isActive = true,
-            uploadedAt = LocalDateTime.now(),
-        )
+        val savedEntity =
+            ApkVersionEntity(
+                id = 1L,
+                version = version,
+                versionCode = versionCode,
+                fileName = "kidspos-v$version.apk",
+                fileSize = 1000L,
+                filePath = "$testUploadDir/kidspos-v$version.apk",
+                releaseNotes = releaseNotes,
+                isActive = true,
+                uploadedAt = LocalDateTime.now(),
+            )
         whenever(apkVersionRepository.save(any<ApkVersionEntity>())).thenReturn(savedEntity)
 
         // When
@@ -135,16 +135,17 @@ class ApkVersionServiceTest {
     @Test
     fun `getLatestVersion should return latest version when exists`() {
         // Given
-        val latestVersion = ApkVersionEntity(
-            id = 1L,
-            version = "1.0.0",
-            versionCode = 100,
-            fileName = "kidspos-v1.0.0.apk",
-            fileSize = 1000L,
-            filePath = "$testUploadDir/kidspos-v1.0.0.apk",
-            isActive = true,
-            uploadedAt = LocalDateTime.now(),
-        )
+        val latestVersion =
+            ApkVersionEntity(
+                id = 1L,
+                version = "1.0.0",
+                versionCode = 100,
+                fileName = "kidspos-v1.0.0.apk",
+                fileSize = 1000L,
+                filePath = "$testUploadDir/kidspos-v1.0.0.apk",
+                isActive = true,
+                uploadedAt = LocalDateTime.now(),
+            )
         whenever(apkVersionRepository.findTopByIsActiveTrueOrderByVersionCodeDesc())
             .thenReturn(Optional.of(latestVersion))
 
@@ -174,16 +175,17 @@ class ApkVersionServiceTest {
     fun `checkForUpdate should return newer version when available`() {
         // Given
         val currentVersionCode = 100
-        val newerVersion = ApkVersionEntity(
-            id = 2L,
-            version = "2.0.0",
-            versionCode = 200,
-            fileName = "kidspos-v2.0.0.apk",
-            fileSize = 2000L,
-            filePath = "$testUploadDir/kidspos-v2.0.0.apk",
-            isActive = true,
-            uploadedAt = LocalDateTime.now(),
-        )
+        val newerVersion =
+            ApkVersionEntity(
+                id = 2L,
+                version = "2.0.0",
+                versionCode = 200,
+                fileName = "kidspos-v2.0.0.apk",
+                fileSize = 2000L,
+                filePath = "$testUploadDir/kidspos-v2.0.0.apk",
+                isActive = true,
+                uploadedAt = LocalDateTime.now(),
+            )
         whenever(apkVersionRepository.findNewerVersions(currentVersionCode))
             .thenReturn(listOf(newerVersion))
 
@@ -214,16 +216,17 @@ class ApkVersionServiceTest {
     fun `getVersionById should return version when exists`() {
         // Given
         val id = 1L
-        val apkVersion = ApkVersionEntity(
-            id = id,
-            version = "1.0.0",
-            versionCode = 100,
-            fileName = "kidspos-v1.0.0.apk",
-            fileSize = 1000L,
-            filePath = "$testUploadDir/kidspos-v1.0.0.apk",
-            isActive = true,
-            uploadedAt = LocalDateTime.now(),
-        )
+        val apkVersion =
+            ApkVersionEntity(
+                id = id,
+                version = "1.0.0",
+                versionCode = 100,
+                fileName = "kidspos-v1.0.0.apk",
+                fileSize = 1000L,
+                filePath = "$testUploadDir/kidspos-v1.0.0.apk",
+                isActive = true,
+                uploadedAt = LocalDateTime.now(),
+            )
         whenever(apkVersionRepository.findById(id))
             .thenReturn(Optional.of(apkVersion))
 
@@ -253,16 +256,17 @@ class ApkVersionServiceTest {
     fun `deactivateVersion should deactivate existing version`() {
         // Given
         val id = 1L
-        val apkVersion = ApkVersionEntity(
-            id = id,
-            version = "1.0.0",
-            versionCode = 100,
-            fileName = "kidspos-v1.0.0.apk",
-            fileSize = 1000L,
-            filePath = "$testUploadDir/kidspos-v1.0.0.apk",
-            isActive = true,
-            uploadedAt = LocalDateTime.now(),
-        )
+        val apkVersion =
+            ApkVersionEntity(
+                id = id,
+                version = "1.0.0",
+                versionCode = 100,
+                fileName = "kidspos-v1.0.0.apk",
+                fileSize = 1000L,
+                filePath = "$testUploadDir/kidspos-v1.0.0.apk",
+                isActive = true,
+                uploadedAt = LocalDateTime.now(),
+            )
         val deactivatedVersion = apkVersion.copy(isActive = false)
 
         whenever(apkVersionRepository.findById(id))
@@ -283,16 +287,17 @@ class ApkVersionServiceTest {
     fun `deleteVersion should delete existing version and file`() {
         // Given
         val id = 1L
-        val apkVersion = ApkVersionEntity(
-            id = id,
-            version = "1.0.0",
-            versionCode = 100,
-            fileName = "kidspos-v1.0.0.apk",
-            fileSize = 1000L,
-            filePath = "$testUploadDir/kidspos-v1.0.0.apk",
-            isActive = true,
-            uploadedAt = LocalDateTime.now(),
-        )
+        val apkVersion =
+            ApkVersionEntity(
+                id = id,
+                version = "1.0.0",
+                versionCode = 100,
+                fileName = "kidspos-v1.0.0.apk",
+                fileSize = 1000L,
+                filePath = "$testUploadDir/kidspos-v1.0.0.apk",
+                isActive = true,
+                uploadedAt = LocalDateTime.now(),
+            )
 
         whenever(apkVersionRepository.findById(id))
             .thenReturn(Optional.of(apkVersion))
@@ -309,16 +314,17 @@ class ApkVersionServiceTest {
     fun `getApkFile should throw exception when file does not exist`() {
         // Given
         val id = 1L
-        val apkVersion = ApkVersionEntity(
-            id = id,
-            version = "1.0.0",
-            versionCode = 100,
-            fileName = "kidspos-v1.0.0.apk",
-            fileSize = 1000L,
-            filePath = "/non/existent/path/kidspos-v1.0.0.apk",
-            isActive = true,
-            uploadedAt = LocalDateTime.now(),
-        )
+        val apkVersion =
+            ApkVersionEntity(
+                id = id,
+                version = "1.0.0",
+                versionCode = 100,
+                fileName = "kidspos-v1.0.0.apk",
+                fileSize = 1000L,
+                filePath = "/non/existent/path/kidspos-v1.0.0.apk",
+                isActive = true,
+                uploadedAt = LocalDateTime.now(),
+            )
 
         whenever(apkVersionRepository.findById(id))
             .thenReturn(Optional.of(apkVersion))
