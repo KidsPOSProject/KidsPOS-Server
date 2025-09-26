@@ -48,6 +48,7 @@ jobs:
           curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:8080
 
       - name: Run Visual Regression Tests
+        id: vrt
         run: npm run test:vrt
         env:
           BASE_URL: http://localhost:8080
@@ -87,7 +88,8 @@ jobs:
             let message = '## 🎨 Visual Regression Test Results\n\n';
 
             // Check if tests passed
-            if (${{ job.status }} === 'success') {
+            const testOutcome = '${{ steps.vrt.outcome }}';
+            if (testOutcome === 'success') {
               message += '✅ **All visual regression tests passed!**\n\n';
               message += 'All page screenshots match the expected baselines.\n';
             } else {
