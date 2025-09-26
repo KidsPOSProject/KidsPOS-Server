@@ -29,6 +29,12 @@ spring:
 
 server:
   port: 8080
+  ssl:
+    enabled: ${SSL_ENABLED:false}
+    key-store: ${SSL_KEY_STORE:classpath:keystore/kidspos.p12}
+    key-store-password: ${SSL_KEY_STORE_PASSWORD:kidspos123}
+    key-store-type: ${SSL_KEY_STORE_TYPE:PKCS12}
+    key-alias: ${SSL_KEY_ALIAS:kidspos}
 
 # Application-specific configuration
 app:
@@ -45,6 +51,9 @@ app:
     allowed-ip-prefix: ${ALLOWED_IP_PREFIX:192.168.}
   security:
     encryption-key: ${ENCRYPTION_KEY:DefaultKidsPOSKey123!@#}
+  apk:
+    upload-dir: ${APK_UPLOAD_DIR:./uploads/apk}
+    max-file-size: ${APK_MAX_FILE_SIZE:104857600}
 
 # OpenAPI/Swagger configuration
 springdoc:

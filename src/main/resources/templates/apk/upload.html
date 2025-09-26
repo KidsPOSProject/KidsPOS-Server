@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::body}, ${title})}">
+<body>
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-12 col-md-8 col-lg-6 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">APKアップロード</h4>
+                </div>
+                <div class="card-body">
+                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <span th:text="${errorMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+
+                    <form method="post" action="/apk/upload" enctype="multipart/form-data" onsubmit="return validateForm()">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">APKファイル <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".apk" required>
+                            <div class="form-text">最大ファイルサイズ: 100MB</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="version" class="form-label">バージョン <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="version" name="version"
+                                   placeholder="例: 1.2.3" pattern="^\d+\.\d+\.\d+$" required>
+                            <div class="form-text">セマンティックバージョニング形式（X.Y.Z）で入力してください</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="versionCode" class="form-label">バージョンコード <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="versionCode" name="versionCode"
+                                   placeholder="例: 10203" min="1" required>
+                            <div class="form-text">内部バージョン番号（整数）。新しいバージョンは必ず大きい値にしてください</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="releaseNotes" class="form-label">リリースノート</label>
+                            <textarea class="form-control" id="releaseNotes" name="releaseNotes"
+                                      rows="5" placeholder="このバージョンの変更点を記載してください"></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/apk" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> 戻る
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> アップロード
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">アップロードガイドライン</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>APKファイルは正しく署名されている必要があります</li>
+                        <li>バージョンコードは既存のバージョンより大きい値を設定してください</li>
+                        <li>バージョン名はユーザーに表示される文字列です（例: 1.2.3）</li>
+                        <li>リリースノートには主要な変更点や修正内容を記載してください</li>
+                        <li>アップロード後、自動的に最新バージョンとして設定されます</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    function validateForm() {
+        const fileInput = document.getElementById('file');
+        if (fileInput.files.length === 0) {
+            alert('APKファイルを選択してください');
+            return false;
+        }
+
+        const file = fileInput.files[0];
+        if (!file.name.toLowerCase().endsWith('.apk')) {
+            alert('APKファイルのみアップロード可能です');
+            return false;
+        }
+
+        const maxSize = 100 * 1024 * 1024; // 100MB
+        if (file.size > maxSize) {
+            alert('ファイルサイズが100MBを超えています');
+            return false;
+        }
+
+        const version = document.getElementById('version').value;
+        if (!/^\d+\.\d+\.\d+$/.test(version)) {
+            alert('バージョンはX.Y.Z形式で入力してください（例: 1.2.3）');
+            return false;
+        }
+
+        const versionCode = parseInt(document.getElementById('versionCode').value);
+        if (isNaN(versionCode) || versionCode < 1) {
+            alert('バージョンコードは1以上の整数を入力してください');
+            return false;
+        }
+
+        return confirm('APKファイルをアップロードしますか？');
+    }
+
+    document.getElementById('file').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'form-text text-info mt-1';
+            fileInfo.textContent = `選択されたファイル: ${file.name} (${sizeMB} MB)`;
+
+            const existingInfo = e.target.parentNode.querySelector('.text-info');
+            if (existingInfo) {
+                existingInfo.remove();
+            }
+            e.target.parentNode.appendChild(fileInfo);
+        }
+    });
+</script>
+</body>
+</html>
