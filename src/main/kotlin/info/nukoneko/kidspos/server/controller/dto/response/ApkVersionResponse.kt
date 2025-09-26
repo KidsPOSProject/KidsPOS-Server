@@ -4,7 +4,7 @@ import info.nukoneko.kidspos.server.entity.ApkVersionEntity
 import java.time.LocalDateTime
 
 data class ApkVersionResponse(
-    val id: Long,
+    val id: Long?,
     val version: String,
     val versionCode: Int,
     val fileName: String,

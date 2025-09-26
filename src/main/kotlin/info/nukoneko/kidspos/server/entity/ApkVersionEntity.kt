@@ -7,8 +7,7 @@ import java.time.LocalDateTime
 @Table(name = "apk_versions")
 data class ApkVersionEntity(
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    val id: Long? = null,
     @Column(nullable = false, unique = true)
     val version: String = "",
     @Column(name = "version_code", nullable = false)

@@ -247,27 +247,46 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateSaleRequest'
       responses:
-        '200':
-          description: Success
+        '201':
+          description: Created
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                  saleId:
+                  id:
                     type: integer
-                  totalAmount:
+                    description: 売上ID
+                  amount:
                     type: integer
+                    description: 合計金額
+                  quantity:
+                    type: integer
+                    description: 商品数
+                  deposit:
+                    type: integer
+                    description: 預かり金額
                   change:
                     type: integer
-                  receiptPrinted:
-                    type: boolean
+                    description: おつり
+                  staffId:
+                    type: integer
+                    description: スタッフID
+                  storeId:
+                    type: integer
+                    description: 店舗ID
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Processing error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/sales/{id}:
     get:
@@ -870,63 +889,98 @@ components:
       properties:
         id:
           type: integer
+          description: 売上ID
         storeId:
           type: integer
-        staffBarcode:
+          description: 店舗ID
+        storeName:
           type: string
-        createdAt:
+          description: 店舗名
+        staffId:
           type: string
-          format: date-time
+          description: スタッフID
+        staffName:
+          type: string
+          description: スタッフ名
         totalAmount:
           type: integer
           description: 合計金額（リバー）
         deposit:
           type: integer
           description: 預り金（リバー）
+        change:
+          type: integer
+          description: お釣り（リバー）
+        saleTime:
+          type: string
+          format: date-time
+          description: 売上時刻
         items:
           type: array
+          description: 売上商品リスト
           items:
-            type: object
-            properties:
-              barcode:
-                type: string
-              name:
-                type: string
-              price:
-                type: integer
-              quantity:
-                type: integer
+            $ref: '#/components/schemas/SaleItemResponse'
+      required:
+        - id
+        - storeId
+        - storeName
+        - staffId
+        - staffName
+        - totalAmount
+        - deposit
+        - change
+        - saleTime
+
+    SaleItemResponse:
+      type: object
+      properties:
+        itemId:
+          type: integer
+          description: 商品ID
+        itemName:
+          type: string
+          description: 商品名
+        barcode:
+          type: string
+          description: バーコード
+        quantity:
+          type: integer
+          description: 数量
+        unitPrice:
+          type: integer
+          description: 単価（リバー）
+        subtotal:
+          type: integer
+          description: 小計（リバー）
+      required:
+        - itemId
+        - itemName
+        - barcode
+        - quantity
+        - unitPrice
+        - subtotal
 
     CreateSaleRequest:
       type: object
       properties:
         storeId:
           type: integer
+          description: 店舗ID
         staffBarcode:
           type: string
-        items:
-          type: array
-          items:
-            type: object
-            properties:
-              barcode:
-                type: string
-              quantity:
-                type: integer
-                minimum: 1
-            required:
-              - barcode
-              - quantity
+          nullable: true
+          description: スタッフバーコード（オプショナル）
+        itemIds:
+          type: string
+          description: 商品IDのカンマ区切り文字列（例："1,2,3"）
+          example: "1,2,3"
         deposit:
           type: integer
           minimum: 0
-        printReceipt:
-          type: boolean
-          default: true
+          description: 預かり金額
       required:
         - storeId
-        - staffBarcode
-        - items
+        - itemIds
         - deposit
 
     StaffEntity:
@@ -1005,15 +1059,31 @@ components:
     ErrorResponse:
       type: object
       properties:
-        error:
+        code:
           type: string
+          description: エラーコード
+          example: "VALIDATION_ERROR"
         message:
           type: string
+          description: エラーメッセージ
+          example: "商品IDが空です。売上作成には少なくとも1つの商品が必要です"
         timestamp:
           type: string
           format: date-time
+          description: エラー発生時刻
         path:
           type: string
+          nullable: true
+          description: リクエストパス
+        details:
+          type: object
+          nullable: true
+          description: 追加の詳細情報
+          additionalProperties: true
+      required:
+        - code
+        - message
+        - timestamp
 
   securitySchemes:
     bearerAuth:

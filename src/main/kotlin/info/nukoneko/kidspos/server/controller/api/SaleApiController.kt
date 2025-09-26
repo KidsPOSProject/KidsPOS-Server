@@ -51,11 +51,11 @@ class SaleApiController(
                 )
             when (val result = saleProcessingService.processSaleWithValidation(saleBean, items)) {
                 is SaleResult.Success -> {
-                    // Print receipt
+                    // Print receipt (staffBarcode is now nullable)
                     receiptService.printReceipt(
                         request.storeId,
                         items,
-                        request.staffBarcode,
+                        request.staffBarcode ?: "",
                         request.deposit,
                     )
 
@@ -108,11 +108,11 @@ class SaleApiController(
             // Process the sale
             when (val result = saleProcessingService.processSaleWithValidation(saleBean, items)) {
                 is SaleResult.Success -> {
-                    // Print receipt
+                    // Print receipt (staffBarcode is now nullable)
                     receiptService.printReceipt(
                         saleBean.storeId,
                         items,
-                        saleBean.staffBarcode,
+                        saleBean.staffBarcode ?: "",
                         saleBean.deposit,
                     )
 

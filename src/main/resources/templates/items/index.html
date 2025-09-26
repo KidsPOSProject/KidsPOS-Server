@@ -2,93 +2,117 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header(${title})}"></head>
 <body>
-    <div class="page-container">
-        <div class="table-container">
-            <div class="table-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1><i class="fas fa-box"></i> 商品管理</h1>
-                        <p>商品の登録・編集・削除</p>
-                    </div>
-                    <a href="/items/new" class="btn btn-modern btn-modern-primary">
-                        <i class="fas fa-plus"></i> 新規作成
-                    </a>
-                </div>
-            </div>
+<!-- ナビゲーションバー -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-store"></i> KidsPOS
+        </a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/">
+                <i class="fas fa-home"></i> ダッシュボード
+            </a>
+        </div>
+    </div>
+</nav>
 
-            <!-- Action Bar -->
-            <div class="table-actions" style="border-top: none; border-bottom: 1px solid #e5e7eb;">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button id="printSelected" class="btn btn-modern btn-modern-success" disabled>
-                            <i class="fas fa-print"></i> 選択印刷
-                        </button>
-                        <a href="/api/item/barcode-pdf" class="btn btn-modern btn-modern-info" target="_blank">
-                            <i class="fas fa-file-pdf"></i> PDF出力
-                        </a>
-                    </div>
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" id="showBorders">
-                            <label class="form-check-label" for="showBorders">罫線表示</label>
+<div class="main-container">
+    <!-- Main Content -->
+    <div class="container-wrapper">
+        <div class="content-area">
+            <div class="container-fluid mt-3">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card-modern">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h4 class="mb-0">
+                                        <i class="fas fa-box text-primary me-2"></i>
+                                        商品管理
+                                    </h4>
+                                    <a href="/items/new" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> 新規作成
+                                    </a>
+                                </div>
+
+                                <!-- Action Bar -->
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3 p-3 bg-light rounded">
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button id="printSelected" class="btn btn-success btn-sm" disabled>
+                                            <i class="fas fa-print"></i> 選択印刷
+                                        </button>
+                                        <a href="/api/item/barcode-pdf" class="btn btn-info btn-sm" target="_blank">
+                                            <i class="fas fa-file-pdf"></i> PDF出力
+                                        </a>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" id="showBorders">
+                                            <label class="form-check-label" for="showBorders">罫線表示</label>
+                                        </div>
+                                        <a class="btn btn-secondary btn-sm" href="/">
+                                            <i class="fas fa-arrow-left"></i> 戻る
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table id="content" class="table table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th width="50">
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input" id="selectAll" title="全選択">
+                                                    </div>
+                                                </th>
+                                                <th>ID</th>
+                                                <th>商品名</th>
+                                                <th>バーコード</th>
+                                                <th>値段</th>
+                                                <th width="100">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="item: ${data}">
+                                                <td>
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input item-checkbox"
+                                                               th:data-id="${item.id}"
+                                                               th:data-barcode="${item.barcode}"
+                                                               th:data-name="${item.name}"
+                                                               th:data-price="${item.price}">
+                                                    </div>
+                                                </td>
+                                                <td style="font-weight: 500;" th:text="${item.id}"></td>
+                                                <td style="font-size: 1rem;">
+                                                    <strong th:text="${item.name}"></strong>
+                                                </td>
+                                                <td>
+                                                    <code style="font-size: 0.9rem; background: #f3f4f6; color: #000; padding: 0.25rem 0.5rem; border-radius: 4px;" th:text="${item.barcode}"></code>
+                                                </td>
+                                                <td>
+                                                    <strong style="font-size: 1.1rem; color: #000;">¥<span th:text="${#numbers.formatInteger(item.price, 1, 'COMMA')}"></span></strong>
+                                                </td>
+                                                <td>
+                                                    <a class="btn btn-outline-primary btn-sm" th:href="@{/items/{id}/edit(id=${item.id})}">
+                                                        <i class="fas fa-edit"></i> 編集
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
-                        <a class="btn btn-modern btn-modern-secondary" href="/">
-                            <i class="fas fa-arrow-left"></i> 戻る
-                        </a>
                     </div>
                 </div>
-            </div>
-
-            <div class="table-wrapper">
-                <table id="content" class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th width="50">
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="selectAll" title="全選択">
-                                </div>
-                            </th>
-                            <th>ID</th>
-                            <th>商品名</th>
-                            <th>バーコード</th>
-                            <th>値段</th>
-                            <th width="100">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="item: ${data}">
-                            <td>
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input item-checkbox"
-                                           th:data-id="${item.id}"
-                                           th:data-barcode="${item.barcode}"
-                                           th:data-name="${item.name}"
-                                           th:data-price="${item.price}">
-                                </div>
-                            </td>
-                            <td style="font-weight: 500;" th:text="${item.id}"></td>
-                            <td style="font-size: 1rem;">
-                                <strong th:text="${item.name}"></strong>
-                            </td>
-                            <td>
-                                <code style="font-size: 0.9rem; background: #f3f4f6; color: #000; padding: 0.25rem 0.5rem; border-radius: 4px;" th:text="${item.barcode}"></code>
-                            </td>
-                            <td>
-                                <strong style="font-size: 1.1rem; color: #000;">¥<span th:text="${#numbers.formatInteger(item.price, 1, 'COMMA')}"></span></strong>
-                            </td>
-                            <td>
-                                <a class="btn btn-action btn-primary" th:href="@{/items/{id}/edit(id=${item.id})}">
-                                    <i class="fas fa-edit"></i> 編集
-                                </a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
+<script>
+/*<![CDATA[*/
         document.addEventListener('DOMContentLoaded', function () {
             const selectAllCheckbox = document.getElementById('selectAll');
             const itemCheckboxes = document.getElementsByClassName('item-checkbox');
@@ -185,7 +209,8 @@
                 }
             });
         });
-    </script>
+/*]]>*/
+</script>
 </body>
 </html>
 

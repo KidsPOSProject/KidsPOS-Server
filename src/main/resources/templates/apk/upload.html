@@ -1,63 +1,86 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::body}, ${title})}">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout::base_header('APKアップロード')}"></head>
 <body>
-<div class="container-fluid mt-3">
-    <div class="row">
-        <div class="col-12 col-md-8 col-lg-6 mx-auto">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">APKアップロード</h4>
-                </div>
-                <div class="card-body">
-                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <span th:text="${errorMessage}"></span>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
+<!-- ナビゲーションバー -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-store"></i> KidsPOS
+        </a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/apk">
+                <i class="fas fa-mobile-alt"></i> APK管理
+            </a>
+            <a class="nav-link" href="/">
+                <i class="fas fa-home"></i> ダッシュボード
+            </a>
+        </div>
+    </div>
+</nav>
 
-                    <form method="post" action="/apk/upload" enctype="multipart/form-data" onsubmit="return validateForm()">
-                        <div class="mb-3">
-                            <label for="file" class="form-label">APKファイル <span class="text-danger">*</span></label>
-                            <input type="file" class="form-control" id="file" name="file" accept=".apk" required>
-                            <div class="form-text">最大ファイルサイズ: 100MB</div>
-                        </div>
+<div class="main-container">
+    <!-- Main Content -->
+    <div class="container-wrapper">
+        <div class="content-area">
+            <div class="container-fluid mt-3">
+                <div class="row">
+                    <div class="col-12 col-md-8 col-lg-6 mx-auto">
+                        <div class="card-modern">
+                            <div class="card-body">
+                                <h4 class="mb-4 text-center">
+                                    <i class="fas fa-mobile-alt text-purple me-2"></i>
+                                    APKアップロード
+                                </h4>
+                                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <span th:text="${errorMessage}"></span>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
 
-                        <div class="mb-3">
-                            <label for="version" class="form-label">バージョン <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="version" name="version"
-                                   placeholder="例: 1.2.3" pattern="^\d+\.\d+\.\d+$" required>
-                            <div class="form-text">セマンティックバージョニング形式（X.Y.Z）で入力してください</div>
-                        </div>
+                                <form method="post" action="/apk/upload" enctype="multipart/form-data" onsubmit="return validateForm()">
+                                    <div class="mb-3">
+                                        <label for="file" class="form-label">APKファイル <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control" id="file" name="file" accept=".apk" required>
+                                        <div class="form-text">最大ファイルサイズ: 100MB</div>
+                                    </div>
 
-                        <div class="mb-3">
-                            <label for="versionCode" class="form-label">バージョンコード <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="versionCode" name="versionCode"
-                                   placeholder="例: 10203" min="1" required>
-                            <div class="form-text">内部バージョン番号（整数）。新しいバージョンは必ず大きい値にしてください</div>
-                        </div>
+                                    <div class="mb-3">
+                                        <label for="version" class="form-label">バージョン <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="version" name="version"
+                                               placeholder="例: 1.2.3" pattern="^\d+\.\d+\.\d+$" required>
+                                        <div class="form-text">セマンティックバージョニング形式（X.Y.Z）で入力してください</div>
+                                    </div>
 
-                        <div class="mb-3">
-                            <label for="releaseNotes" class="form-label">リリースノート</label>
-                            <textarea class="form-control" id="releaseNotes" name="releaseNotes"
-                                      rows="5" placeholder="このバージョンの変更点を記載してください"></textarea>
-                        </div>
+                                    <div class="mb-3">
+                                        <label for="versionCode" class="form-label">バージョンコード <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" id="versionCode" name="versionCode"
+                                               placeholder="例: 10203" min="1" required>
+                                        <div class="form-text">内部バージョン番号（整数）。新しいバージョンは必ず大きい値にしてください</div>
+                                    </div>
 
-                        <div class="d-flex justify-content-between">
-                            <a href="/apk" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> 戻る
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-upload"></i> アップロード
-                            </button>
-                        </div>
-                    </form>
+                                    <div class="mb-3">
+                                        <label for="releaseNotes" class="form-label">リリースノート</label>
+                                        <textarea class="form-control" id="releaseNotes" name="releaseNotes"
+                                                  rows="5" placeholder="このバージョンの変更点を記載してください"></textarea>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between">
+                                        <a href="/apk" class="btn btn-secondary">
+                                            <i class="bi bi-arrow-left"></i> 戻る
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-upload"></i> アップロード
+                                        </button>
+                                    </div>
+                                </form>
                 </div>
             </div>
 
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0">アップロードガイドライン</h5>
-                </div>
+            <div class="card-modern mt-4">
                 <div class="card-body">
+                    <h5 class="mb-3">
+                        <i class="fas fa-info-circle text-primary"></i> アップロードガイドライン
+                    </h5>
                     <ul>
                         <li>APKファイルは正しく署名されている必要があります</li>
                         <li>バージョンコードは既存のバージョンより大きい値を設定してください</li>

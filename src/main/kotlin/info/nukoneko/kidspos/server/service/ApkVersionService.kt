@@ -30,7 +30,13 @@ class ApkVersionService(
 
     @PostConstruct
     fun init() {
-        createUploadDirectory()
+        try {
+            createUploadDirectory()
+            logger.info("APKVersionService が正常に初期化されました")
+        } catch (e: Exception) {
+            logger.error("APKVersionService の初期化中にエラーが発生しました: ${e.message}", e)
+            throw e
+        }
     }
 
     private fun createUploadDirectory() {
@@ -60,8 +66,12 @@ class ApkVersionService(
         val fileName = "kidspos-v$version.apk"
         val filePath = saveApkFile(file, fileName)
 
+        // 新しいIDを生成（最大ID + 1）
+        val nextId = (apkVersionRepository.findMaxId() ?: 0) + 1
+
         val apkVersion =
             ApkVersionEntity(
+                id = nextId,
                 version = version,
                 versionCode = versionCode,
                 fileName = fileName,
@@ -110,7 +120,7 @@ class ApkVersionService(
     fun getLatestVersion(): ApkVersionEntity? = apkVersionRepository.findTopByIsActiveTrueOrderByVersionCodeDesc().orElse(null)
 
     @Transactional(readOnly = true)
-    fun getAllVersions(): List<ApkVersionEntity> = apkVersionRepository.findByIsActiveTrueOrderByVersionCodeDesc()
+    fun getAllVersions(): List<ApkVersionEntity> = apkVersionRepository.findAllByOrderByVersionCodeDesc()
 
     @Transactional(readOnly = true)
     fun getVersionById(id: Long): ApkVersionEntity =
@@ -138,6 +148,12 @@ class ApkVersionService(
     fun deactivateVersion(id: Long): ApkVersionEntity {
         val apkVersion = getVersionById(id)
         val updated = apkVersion.copy(isActive = false)
+        return apkVersionRepository.save(updated)
+    }
+
+    fun activateVersion(id: Long): ApkVersionEntity {
+        val apkVersion = getVersionById(id)
+        val updated = apkVersion.copy(isActive = true)
         return apkVersionRepository.save(updated)
     }
 

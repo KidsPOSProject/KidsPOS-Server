@@ -78,6 +78,27 @@ class ApkController(
             "redirect:/apk"
         }
 
+    @PostMapping("/{id}/activate")
+    fun activateVersion(
+        @PathVariable id: Long,
+        redirectAttributes: RedirectAttributes,
+    ): String =
+        try {
+            val activated = apkVersionService.activateVersion(id)
+            redirectAttributes.addFlashAttribute(
+                "successMessage",
+                "バージョン ${activated.version} を有効化しました",
+            )
+            "redirect:/apk"
+        } catch (e: Exception) {
+            logger.error("APK有効化エラー: ${e.message}", e)
+            redirectAttributes.addFlashAttribute(
+                "errorMessage",
+                "有効化に失敗しました: ${e.message}",
+            )
+            "redirect:/apk"
+        }
+
     @PostMapping("/{id}/delete")
     fun deleteVersion(
         @PathVariable id: Long,

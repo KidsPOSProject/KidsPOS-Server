@@ -65,7 +65,7 @@ class SaleService(
 
         // 売り上げを保存
         val staffId =
-            if (saleBean.staffBarcode.length > Constants.Barcode.MIN_LENGTH) {
+            if (!saleBean.staffBarcode.isNullOrEmpty() && saleBean.staffBarcode.length > Constants.Barcode.MIN_LENGTH) {
                 saleBean.staffBarcode
                     .substring(saleBean.staffBarcode.length - Constants.Barcode.SUFFIX_LENGTH)
                     .toIntOrNull() ?: 0

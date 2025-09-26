@@ -1,266 +1,258 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>売上レポート - KidsPos</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <style>
-        .report-card {
-            transition: transform 0.2s;
-        }
-        .report-card:hover {
-            transform: translateY(-5px);
-        }
-        .download-btn {
-            min-width: 120px;
-        }
-    </style>
-</head>
+<head th:replace="~{layout::base_header('売上レポート')}"></head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">KidsPos</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">ホーム</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/stores">店舗管理</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/staff">スタッフ管理</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/items">商品管理</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/reports/sales">売上レポート</a>
-                    </li>
-                </ul>
-            </div>
+<!-- ナビゲーションバー -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-store"></i> KidsPOS
+        </a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/">
+                <i class="fas fa-home"></i> ダッシュボード
+            </a>
         </div>
-    </nav>
+    </div>
+</nav>
 
-    <div class="container mt-4">
-        <h1 class="mb-4">
-            <i class="bi bi-file-earmark-text"></i> 売上レポート
-        </h1>
+<div class="main-container">
+    <!-- Main Content -->
+    <div class="container-wrapper">
+        <div class="content-area">
+            <div class="container-fluid mt-3">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card-modern">
+                            <div class="card-body">
+                                <h4 class="mb-4">
+                                    <i class="fas fa-file-pdf text-danger me-2"></i>
+                                    売上レポート
+                                </h4>
 
-        <!-- 期間指定レポート -->
-        <div class="card mb-4 report-card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-calendar-range"></i> 期間指定レポート</h5>
-            </div>
-            <div class="card-body">
-                <form id="dateRangeForm">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label for="startDate" class="form-label">開始日</label>
-                            <input type="date" class="form-control" id="startDate" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="endDate" class="form-label">終了日</label>
-                            <input type="date" class="form-control" id="endDate" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="storeId" class="form-label">店舗</label>
-                            <select class="form-select" id="storeId">
-                                <option value="">全店舗</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <div class="btn-group w-100" role="group">
-                                <button type="button" class="btn btn-danger download-btn" onclick="downloadReport('pdf', 'range')">
-                                    <i class="bi bi-file-earmark-pdf"></i> PDF
-                                </button>
-                                <button type="button" class="btn btn-success download-btn" onclick="downloadReport('excel', 'range')">
-                                    <i class="bi bi-file-earmark-excel"></i> Excel
-                                </button>
+                                <!-- 期間指定レポート -->
+                                <div class="card mb-4">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> 期間指定レポート</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="dateRangeForm">
+                                            <div class="row g-3">
+                                                <div class="col-md-3">
+                                                    <label for="startDate" class="form-label">開始日</label>
+                                                    <input type="date" class="form-control" id="startDate" required>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label for="endDate" class="form-label">終了日</label>
+                                                    <input type="date" class="form-control" id="endDate" required>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label for="storeId" class="form-label">店舗</label>
+                                                    <select class="form-select" id="storeId">
+                                                        <option value="">全店舗</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3 d-flex align-items-end">
+                                                    <div class="btn-group w-100" role="group">
+                                                        <button type="button" class="btn btn-danger btn-sm" onclick="downloadReport('pdf', 'range')">
+                                                            <i class="fas fa-file-pdf"></i> PDF
+                                                        </button>
+                                                        <button type="button" class="btn btn-success btn-sm" onclick="downloadReport('excel', 'range')">
+                                                            <i class="fas fa-file-excel"></i> Excel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <!-- 本日のレポート -->
+                                <div class="card mb-4">
+                                    <div class="card-header bg-info text-white">
+                                        <h5 class="mb-0"><i class="fas fa-calendar-check"></i> 本日のレポート</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="todayStoreId" class="form-label">店舗</label>
+                                                <select class="form-select" id="todayStoreId">
+                                                    <option value="">全店舗</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 d-flex align-items-end">
+                                                <div class="btn-group w-100" role="group">
+                                                    <button type="button" class="btn btn-danger btn-sm" onclick="downloadReport('pdf', 'today')">
+                                                        <i class="fas fa-file-pdf"></i> PDF
+                                                    </button>
+                                                    <button type="button" class="btn btn-success btn-sm" onclick="downloadReport('excel', 'today')">
+                                                        <i class="fas fa-file-excel"></i> Excel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 月次レポート -->
+                                <div class="card mb-4">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h5 class="mb-0"><i class="fas fa-calendar"></i> 月次レポート</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-3">
+                                                <label for="year" class="form-label">年</label>
+                                                <select class="form-select" id="year">
+                                                    <!-- 年のオプションはJavaScriptで生成 -->
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="month" class="form-label">月</label>
+                                                <select class="form-select" id="month">
+                                                    <option value="1">1月</option>
+                                                    <option value="2">2月</option>
+                                                    <option value="3">3月</option>
+                                                    <option value="4">4月</option>
+                                                    <option value="5">5月</option>
+                                                    <option value="6">6月</option>
+                                                    <option value="7">7月</option>
+                                                    <option value="8">8月</option>
+                                                    <option value="9">9月</option>
+                                                    <option value="10">10月</option>
+                                                    <option value="11">11月</option>
+                                                    <option value="12">12月</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="monthlyStoreId" class="form-label">店舗</label>
+                                                <select class="form-select" id="monthlyStoreId">
+                                                    <option value="">全店舗</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3 d-flex align-items-end">
+                                                <div class="btn-group w-100" role="group">
+                                                    <button type="button" class="btn btn-danger btn-sm" onclick="downloadReport('pdf', 'monthly')">
+                                                        <i class="fas fa-file-pdf"></i> PDF
+                                                    </button>
+                                                    <button type="button" class="btn btn-success btn-sm" onclick="downloadReport('excel', 'monthly')">
+                                                        <i class="fas fa-file-excel"></i> Excel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3">
+                                    <a class="btn btn-secondary" href="/">
+                                        <i class="fas fa-arrow-left"></i> 戻る
+                                    </a>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- 本日のレポート -->
-        <div class="card mb-4 report-card">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-calendar-check"></i> 本日のレポート</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="todayStoreId" class="form-label">店舗</label>
-                        <select class="form-select" id="todayStoreId">
-                            <option value="">全店舗</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6 d-flex align-items-end">
-                        <div class="btn-group w-100" role="group">
-                            <button type="button" class="btn btn-danger download-btn" onclick="downloadReport('pdf', 'today')">
-                                <i class="bi bi-file-earmark-pdf"></i> PDF
-                            </button>
-                            <button type="button" class="btn btn-success download-btn" onclick="downloadReport('excel', 'today')">
-                                <i class="bi bi-file-earmark-excel"></i> Excel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 月次レポート -->
-        <div class="card mb-4 report-card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-calendar-month"></i> 月次レポート</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label for="year" class="form-label">年</label>
-                        <select class="form-select" id="year">
-                            <!-- 年のオプションはJavaScriptで生成 -->
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="month" class="form-label">月</label>
-                        <select class="form-select" id="month">
-                            <option value="1">1月</option>
-                            <option value="2">2月</option>
-                            <option value="3">3月</option>
-                            <option value="4">4月</option>
-                            <option value="5">5月</option>
-                            <option value="6">6月</option>
-                            <option value="7">7月</option>
-                            <option value="8">8月</option>
-                            <option value="9">9月</option>
-                            <option value="10">10月</option>
-                            <option value="11">11月</option>
-                            <option value="12">12月</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="monthlyStoreId" class="form-label">店舗</label>
-                        <select class="form-select" id="monthlyStoreId">
-                            <option value="">全店舗</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                        <div class="btn-group w-100" role="group">
-                            <button type="button" class="btn btn-danger download-btn" onclick="downloadReport('pdf', 'monthly')">
-                                <i class="bi bi-file-earmark-pdf"></i> PDF
-                            </button>
-                            <button type="button" class="btn btn-success download-btn" onclick="downloadReport('excel', 'monthly')">
-                                <i class="bi bi-file-earmark-excel"></i> Excel
-                            </button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // ページ読み込み時の初期化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 現在の日付を設定
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
+<script>
+/*<![CDATA[*/
+    // ページ読み込み時の初期化
+    document.addEventListener('DOMContentLoaded', function() {
+        // 現在の日付を設定
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
 
-            document.getElementById('endDate').value = `${yyyy}-${mm}-${dd}`;
-            document.getElementById('startDate').value = `${yyyy}-${mm}-01`;
+        document.getElementById('endDate').value = `${yyyy}-${mm}-${dd}`;
+        document.getElementById('startDate').value = `${yyyy}-${mm}-01`;
 
-            // 年のオプションを生成
-            const yearSelect = document.getElementById('year');
-            const currentYear = new Date().getFullYear();
-            for (let year = currentYear; year >= currentYear - 5; year--) {
-                const option = document.createElement('option');
-                option.value = year;
-                option.text = year + '年';
-                if (year === currentYear) {
-                    option.selected = true;
-                }
-                yearSelect.appendChild(option);
+        // 年のオプションを生成
+        const yearSelect = document.getElementById('year');
+        const currentYear = new Date().getFullYear();
+        for (let year = currentYear; year >= currentYear - 5; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.text = year + '年';
+            if (year === currentYear) {
+                option.selected = true;
             }
+            yearSelect.appendChild(option);
+        }
 
-            // 現在の月を選択
-            document.getElementById('month').value = today.getMonth() + 1;
-
-            // 店舗リストを取得
-            loadStores();
-        });
+        // 現在の月を選択
+        document.getElementById('month').value = today.getMonth() + 1;
 
         // 店舗リストを取得
-        function loadStores() {
-            fetch('/api/stores')
-                .then(response => response.json())
-                .then(stores => {
-                    const storeSelects = ['storeId', 'todayStoreId', 'monthlyStoreId'];
-                    storeSelects.forEach(selectId => {
-                        const select = document.getElementById(selectId);
-                        stores.forEach(store => {
-                            const option = document.createElement('option');
-                            option.value = store.id;
-                            option.text = store.name;
-                            select.appendChild(option);
-                        });
+        loadStores();
+    });
+
+    // 店舗リストを取得
+    function loadStores() {
+        fetch('/api/stores')
+            .then(response => response.json())
+            .then(stores => {
+                const storeSelects = ['storeId', 'todayStoreId', 'monthlyStoreId'];
+                storeSelects.forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    stores.forEach(store => {
+                        const option = document.createElement('option');
+                        option.value = store.id;
+                        option.text = store.name;
+                        select.appendChild(option);
                     });
-                })
-                .catch(error => {
-                    console.error('店舗リストの取得に失敗しました:', error);
                 });
-        }
+            })
+            .catch(error => {
+                console.error('店舗リストの取得に失敗しました:', error);
+            });
+    }
 
-        // レポートダウンロード
-        function downloadReport(format, type) {
-            let url = '';
-            let params = new URLSearchParams();
+    // レポートダウンロード
+    function downloadReport(format, type) {
+        let url = '';
+        let params = new URLSearchParams();
 
-            if (type === 'range') {
-                const startDate = document.getElementById('startDate').value;
-                const endDate = document.getElementById('endDate').value;
-                const storeId = document.getElementById('storeId').value;
+        if (type === 'range') {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const storeId = document.getElementById('storeId').value;
 
-                if (!startDate || !endDate) {
-                    alert('開始日と終了日を選択してください。');
-                    return;
-                }
-
-                url = `/api/reports/sales/${format}`;
-                params.append('startDate', startDate);
-                params.append('endDate', endDate);
-                if (storeId) params.append('storeId', storeId);
-
-            } else if (type === 'today') {
-                const storeId = document.getElementById('todayStoreId').value;
-                url = `/api/reports/sales/${format}/today`;
-                if (storeId) params.append('storeId', storeId);
-
-            } else if (type === 'monthly') {
-                const year = document.getElementById('year').value;
-                const month = document.getElementById('month').value;
-                const storeId = document.getElementById('monthlyStoreId').value;
-
-                url = `/api/reports/sales/${format}/month`;
-                params.append('year', year);
-                params.append('month', month);
-                if (storeId) params.append('storeId', storeId);
+            if (!startDate || !endDate) {
+                alert('開始日と終了日を選択してください。');
+                return;
             }
 
-            // ダウンロード実行
-            const fullUrl = params.toString() ? `${url}?${params}` : url;
-            window.open(fullUrl, '_blank');
+            url = `/api/reports/sales/${format}`;
+            params.append('startDate', startDate);
+            params.append('endDate', endDate);
+            if (storeId) params.append('storeId', storeId);
+
+        } else if (type === 'today') {
+            const storeId = document.getElementById('todayStoreId').value;
+            url = `/api/reports/sales/${format}/today`;
+            if (storeId) params.append('storeId', storeId);
+
+        } else if (type === 'monthly') {
+            const year = document.getElementById('year').value;
+            const month = document.getElementById('month').value;
+            const storeId = document.getElementById('monthlyStoreId').value;
+
+            url = `/api/reports/sales/${format}/month`;
+            params.append('year', year);
+            params.append('month', month);
+            if (storeId) params.append('storeId', storeId);
         }
-    </script>
+
+        // ダウンロード実行
+        const fullUrl = params.toString() ? `${url}?${params}` : url;
+        window.open(fullUrl, '_blank');
+    }
+/*]]>*/
+</script>
 </body>
 </html>

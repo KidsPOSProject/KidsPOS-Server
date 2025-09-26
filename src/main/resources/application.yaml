@@ -3,6 +3,12 @@ spring:
     url: jdbc:sqlite:./kidspos.db
     driverClassName: org.sqlite.JDBC
 
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+      enabled: true
+
   jpa:
     properties:
       hibernate:

@@ -118,7 +118,7 @@ class ApkApiController(
             apkVersionService.getLatestVersion()
                 ?: return ResponseEntity.notFound().build()
 
-        return downloadApk(latestVersion.id)
+        return downloadApk(latestVersion.id!!)
     }
 
     @PostMapping("/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])

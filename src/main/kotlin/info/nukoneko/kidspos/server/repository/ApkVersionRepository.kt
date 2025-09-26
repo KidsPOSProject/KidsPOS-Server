@@ -10,6 +10,8 @@ import java.util.Optional
 interface ApkVersionRepository : JpaRepository<ApkVersionEntity, Long> {
     fun findByIsActiveTrueOrderByVersionCodeDesc(): List<ApkVersionEntity>
 
+    fun findAllByOrderByVersionCodeDesc(): List<ApkVersionEntity>
+
     fun findTopByIsActiveTrueOrderByVersionCodeDesc(): Optional<ApkVersionEntity>
 
     fun findByVersion(version: String): Optional<ApkVersionEntity>
@@ -18,6 +20,9 @@ interface ApkVersionRepository : JpaRepository<ApkVersionEntity, Long> {
     fun findNewerVersions(currentVersionCode: Int): List<ApkVersionEntity>
 
     fun existsByVersionCode(versionCode: Int): Boolean
+
+    @Query("SELECT MAX(a.id) FROM ApkVersionEntity a")
+    fun findMaxId(): Long?
 
     fun existsByVersion(version: String): Boolean
 }

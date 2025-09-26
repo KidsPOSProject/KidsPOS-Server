@@ -10,5 +10,5 @@ data class ErrorResponse(
     val message: String,
     val timestamp: Instant = Instant.now(),
     val path: String? = null,
-    val details: Map<String, String>? = null,
+    val details: Map<String, Any?>? = null,
 )

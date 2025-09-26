@@ -174,19 +174,43 @@ class GlobalExceptionHandler {
         ex: MethodArgumentNotValidException,
         request: WebRequest,
     ): ResponseEntity<ErrorResponse> {
-        val errors =
-            ex.bindingResult.fieldErrors
-                .map { "${it.field}: ${it.defaultMessage}" }
-                .joinToString(", ")
+        val fieldErrors =
+            ex.bindingResult.fieldErrors.map { error ->
+                val fieldMessage =
+                    when (error.field) {
+                        "itemIds" ->
+                            when {
+                                error.defaultMessage?.contains("blank") == true || error.rejectedValue == "" ->
+                                    "商品IDが空です。売上作成には少なくとも1つの商品が必要です"
+                                else -> error.defaultMessage ?: "商品IDの形式が不正です"
+                            }
+                        "storeId" -> "店舗IDが無効です。存在する店舗のIDを指定してください"
+                        "deposit" -> "預かり金額が不正です。0以上の金額を指定してください"
+                        else -> "${error.field}: ${error.defaultMessage}"
+                    }
+                mapOf(
+                    "field" to error.field,
+                    "message" to fieldMessage,
+                    "value" to error.rejectedValue,
+                )
+            }
 
-        logger.warn("Validation failed: $errors")
+        val message =
+            if (fieldErrors.size == 1) {
+                fieldErrors.first()["message"] as String
+            } else {
+                "複数の入力エラーがあります。詳細は 'details' を確認してください"
+            }
+
+        logger.warn("Validation failed: ${fieldErrors.map { it["field"] to it["message"] }}")
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(
                 ErrorResponse(
-                    code = "VALIDATION_ERROR",
-                    message = "Validation failed: $errors",
+                    code = "VALIDATION_FAILED",
+                    message = message,
                     path = request.getDescription(false),
+                    details = mapOf("fieldErrors" to fieldErrors),
                 ),
             )
     }
@@ -212,20 +236,73 @@ class GlobalExceptionHandler {
             )
     }
 
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadable(
+        ex: org.springframework.http.converter.HttpMessageNotReadableException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        logger.warn("Invalid JSON format: ${ex.message}")
+
+        val detailedMessage =
+            when {
+                ex.message?.contains("JSON parse error") == true -> {
+                    when {
+                        ex.message?.contains("storeId") == true ->
+                            "リクエストの形式が不正です。'storeId'フィールドは必須です"
+                        ex.message?.contains("Required request body is missing") == true ->
+                            "リクエストボディが空です。JSON形式のデータを送信してください"
+                        else ->
+                            "JSONの形式が不正です。正しいJSON形式でリクエストを送信してください"
+                    }
+                }
+                ex.message?.contains("Required request body is missing") == true ->
+                    "リクエストボディが必要です。JSON形式のデータを送信してください"
+                else ->
+                    "リクエストの形式が不正です。JSON形式を確認してください"
+            }
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(
+                ErrorResponse(
+                    code = "INVALID_REQUEST_FORMAT",
+                    message = detailedMessage,
+                    path = request.getDescription(false),
+                    details = if (logger.isDebugEnabled) mapOf("debug" to ex.message) else null,
+                ),
+            )
+    }
+
     @ExceptionHandler(MissingKotlinParameterException::class)
     fun handleMissingKotlinParameter(
         ex: MissingKotlinParameterException,
         request: WebRequest,
     ): ResponseEntity<ErrorResponse> {
         val parameterName = ex.parameter.name ?: "unknown"
-        logger.debug("Missing required parameter: $parameterName")
+        val parameterType = "String"
+        logger.warn("Missing required parameter: $parameterName (type: $parameterType)")
+
+        val detailedMessage =
+            when (parameterName) {
+                "itemIds" -> "売上作成には商品IDが必要です。'itemIds'フィールドにカンマ区切りの商品IDを指定してください（例: '1,2,3'）"
+                "storeId" -> "店舗IDが必要です。'storeId'フィールドに店舗IDを指定してください"
+                "deposit" -> "預かり金額が必要です。'deposit'フィールドに金額を指定してください"
+                else -> "必須パラメータ '$parameterName' (型: $parameterType) が不足しています。リクエストボディに含めてください"
+            }
+
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(
                 ErrorResponse(
-                    code = "MISSING_PARAMETER",
-                    message = "Missing required parameter: $parameterName",
+                    code = "MISSING_REQUIRED_FIELD",
+                    message = detailedMessage,
                     path = request.getDescription(false),
+                    details =
+                        mapOf(
+                            "field" to parameterName,
+                            "type" to parameterType,
+                            "required" to true,
+                        ),
                 ),
             )
     }
@@ -235,14 +312,26 @@ class GlobalExceptionHandler {
         ex: Exception,
         request: WebRequest,
     ): ResponseEntity<ErrorResponse> {
-        logger.error("Unexpected error occurred", ex)
+        logger.error("Unexpected error occurred: ${ex.message}", ex)
+
+        val userMessage =
+            when {
+                ex.message?.contains("connection", ignoreCase = true) == true ->
+                    "データベース接続エラーが発生しました。しばらく待ってから再試行してください"
+                ex.message?.contains("timeout", ignoreCase = true) == true ->
+                    "処理がタイムアウトしました。しばらく待ってから再試行してください"
+                else ->
+                    "サーバーエラーが発生しました。問題が続く場合は管理者に連絡してください"
+            }
+
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(
                 ErrorResponse(
-                    code = "INTERNAL_ERROR",
-                    message = "An unexpected error occurred",
+                    code = "INTERNAL_SERVER_ERROR",
+                    message = userMessage,
                     path = request.getDescription(false),
+                    details = if (logger.isDebugEnabled) mapOf("debug" to ex.message) else null,
                 ),
             )
     }
