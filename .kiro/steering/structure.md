@@ -9,19 +9,42 @@ KidsPOS-Server/
 │   └── steering/               # Project steering documents
 ├── .claude/                    # Claude AI configuration
 │   ├── commands/               # Custom slash commands
-│   └── CLAUDE.md              # Project-specific AI instructions
+│   ├── CLAUDE.md              # Project-specific AI instructions
+│   └── settings.json          # Claude Code settings
+├── .github/                    # GitHub configuration
+│   └── workflows/             # CI/CD workflows
+│       └── vrt.yml           # Visual regression testing workflow
+├── .vscode/                    # VS Code configuration
+│   └── settings.json          # Project-specific VS Code settings
+├── config/                     # Configuration files
+│   └── detekt/                # Detekt static analysis config
+│       ├── detekt.yml        # Detekt rules configuration
+│       └── baseline.xml      # Detekt baseline violations
 ├── src/                        # Source code root
-│   └── main/                   # Main application code
-│       ├── kotlin/            # Kotlin source files
-│       └── resources/         # Resources and assets
+│   ├── main/                  # Main application code
+│   │   ├── kotlin/           # Kotlin source files
+│   │   └── resources/        # Resources and assets
+│   └── test/                  # Test code
+│       └── kotlin/           # Kotlin test files
+├── tests-vrt/                  # Visual regression test snapshots
+│   └── *.spec.ts-snapshots/   # Playwright snapshot files
 ├── build/                      # Build output directory
 ├── gradle/                     # Gradle wrapper files
+├── node_modules/              # Node.js dependencies (git-ignored)
+├── playwright-report/          # Playwright test reports (git-ignored)
+├── .editorconfig              # Editor configuration for code style
 ├── .gitignore                  # Git ignore rules
+├── .mcp.json                  # Model Context Protocol configuration
 ├── build.gradle               # Gradle build configuration
 ├── settings.gradle            # Gradle settings
 ├── gradlew                    # Gradle wrapper script (Unix)
 ├── gradlew.bat               # Gradle wrapper script (Windows)
+├── package.json              # Node.js project configuration
+├── package-lock.json         # Node.js dependency lock file
+├── playwright.config.ts       # Playwright test configuration
 ├── CLAUDE.md                  # AI assistant guidelines
+├── README.md                  # Project documentation
+├── VRT-README.md             # Visual regression testing guide
 ├── kidspos.db                # SQLite database file
 └── app.jar                    # Staged application JAR
 ```
@@ -59,6 +82,7 @@ info/nukoneko/kidspos/
 api/
 ├── ItemApiController.kt        # Item CRUD operations
 ├── SaleApiController.kt        # Sales transactions
+├── SaleReportController.kt     # Sales report and Excel export
 ├── SettingApiController.kt     # Settings management
 ├── StaffApiController.kt       # Staff management
 ├── StoreApiController.kt       # Store management
@@ -114,9 +138,14 @@ service/
 ├── BarcodeService.kt           # Barcode generation/scanning
 ├── ItemService.kt              # Item business logic
 ├── SaleService.kt              # Sales transaction logic
+├── SaleExcelReportService.kt   # Excel report generation
 ├── SettingService.kt           # Settings management logic
 ├── StaffService.kt             # Staff management logic
-└── StoreService.kt             # Store management logic
+├── StoreService.kt             # Store management logic
+└── mapper/                      # DTO mapping utilities
+    ├── ItemMapper.kt           # Item entity to DTO mapping
+    ├── StaffMapper.kt          # Staff entity to DTO mapping
+    └── StoreMapper.kt          # Store entity to DTO mapping
 ```
 
 ### Resources Structure (`src/main/resources/`)
@@ -248,14 +277,28 @@ import info.nukoneko.kidspos.server.repository.ItemRepository
 - **Null Safety**: Leverage Kotlin's null safety features
 - **Expression Bodies**: Use expression syntax for simple functions
 
-### Testing Structure (Future)
+### Testing Structure
 
 ```
 src/test/kotlin/                # Test source root
 └── info/nukoneko/kidspos/
-    ├── unit/                   # Unit tests
-    ├── integration/           # Integration tests
-    └── e2e/                   # End-to-end tests
+    ├── server/
+    │   ├── architecture/      # Architecture compliance tests
+    │   ├── controller/        # Controller layer tests
+    │   │   ├── api/          # API controller tests
+    │   │   └── front/        # Frontend controller tests
+    │   ├── entity/           # Entity tests
+    │   ├── repository/       # Repository tests
+    │   ├── security/         # Security tests
+    │   │   ├── OWASPSecurityTest.kt      # OWASP compliance tests
+    │   │   └── DataExposureSecurityTest.kt # Data exposure tests
+    │   ├── service/          # Service layer tests
+    │   └── OpenApiIntegrationTest.kt # API documentation tests
+    └── receipt/               # Receipt module tests
+
+tests-vrt/                     # Visual regression tests
+├── *.spec.ts                 # Playwright test specifications
+└── *.spec.ts-snapshots/      # Visual baseline snapshots
 ```
 
 ### Configuration Management
