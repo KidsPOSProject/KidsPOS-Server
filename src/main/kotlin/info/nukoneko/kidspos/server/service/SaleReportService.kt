@@ -145,7 +145,7 @@ class SaleReportService(
         } catch (e: Exception) {
             logger.error("Error generating PDF report", e)
             document.close()
-            throw RuntimeException("PDF生成中にエラーが発生しました", e)
+            throw RuntimeException("An error occurred while generating the PDF report", e)
         }
     }
 

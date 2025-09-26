@@ -138,7 +138,7 @@ class SaleExcelReportService(
         } catch (e: Exception) {
             logger.error("Error generating Excel report", e)
             workbook.close()
-            throw RuntimeException("Excel生成中にエラーが発生しました", e)
+            throw RuntimeException("An error occurred while generating the Excel report", e)
         }
     }
 

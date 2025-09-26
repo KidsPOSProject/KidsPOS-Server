@@ -51,7 +51,7 @@ test.describe('Visual Regression Tests', () => {
     await page.waitForSelector('h1');
 
     // Wait for store dropdown to be populated
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('#storeId option', { state: 'attached' });
 
     await expect(page).toHaveScreenshot('sales-report-page.png', {
       fullPage: true,
@@ -89,7 +89,7 @@ test.describe('Mobile Visual Regression Tests', () => {
   test('Mobile Sales Report Page', async ({ page }) => {
     await page.goto('/reports/sales');
     await page.waitForSelector('h1');
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('#storeId option', { state: 'attached' });
 
     await expect(page).toHaveScreenshot('mobile-sales-report.png', {
       fullPage: true,
@@ -105,7 +105,7 @@ test.describe('Interactive Elements', () => {
 
     // Open date picker
     await page.click('#startDate');
-    await page.waitForTimeout(500);
+    await page.waitForSelector('.datepicker-calendar, .react-datepicker, .MuiPickersPopper-root', { state: 'visible' });
 
     await expect(page).toHaveScreenshot('report-date-picker.png', {
       animations: 'disabled',
@@ -113,7 +113,7 @@ test.describe('Interactive Elements', () => {
 
     // Select store dropdown
     await page.click('#storeId');
-    await page.waitForTimeout(500);
+    await page.waitForSelector('.ant-select-dropdown'); // Wait for dropdown options to appear
 
     await expect(page).toHaveScreenshot('report-store-dropdown.png', {
       animations: 'disabled',
