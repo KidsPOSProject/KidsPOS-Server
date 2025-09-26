@@ -5,6 +5,7 @@ import info.nukoneko.kidspos.server.domain.exception.InvalidFileException
 import info.nukoneko.kidspos.server.domain.exception.ResourceNotFoundException
 import info.nukoneko.kidspos.server.entity.ApkVersionEntity
 import info.nukoneko.kidspos.server.repository.ApkVersionRepository
+import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -20,16 +21,15 @@ import java.time.LocalDateTime
 @Transactional
 class ApkVersionService(
     private val apkVersionRepository: ApkVersionRepository,
+    @Value("\${app.apk.upload-dir:./uploads/apk}")
+    private val uploadDir: String = "./uploads/apk",
+    @Value("\${app.apk.max-file-size:104857600}")
+    private val maxFileSize: Long = 104857600,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @Value("\${app.apk.upload-dir:./uploads/apk}")
-    private lateinit var uploadDir: String
-
-    @Value("\${app.apk.max-file-size:104857600}")
-    private var maxFileSize: Long = 104857600
-
-    init {
+    @PostConstruct
+    fun init() {
         createUploadDirectory()
     }
 
