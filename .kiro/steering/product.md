@@ -14,6 +14,7 @@ transactions while maintaining simplicity and ease of use appropriate for young 
 - **Multi-item Sales**: Support for multiple items per transaction
 - **Sales History**: Track all transactions with date, time, and details
 - **Sales Reports**: View historical sales data and transaction details
+- **Excel Export**: Generate detailed Excel reports of sales data for analysis
 
 ### Inventory Management
 

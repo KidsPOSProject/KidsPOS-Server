@@ -21,15 +21,15 @@
 
 ### Core Framework
 
-- **Spring Boot 2.7.3**: Enterprise Java framework
+- **Spring Boot 3.2.0**: Enterprise Java framework
     - Spring Web: RESTful web services
     - Spring Data JPA: Database abstraction layer
     - Spring Boot DevTools: Development productivity
 
 ### Programming Language
 
-- **Kotlin 1.6.21**: Modern JVM language
-    - Target JVM: 1.8
+- **Kotlin 2.0.21**: Modern JVM language
+    - Target JVM: 21
     - Kotlin Spring Plugin: Spring integration
     - Kotlin JPA Plugin: JPA/Hibernate support
     - Kotlin Reflection: Runtime introspection
@@ -56,6 +56,12 @@
 - **ZXing 3.5.1**: Barcode generation and scanning
     - Core library: Barcode algorithms
     - JavaSE library: Java-specific implementations
+- **Apache POI 5.2.4**: Excel file generation for reports
+    - POI: Core library for Excel manipulation
+    - POI-OOXML: Support for XLSX format
+- **SpringDoc OpenAPI 2.2.0**: API documentation
+    - Swagger UI: Interactive API testing
+    - OpenAPI 3.0 specification generation
 
 ## Frontend Technology
 
@@ -68,7 +74,7 @@
 
 ### UI Framework
 
-- **Bootstrap 4.1.1**: CSS framework (local copy)
+- **Bootstrap 5.2.1**: CSS framework (local copy)
     - Responsive design support
     - Component library
     - Grid system
@@ -93,7 +99,7 @@
 
 ### Build System
 
-- **Gradle**: Build automation
+- **Gradle 8.10**: Build automation
     - Build file: `build.gradle` (Groovy DSL)
     - Wrapper included for version consistency
 
@@ -103,11 +109,44 @@
 - **Spring Boot Support**: Development tools and hot reload
 - **JPA Support**: Entity and repository generation
 
+### Code Quality Tools
+
+- **Detekt 1.23.8**: Static code analysis for Kotlin
+    - Configuration: `config/detekt/detekt.yml`
+    - Baseline: `config/detekt/baseline.xml`
+    - Custom rules and thresholds configured
+    - Integration with Gradle build process
+
+- **Ktlint 1.5.0**: Kotlin code formatting and linting
+    - Automatic formatting enforcement
+    - Integration with Gradle build
+    - Pre-commit hook ready
+    - Console output with colored error messages
+
+### Testing Infrastructure
+
+- **JUnit 5**: Unit testing framework
+    - Spring Boot Test integration
+    - MockK for mocking
+    - JaCoCo for code coverage
+
+- **Visual Regression Testing (VRT)**: UI consistency testing
+    - **Playwright 1.48.0**: Browser automation and screenshot comparison
+    - **GitHub Actions**: Automated VRT on every PR
+    - **Node.js 18+**: Required for Playwright execution
+    - Test commands:
+        - `npm run test:vrt`: Run visual regression tests
+        - `npm run test:vrt:update`: Update baseline snapshots
+        - `npm run test:vrt:report`: View test results
+
 ### Development Commands
 
 ```bash
 # Build the application
 ./gradlew build
+
+# Build without detekt (faster)
+./gradlew build -x detekt
 
 # Create executable JAR
 ./gradlew bootJar
@@ -123,6 +162,26 @@
 
 # Clean staged JAR
 ./gradlew cleanJar
+
+# Run tests
+./gradlew test
+
+# Generate test coverage report
+./gradlew jacocoTestReport
+
+# Run static code analysis
+./gradlew detekt
+
+# Format code with ktlint
+./gradlew ktlintFormat
+
+# Check code formatting
+./gradlew ktlintCheck
+
+# Visual regression testing
+npm run test:vrt
+npm run test:vrt:update
+npm run test:vrt:report
 ```
 
 ## Common Commands
@@ -227,10 +286,11 @@ server:
 
 ### System Requirements
 
-- **Java Runtime**: JRE 8 or higher
-- **Memory**: Minimum 256MB, recommended 512MB
+- **Java Runtime**: JRE 21 or higher
+- **Memory**: Minimum 512MB, recommended 1GB
 - **Disk Space**: 100MB for application + database growth
 - **Network**: Port 8080 accessible
+- **Node.js**: 18+ (for Visual Regression Testing only)
 
 ### Security Considerations
 
