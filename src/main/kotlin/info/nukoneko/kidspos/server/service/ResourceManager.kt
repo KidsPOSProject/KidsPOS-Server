@@ -19,7 +19,7 @@ import java.util.stream.Stream
 class ResourceManager(
     private val fileManager: FileManager,
     private val streamProcessor: StreamProcessor,
-    private val backupManager: BackupManager
+    private val backupManager: BackupManager,
 ) {
     private val logger = LoggerFactory.getLogger(ResourceManager::class.java)
 
@@ -28,7 +28,10 @@ class ResourceManager(
      * @deprecated Use FileManager.readFileContent() instead
      */
     @Deprecated("Use FileManager.readFileContent() instead")
-    fun readFileContent(filePath: String, onClose: (() -> Unit)? = null): String {
+    fun readFileContent(
+        filePath: String,
+        onClose: (() -> Unit)? = null,
+    ): String {
         logger.warn("ResourceManager.readFileContent is deprecated. Use FileManager instead.")
         return fileManager.readFileContent(filePath, onClose)
     }
@@ -36,7 +39,10 @@ class ResourceManager(
     /**
      * Copy file using proper resource management
      */
-    fun copyFile(sourcePath: String, destinationPath: String) {
+    fun copyFile(
+        sourcePath: String,
+        destinationPath: String,
+    ) {
         try {
             Files.newInputStream(Paths.get(sourcePath)).use { input ->
                 Files.newOutputStream(Paths.get(destinationPath)).use { output ->
@@ -61,7 +67,8 @@ class ResourceManager(
         var processedCount = 0
 
         // Use streaming to process data efficiently
-        data.stream()
+        data
+            .stream()
             .parallel()
             .forEach { item ->
                 totalLength += item.length
@@ -83,15 +90,19 @@ class ResourceManager(
     /**
      * Process data with timeout management
      */
-    fun processWithTimeout(taskName: String, timeoutMs: Long): String {
+    fun processWithTimeout(
+        taskName: String,
+        timeoutMs: Long,
+    ): String {
         val executor = Executors.newSingleThreadExecutor()
 
         return try {
-            val future = executor.submit<String> {
-                // Simulate processing work
-                Thread.sleep(100) // Simulate some work
-                "$taskName processed successfully"
-            }
+            val future =
+                executor.submit<String> {
+                    // Simulate processing work
+                    Thread.sleep(100) // Simulate some work
+                    "$taskName processed successfully"
+                }
 
             val result = future.get(timeoutMs, TimeUnit.MILLISECONDS)
             logger.debug("Task {} completed within timeout", taskName)
@@ -115,17 +126,19 @@ class ResourceManager(
     /**
      * Read file and throw exception to test resource cleanup
      */
-    fun readFileWithException(filePath: String): String {
-        return Files.newBufferedReader(Paths.get(filePath)).use { _ ->
+    fun readFileWithException(filePath: String): String =
+        Files.newBufferedReader(Paths.get(filePath)).use { _ ->
             // Throw exception to test cleanup
             throw RuntimeException("Simulated exception during file reading")
         }
-    }
 
     /**
      * Process data in batches to optimize memory usage
      */
-    fun processBatchedData(totalItems: Int, batchSize: Int): BatchResult {
+    fun processBatchedData(
+        totalItems: Int,
+        batchSize: Int,
+    ): BatchResult {
         logger.debug("Processing {} items in batches of {}", totalItems, batchSize)
 
         val runtime = Runtime.getRuntime()
@@ -166,7 +179,9 @@ class ResourceManager(
 
         logger.info(
             "Batch processing completed: {} items in {} batches, max memory: {} bytes",
-            processedCount, batchCount, maxMemoryUsed
+            processedCount,
+            batchCount,
+            maxMemoryUsed,
         )
 
         return BatchResult(processedCount, batchCount, maxMemoryUsed)
@@ -183,14 +198,15 @@ class ResourceManager(
     /**
      * Process streaming data efficiently
      */
-    fun processStreamingData(dataStream: Stream<String>): String {
-        return try {
+    fun processStreamingData(dataStream: Stream<String>): String =
+        try {
             dataStream.use { stream ->
-                val items = stream
-                    .filter { it.isNotEmpty() }
-                    .map { it.trim() }
-                    .limit(1000) // Limit to prevent memory issues
-                    .toList()
+                val items =
+                    stream
+                        .filter { it.isNotEmpty() }
+                        .map { it.trim() }
+                        .limit(1000) // Limit to prevent memory issues
+                        .toList()
 
                 val result = items.joinToString(",")
                 logger.debug("Processed streaming data, result length: {}", result.length)
@@ -200,7 +216,6 @@ class ResourceManager(
             logger.error("Error processing streaming data", e)
             throw RuntimeException("Failed to process streaming data", e)
         }
-    }
 }
 
 /**
@@ -209,26 +224,30 @@ class ResourceManager(
 data class ProcessingResult(
     val totalItems: Int,
     val averageLength: Double,
-    val summary: String
+    val summary: String,
 )
 
 data class BatchResult(
     val processedCount: Int,
     val batchCount: Int,
-    val maxMemoryUsed: Long
+    val maxMemoryUsed: Long,
 )
 
 /**
  * Mock resource for pooling demonstration
  */
-class MockResource(val id: Int) {
+class MockResource(
+    val id: Int,
+) {
     fun process(data: String): String = "Resource $id processed: $data"
 }
 
 /**
  * Simple resource pool implementation
  */
-class ResourcePool(private val maxSize: Int) {
+class ResourcePool(
+    private val maxSize: Int,
+) {
     private val resources = mutableListOf<MockResource>()
     private val inUse = mutableSetOf<MockResource>()
     var totalAcquired = 0

@@ -30,8 +30,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class SettingService(
-    private val repository: SettingRepository
-
+    private val repository: SettingRepository,
 ) {
     private val logger = LoggerFactory.getLogger(SettingService::class.java)
 
@@ -54,7 +53,11 @@ class SettingService(
     }
 
     @CacheEvict(value = [CacheConfig.SETTINGS_CACHE], allEntries = true)
-    fun savePrinterHostPort(storeId: Int, host: String, port: Int) {
+    fun savePrinterHostPort(
+        storeId: Int,
+        host: String,
+        port: Int,
+    ) {
         logger.info("Saving printer settings for store ID: {}", storeId)
         repository.save(SettingEntity("${KEY_PRINTER}_$storeId", "$host:$port"))
     }
@@ -71,7 +74,7 @@ class SettingService(
             } else {
                 Pair(
                     matchResult.groupValues[1],
-                    matchResult.groupValues[2].toInt()
+                    matchResult.groupValues[2].toInt(),
                 )
             }
         }
@@ -88,7 +91,7 @@ class SettingService(
         logger.info(
             "Saving application settings: host={}, port={}",
             applicationSetting.serverHost,
-            applicationSetting.serverPort
+            applicationSetting.serverPort,
         )
         repository.save(SettingEntity("${KEY_APP}_host", applicationSetting.serverHost))
         repository.save(SettingEntity("${KEY_APP}_port", applicationSetting.serverPort.toString()))
@@ -115,6 +118,6 @@ class SettingService(
 
     data class ApplicationSetting(
         val serverHost: String,
-        val serverPort: Int
+        val serverPort: Int,
     )
 }

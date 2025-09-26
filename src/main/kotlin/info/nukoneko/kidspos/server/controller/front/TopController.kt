@@ -11,14 +11,12 @@ import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.NetworkInterface
 
-
 @Controller
 @RequestMapping("/")
 class TopController(
     private val environment: Environment,
-    private val appProperties: AppProperties
+    private val appProperties: AppProperties,
 ) {
-
     @GetMapping
     fun index(model: Model): String {
         model.addAttribute("title", "ダッシュボード")
@@ -37,23 +35,27 @@ class TopController(
 
         try {
             // ループバックインターフェースは除外し、アクティブなインターフェースのみ取得
-            NetworkInterface.getNetworkInterfaces()?.asSequence()
+            NetworkInterface
+                .getNetworkInterfaces()
+                ?.asSequence()
                 ?.filter { ni -> ni.isUp && !ni.isLoopback && !ni.isVirtual }
                 ?.forEach { networkInterface ->
-                    networkInterface.inetAddresses?.asSequence()
-                        ?.filterIsInstance<Inet4Address>()  // IPv4のみ取得して高速化
+                    networkInterface.inetAddresses
+                        ?.asSequence()
+                        ?.filterIsInstance<Inet4Address>() // IPv4のみ取得して高速化
                         ?.filter { inetAddress ->
                             // ローカルIPアドレスのみフィルタリング
                             !inetAddress.isLoopbackAddress &&
-                            !inetAddress.isLinkLocalAddress &&
-                            inetAddress.hostAddress.startsWith(appProperties.network.allowedIpPrefix)
-                        }
-                        ?.forEach { inetAddress ->
+                                !inetAddress.isLinkLocalAddress &&
+                                inetAddress.hostAddress.startsWith(appProperties.network.allowedIpPrefix)
+                        }?.forEach { inetAddress ->
                             // hostNameの解決は遅いので、hostAddressのみを使用
-                            hosts.add(HostBean(
-                                name = networkInterface.displayName ?: inetAddress.hostAddress,
-                                address = inetAddress.hostAddress
-                            ))
+                            hosts.add(
+                                HostBean(
+                                    name = networkInterface.displayName ?: inetAddress.hostAddress,
+                                    address = inetAddress.hostAddress,
+                                ),
+                            )
                         }
                 }
         } catch (e: Exception) {
@@ -73,6 +75,6 @@ class TopController(
 
     data class HostBean(
         val name: String,
-        val address: String
+        val address: String,
     )
 }

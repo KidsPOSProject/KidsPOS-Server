@@ -34,7 +34,7 @@ class OptimizedQueryService(
     private val itemRepository: ItemRepository,
     private val saleRepository: SaleRepository,
     private val saleDetailRepository: SaleDetailRepository,
-    private val storeRepository: StoreRepository
+    private val storeRepository: StoreRepository,
 ) {
     private val logger = LoggerFactory.getLogger(OptimizedQueryService::class.java)
 
@@ -42,7 +42,11 @@ class OptimizedQueryService(
      * Get paginated items with caching
      */
     @Cacheable(value = [CacheConfig.ITEMS_CACHE], key = "#pageable.toString()")
-    fun getItemsPaginated(page: Int = 0, size: Int = 20, sortBy: String = "id"): Page<ItemEntity> {
+    fun getItemsPaginated(
+        page: Int = 0,
+        size: Int = 20,
+        sortBy: String = "id",
+    ): Page<ItemEntity> {
         logger.debug("Fetching items page {} with size {}", page, size)
         val pageable = PageRequest.of(page, size, Sort.by(sortBy))
         return itemRepository.findAll(pageable)
@@ -70,7 +74,10 @@ class OptimizedQueryService(
      * Find items in price range with indexing
      */
     @Cacheable(value = [CacheConfig.ITEMS_CACHE], key = "'price_range_' + #minPrice + '_' + #maxPrice")
-    fun getItemsByPriceRange(minPrice: Int, maxPrice: Int): List<ItemEntity> {
+    fun getItemsByPriceRange(
+        minPrice: Int,
+        maxPrice: Int,
+    ): List<ItemEntity> {
         logger.debug("Fetching items in price range {} - {}", minPrice, maxPrice)
         return itemRepository.findByPriceRange(minPrice, maxPrice)
     }
@@ -78,7 +85,11 @@ class OptimizedQueryService(
     /**
      * Get sales with pagination and store filter
      */
-    fun getSalesByStore(storeId: Int, page: Int = 0, size: Int = 20): Page<SaleEntity> {
+    fun getSalesByStore(
+        storeId: Int,
+        page: Int = 0,
+        size: Int = 20,
+    ): Page<SaleEntity> {
         logger.debug("Fetching sales for store {} page {}", storeId, page)
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
         return saleRepository.findByStoreId(storeId, pageable)
@@ -90,16 +101,22 @@ class OptimizedQueryService(
     @Cacheable(value = ["salesSummary"], key = "#daysBack")
     fun getSalesSummary(daysBack: Int = 30): List<SalesSummary> {
         logger.debug("Fetching sales summary for last {} days", daysBack)
-        val fromDate = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_MONTH, -daysBack)
-        }.time
+        val fromDate =
+            Calendar
+                .getInstance()
+                .apply {
+                    add(Calendar.DAY_OF_MONTH, -daysBack)
+                }.time
         return saleRepository.findSalesSummaryByStore(fromDate)
     }
 
     /**
      * Get sales by date range for reports
      */
-    fun getSalesByDateRange(startDate: Date, endDate: Date): List<SaleEntity> {
+    fun getSalesByDateRange(
+        startDate: Date,
+        endDate: Date,
+    ): List<SaleEntity> {
         logger.debug("Fetching sales from {} to {}", startDate, endDate)
         return saleRepository.findByDateRange(startDate, endDate)
     }
@@ -117,16 +134,17 @@ class OptimizedQueryService(
 
         // Batch fetch all items referenced in details
         val itemIds = details.map { it.itemId }.distinct()
-        val items = if (itemIds.isNotEmpty()) {
-            itemRepository.findAllByIdsBatch(itemIds).associateBy { it.id }
-        } else {
-            emptyMap()
-        }
+        val items =
+            if (itemIds.isNotEmpty()) {
+                itemRepository.findAllByIdsBatch(itemIds).associateBy { it.id }
+            } else {
+                emptyMap()
+            }
 
         return SaleWithDetailsDTO(
             sale = sale,
             details = details,
-            items = items
+            items = items,
         )
     }
 
@@ -142,7 +160,10 @@ class OptimizedQueryService(
     /**
      * Search items by name with pagination (for autocomplete)
      */
-    fun searchItemsByName(namePattern: String, pageable: Pageable): Page<ItemEntity> {
+    fun searchItemsByName(
+        namePattern: String,
+        pageable: Pageable,
+    ): Page<ItemEntity> {
         logger.debug("Searching items by name pattern: {}", namePattern)
         // For SQLite, we'll use a simple approach
         return itemRepository.findAll(pageable)
@@ -155,5 +176,5 @@ class OptimizedQueryService(
 data class SaleWithDetailsDTO(
     val sale: SaleEntity,
     val details: List<info.nukoneko.kidspos.server.entity.SaleDetailEntity>,
-    val items: Map<Int, ItemEntity>
+    val items: Map<Int, ItemEntity>,
 )

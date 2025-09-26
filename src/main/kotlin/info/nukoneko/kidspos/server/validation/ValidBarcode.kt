@@ -13,16 +13,19 @@ import kotlin.reflect.KClass
 annotation class ValidBarcode(
     val message: String = "Invalid barcode format",
     val groups: Array<KClass<*>> = [],
-    val payload: Array<KClass<out Payload>> = []
+    val payload: Array<KClass<out Payload>> = [],
 )
 
 class BarcodeValidator : ConstraintValidator<ValidBarcode, String> {
-    override fun isValid(value: String?, context: ConstraintValidatorContext): Boolean {
+    override fun isValid(
+        value: String?,
+        context: ConstraintValidatorContext,
+    ): Boolean {
         if (value == null) {
             return true // Let @NotNull handle null checks
         }
 
         return value.matches(Regex(Constants.Validation.BARCODE_PATTERN)) &&
-                value.length >= Constants.Barcode.MIN_LENGTH
+            value.length >= Constants.Barcode.MIN_LENGTH
     }
 }

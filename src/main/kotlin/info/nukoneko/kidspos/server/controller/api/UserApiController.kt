@@ -22,19 +22,22 @@ class UserApiController {
     private lateinit var staffService: StaffService
 
     @GetMapping
-    fun getUsers(): ResponseEntity<List<StaffEntity>> {
-        return ResponseEntity.ok(staffService.findAll())
-    }
+    fun getUsers(): ResponseEntity<List<StaffEntity>> = ResponseEntity.ok(staffService.findAll())
 
     @GetMapping("/{barcode}")
-    fun getUser(@PathVariable barcode: String): ResponseEntity<StaffEntity> {
-        val user = staffService.findStaff(barcode)
-            ?: throw ResourceNotFoundException("User with barcode $barcode not found")
+    fun getUser(
+        @PathVariable barcode: String,
+    ): ResponseEntity<StaffEntity> {
+        val user =
+            staffService.findStaff(barcode)
+                ?: throw ResourceNotFoundException("User with barcode $barcode not found")
         return ResponseEntity.ok(user)
     }
 
     @PostMapping
-    fun createUser(@Valid @RequestBody user: StaffEntity): ResponseEntity<StaffEntity> {
+    fun createUser(
+        @Valid @RequestBody user: StaffEntity,
+    ): ResponseEntity<StaffEntity> {
         // Validate required fields
         if (user.barcode.isBlank()) {
             throw IllegalArgumentException("Barcode is required")
@@ -53,7 +56,10 @@ class UserApiController {
     }
 
     @PutMapping("/{barcode}")
-    fun updateUser(@PathVariable barcode: String, @Valid @RequestBody user: StaffEntity): ResponseEntity<StaffEntity> {
+    fun updateUser(
+        @PathVariable barcode: String,
+        @Valid @RequestBody user: StaffEntity,
+    ): ResponseEntity<StaffEntity> {
         // Check if user exists
         staffService.findStaff(barcode)
             ?: throw ResourceNotFoundException("User with barcode $barcode not found")
@@ -68,7 +74,9 @@ class UserApiController {
     }
 
     @DeleteMapping("/{barcode}")
-    fun deleteUser(@PathVariable barcode: String): ResponseEntity<Void> {
+    fun deleteUser(
+        @PathVariable barcode: String,
+    ): ResponseEntity<Void> {
         // Check if user exists
         staffService.findStaff(barcode)
             ?: throw ResourceNotFoundException("User with barcode $barcode not found")

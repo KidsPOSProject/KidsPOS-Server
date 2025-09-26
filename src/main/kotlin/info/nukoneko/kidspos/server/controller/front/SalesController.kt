@@ -21,19 +21,22 @@ class SalesController {
     }
 
     @GetMapping("new")
-    fun newItem(model: Model): String {
-        return "sales/new"
-    }
+    fun newItem(model: Model): String = "sales/new"
 
     @GetMapping("{id}/edit")
-    fun edit(@PathVariable id: Int, model: Model): String {
+    fun edit(
+        @PathVariable id: Int,
+        model: Model,
+    ): String {
         val sale = saleService.findSale(id)
         model.addAttribute("sale", sale)
         return "sales/edit"
     }
 
     @PostMapping
-    fun create(@ModelAttribute sale: SaleBean): String {
+    fun create(
+        @ModelAttribute sale: SaleBean,
+    ): String {
 //        saleService.save(sale)
         return "redirect:/sales"
     }

@@ -33,12 +33,13 @@ class ItemServiceTest {
     fun `should find item by ID when item exists`() {
         // Given
         val itemId = 1
-        val expectedItem = ItemEntity(
-            id = itemId,
-            barcode = "123456789",
-            name = "Test Item",
-            price = 100
-        )
+        val expectedItem =
+            ItemEntity(
+                id = itemId,
+                barcode = "123456789",
+                name = "Test Item",
+                price = 100,
+            )
         `when`(itemRepository.findById(itemId)).thenReturn(Optional.of(expectedItem))
 
         // When
@@ -71,12 +72,13 @@ class ItemServiceTest {
     fun `should find item by barcode when item exists`() {
         // Given
         val barcode = "123456789"
-        val expectedItem = ItemEntity(
-            id = 1,
-            barcode = barcode,
-            name = "Test Item",
-            price = 100
-        )
+        val expectedItem =
+            ItemEntity(
+                id = 1,
+                barcode = barcode,
+                name = "Test Item",
+                price = 100,
+            )
         `when`(itemRepository.findByBarcode(barcode)).thenReturn(expectedItem)
 
         // When
@@ -108,18 +110,20 @@ class ItemServiceTest {
     @Test
     fun `should save item successfully`() {
         // Given
-        val itemBean = ItemBean(
-            id = null,
-            barcode = "123456789",
-            name = "New Item",
-            price = 200
-        )
-        val expectedItem = ItemEntity(
-            id = 1,
-            barcode = "123456789",
-            name = "New Item",
-            price = 200
-        )
+        val itemBean =
+            ItemBean(
+                id = null,
+                barcode = "123456789",
+                name = "New Item",
+                price = 200,
+            )
+        val expectedItem =
+            ItemEntity(
+                id = 1,
+                barcode = "123456789",
+                name = "New Item",
+                price = 200,
+            )
         `when`(idGenerationService.generateNextId(itemRepository)).thenReturn(1)
         `when`(itemRepository.save(any<ItemEntity>())).thenReturn(expectedItem)
 
@@ -139,10 +143,11 @@ class ItemServiceTest {
     @Test
     fun `should find all items`() {
         // Given
-        val expectedItems = listOf(
-            ItemEntity(1, "123456789", "Item 1", 100),
-            ItemEntity(2, "987654321", "Item 2", 200)
-        )
+        val expectedItems =
+            listOf(
+                ItemEntity(1, "123456789", "Item 1", 100),
+                ItemEntity(2, "987654321", "Item 2", 200),
+            )
         `when`(itemRepository.findAll()).thenReturn(expectedItems)
 
         // When
@@ -159,18 +164,20 @@ class ItemServiceTest {
     @Test
     fun `should save item with existing ID`() {
         // Given
-        val itemBean = ItemBean(
-            id = 5,
-            barcode = "123456789",
-            name = "Existing Item",
-            price = 300
-        )
-        val expectedItem = ItemEntity(
-            id = 5,
-            barcode = "123456789",
-            name = "Existing Item",
-            price = 300
-        )
+        val itemBean =
+            ItemBean(
+                id = 5,
+                barcode = "123456789",
+                name = "Existing Item",
+                price = 300,
+            )
+        val expectedItem =
+            ItemEntity(
+                id = 5,
+                barcode = "123456789",
+                name = "Existing Item",
+                price = 300,
+            )
         `when`(itemRepository.save(any<ItemEntity>())).thenReturn(expectedItem)
 
         // When

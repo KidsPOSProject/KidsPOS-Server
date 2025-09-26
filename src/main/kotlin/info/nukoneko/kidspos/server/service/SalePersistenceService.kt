@@ -22,33 +22,39 @@ class SalePersistenceService(
     private val saleRepository: SaleRepository,
     private val saleDetailRepository: SaleDetailRepository,
     private val idGenerationService: IdGenerationService,
-    private val saleCalculationService: SaleCalculationService
+    private val saleCalculationService: SaleCalculationService,
 ) {
     private val logger = LoggerFactory.getLogger(SalePersistenceService::class.java)
 
     /**
      * Save sale entity
      */
-    fun saveSale(saleBean: SaleBean, items: List<ItemBean>): SaleEntity {
+    fun saveSale(
+        saleBean: SaleBean,
+        items: List<ItemBean>,
+    ): SaleEntity {
         val saleId = idGenerationService.generateNextId(saleRepository)
         val staffId = extractStaffId(saleBean.staffBarcode)
         val totalAmount = saleCalculationService.calculateSaleAmount(items)
         val quantity = saleCalculationService.calculateQuantity(items)
 
-        val sale = SaleEntity(
-            id = saleId,
-            storeId = saleBean.storeId,
-            staffId = staffId,
-            quantity = quantity,
-            amount = totalAmount,
-            deposit = saleBean.deposit,
-            createdAt = Date()
-        )
+        val sale =
+            SaleEntity(
+                id = saleId,
+                storeId = saleBean.storeId,
+                staffId = staffId,
+                quantity = quantity,
+                amount = totalAmount,
+                deposit = saleBean.deposit,
+                createdAt = Date(),
+            )
 
         val savedSale = saleRepository.save(sale)
         logger.info(
             "Sale saved successfully: ID={}, amount={}, items={}",
-            savedSale.id, savedSale.amount, savedSale.quantity
+            savedSale.id,
+            savedSale.amount,
+            savedSale.quantity,
         )
 
         return savedSale
@@ -57,7 +63,10 @@ class SalePersistenceService(
     /**
      * Save sale detail entities
      */
-    fun saveSaleDetails(saleId: Int, items: List<ItemBean>): List<SaleDetailEntity> {
+    fun saveSaleDetails(
+        saleId: Int,
+        items: List<ItemBean>,
+    ): List<SaleDetailEntity> {
         val groupedItems = saleCalculationService.groupItemsByType(items)
         val savedDetails = mutableListOf<SaleDetailEntity>()
 
@@ -66,20 +75,23 @@ class SalePersistenceService(
             val quantity = itemList.size
             val unitPrice = itemList.first().price
 
-            val saleDetail = SaleDetailEntity(
-                id = detailId,
-                saleId = saleId,
-                itemId = itemId,
-                price = unitPrice,
-                quantity = quantity
-            )
+            val saleDetail =
+                SaleDetailEntity(
+                    id = detailId,
+                    saleId = saleId,
+                    itemId = itemId,
+                    price = unitPrice,
+                    quantity = quantity,
+                )
 
             val savedDetail = saleDetailRepository.save(saleDetail)
             savedDetails.add(savedDetail)
 
             logger.debug(
                 "Sale detail saved: item={}, quantity={}, price={}",
-                itemId, quantity, unitPrice
+                itemId,
+                quantity,
+                unitPrice,
             )
         }
 
@@ -90,39 +102,30 @@ class SalePersistenceService(
     /**
      * Extract staff ID from barcode
      */
-    private fun extractStaffId(staffBarcode: String): Int {
-        return if (staffBarcode.length > 4) {
+    private fun extractStaffId(staffBarcode: String): Int =
+        if (staffBarcode.length > 4) {
             staffBarcode.takeLast(3).toIntOrNull() ?: 0
         } else {
             0
         }
-    }
 
     /**
      * Find sale by ID
      */
-    fun findSaleById(id: Int): SaleEntity? {
-        return saleRepository.findById(id).orElse(null)
-    }
+    fun findSaleById(id: Int): SaleEntity? = saleRepository.findById(id).orElse(null)
 
     /**
      * Find all sales
      */
-    fun findAllSales(): List<SaleEntity> {
-        return saleRepository.findAll()
-    }
+    fun findAllSales(): List<SaleEntity> = saleRepository.findAll()
 
     /**
      * Find sale details by sale ID
      */
-    fun findSaleDetailsBySaleId(saleId: Int): List<SaleDetailEntity> {
-        return saleDetailRepository.findBySaleId(saleId)
-    }
+    fun findSaleDetailsBySaleId(saleId: Int): List<SaleDetailEntity> = saleDetailRepository.findBySaleId(saleId)
 
     /**
      * Find all sale details
      */
-    fun findAllSaleDetails(): List<SaleDetailEntity> {
-        return saleDetailRepository.findAll()
-    }
+    fun findAllSaleDetails(): List<SaleDetailEntity> = saleDetailRepository.findAll()
 }

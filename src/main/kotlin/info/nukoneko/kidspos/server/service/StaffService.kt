@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class StaffService(
-    private val repository: StaffRepository
+    private val repository: StaffRepository,
 ) {
     private val logger = LoggerFactory.getLogger(StaffService::class.java)
 

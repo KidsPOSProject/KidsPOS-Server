@@ -4,5 +4,5 @@ data class SaleBean(
     val storeId: Int,
     val staffBarcode: String,
     val deposit: Int,
-    val itemIds: String
+    val itemIds: String,
 )

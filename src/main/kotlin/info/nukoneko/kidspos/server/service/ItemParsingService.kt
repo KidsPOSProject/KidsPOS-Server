@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class ItemParsingService(
-    private val itemService: ItemService
+    private val itemService: ItemService,
 ) {
     private val logger = LoggerFactory.getLogger(ItemParsingService::class.java)
 
@@ -23,9 +23,11 @@ class ItemParsingService(
             throw IllegalArgumentException("Item IDs cannot be empty")
         }
 
-        val ids = itemIds.split(",")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+        val ids =
+            itemIds
+                .split(",")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
 
         if (ids.isEmpty()) {
             throw IllegalArgumentException("No valid item IDs found")
@@ -47,7 +49,7 @@ class ItemParsingService(
                     id = itemEntity.id,
                     barcode = itemEntity.barcode,
                     name = itemEntity.name,
-                    price = itemEntity.price
+                    price = itemEntity.price,
                 )
             } catch (e: NumberFormatException) {
                 logger.error("Invalid item ID format: {}", idStr)
@@ -60,14 +62,15 @@ class ItemParsingService(
      * Convert single item ID to ItemBean
      */
     fun parseItemFromId(itemId: Int): ItemBean {
-        val itemEntity = itemService.findItem(itemId)
-            ?: throw ItemNotFoundException(id = itemId)
+        val itemEntity =
+            itemService.findItem(itemId)
+                ?: throw ItemNotFoundException(id = itemId)
 
         return ItemBean(
             id = itemEntity.id,
             barcode = itemEntity.barcode,
             name = itemEntity.name,
-            price = itemEntity.price
+            price = itemEntity.price,
         )
     }
 
@@ -79,21 +82,24 @@ class ItemParsingService(
             throw IllegalArgumentException("Barcodes cannot be empty")
         }
 
-        val barcodeList = barcodes.split(",")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+        val barcodeList =
+            barcodes
+                .split(",")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
 
         logger.debug("Parsing {} barcodes", barcodeList.size)
 
         return barcodeList.map { barcode ->
-            val itemEntity = itemService.findItem(barcode)
-                ?: throw ItemNotFoundException(barcode = barcode)
+            val itemEntity =
+                itemService.findItem(barcode)
+                    ?: throw ItemNotFoundException(barcode = barcode)
 
             ItemBean(
                 id = itemEntity.id,
                 barcode = itemEntity.barcode,
                 name = itemEntity.name,
-                price = itemEntity.price
+                price = itemEntity.price,
             )
         }
     }
@@ -116,7 +122,8 @@ class ItemParsingService(
     fun countItemsFromIds(itemIds: String): Int {
         if (itemIds.isBlank()) return 0
 
-        return itemIds.split(",")
+        return itemIds
+            .split(",")
             .map { it.trim() }
             .count { it.isNotEmpty() }
     }
@@ -127,7 +134,8 @@ class ItemParsingService(
     fun getUniqueItemCount(itemIds: String): Int {
         if (itemIds.isBlank()) return 0
 
-        return itemIds.split(",")
+        return itemIds
+            .split(",")
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .toSet()

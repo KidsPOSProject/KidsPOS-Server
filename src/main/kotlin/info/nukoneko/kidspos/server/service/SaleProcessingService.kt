@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional
 class SaleProcessingService(
     private val saleCalculationService: SaleCalculationService,
     private val saleValidationService: SaleValidationService,
-    private val salePersistenceService: SalePersistenceService
+    private val salePersistenceService: SalePersistenceService,
 ) {
     private val logger = LoggerFactory.getLogger(SaleProcessingService::class.java)
 
@@ -43,7 +43,10 @@ class SaleProcessingService(
      * @return Persisted sale entity with generated ID and calculated total
      * @throws IllegalArgumentException if validation fails for sale request or items
      */
-    fun processSale(saleBean: SaleBean, items: List<ItemBean>): SaleEntity {
+    fun processSale(
+        saleBean: SaleBean,
+        items: List<ItemBean>,
+    ): SaleEntity {
         logger.info("Processing sale for store: {}, items: {}", saleBean.storeId, items.size)
 
         // Step 1: Validate the sale request
@@ -57,7 +60,8 @@ class SaleProcessingService(
 
         logger.info(
             "Sale processed successfully: ID={}, total={}",
-            savedSale.id, savedSale.amount
+            savedSale.id,
+            savedSale.amount,
         )
 
         return savedSale
@@ -72,14 +76,14 @@ class SaleProcessingService(
      * @param staffBarcode The barcode string containing staff information
      * @return Extracted staff ID as integer, or 0 if extraction fails
      */
-    fun extractStaffId(staffBarcode: String): Int {
-        return if (staffBarcode.length > Constants.Barcode.MIN_LENGTH) {
-            staffBarcode.substring(staffBarcode.length - Constants.Barcode.SUFFIX_LENGTH)
+    fun extractStaffId(staffBarcode: String): Int =
+        if (staffBarcode.length > Constants.Barcode.MIN_LENGTH) {
+            staffBarcode
+                .substring(staffBarcode.length - Constants.Barcode.SUFFIX_LENGTH)
                 .toIntOrNull() ?: 0
         } else {
             0
         }
-    }
 
     /**
      * Calculate sale summary
@@ -91,7 +95,10 @@ class SaleProcessingService(
      * @param deposit Customer deposit amount
      * @return SaleSummary containing calculated totals and statistics
      */
-    fun calculateSaleSummary(items: List<ItemBean>, deposit: Int): SaleSummary {
+    fun calculateSaleSummary(
+        items: List<ItemBean>,
+        deposit: Int,
+    ): SaleSummary {
         val totalAmount = saleCalculationService.calculateSaleAmount(items)
         val change = saleCalculationService.calculateChange(totalAmount, deposit)
         val itemQuantities = saleCalculationService.calculateItemQuantities(items)
@@ -102,7 +109,7 @@ class SaleProcessingService(
             change = change,
             itemCount = items.size,
             uniqueItems = itemQuantities.size,
-            itemQuantities = itemQuantities
+            itemQuantities = itemQuantities,
         )
     }
 
@@ -116,8 +123,11 @@ class SaleProcessingService(
      * @param items List of items being purchased
      * @return SaleResult indicating success with data or specific error type
      */
-    fun processSaleWithValidation(saleBean: SaleBean, items: List<ItemBean>): SaleResult {
-        return try {
+    fun processSaleWithValidation(
+        saleBean: SaleBean,
+        items: List<ItemBean>,
+    ): SaleResult =
+        try {
             val sale = processSale(saleBean, items)
             val summary = calculateSaleSummary(items, saleBean.deposit)
 
@@ -129,7 +139,6 @@ class SaleProcessingService(
             logger.error("Sale processing failed", e)
             SaleResult.ProcessingError("Failed to process sale: ${e.message ?: "Unknown error"}")
         }
-    }
 
     /**
      * Find sale by ID
@@ -139,9 +148,7 @@ class SaleProcessingService(
      * @param id Unique sale identifier
      * @return SaleEntity if found, null otherwise
      */
-    fun findSaleById(id: Int): SaleEntity? {
-        return salePersistenceService.findSaleById(id)
-    }
+    fun findSaleById(id: Int): SaleEntity? = salePersistenceService.findSaleById(id)
 
     /**
      * Find all sales
@@ -150,9 +157,7 @@ class SaleProcessingService(
      *
      * @return List of all SaleEntity records
      */
-    fun findAllSales(): List<SaleEntity> {
-        return salePersistenceService.findAllSales()
-    }
+    fun findAllSales(): List<SaleEntity> = salePersistenceService.findAllSales()
 
     /**
      * Find sale details by sale ID
@@ -162,9 +167,7 @@ class SaleProcessingService(
      * @param saleId Sale identifier
      * @return List of SaleDetailEntity records
      */
-    fun findSaleDetailsBySaleId(saleId: Int): List<SaleDetailEntity> {
-        return salePersistenceService.findSaleDetailsBySaleId(saleId)
-    }
+    fun findSaleDetailsBySaleId(saleId: Int): List<SaleDetailEntity> = salePersistenceService.findSaleDetailsBySaleId(saleId)
 }
 
 /**
@@ -176,15 +179,27 @@ data class SaleSummary(
     val change: Int,
     val itemCount: Int,
     val uniqueItems: Int,
-    val itemQuantities: Map<Int, Int>
+    val itemQuantities: Map<Int, Int>,
 )
 
 /**
  * Sealed class for sale processing results
  */
 sealed class SaleResult {
-    data class Success(val sale: SaleEntity, val summary: SaleSummary) : SaleResult()
-    data class Error(val message: String) : SaleResult()
-    data class ValidationError(val message: String) : SaleResult()
-    data class ProcessingError(val message: String) : SaleResult()
+    data class Success(
+        val sale: SaleEntity,
+        val summary: SaleSummary,
+    ) : SaleResult()
+
+    data class Error(
+        val message: String,
+    ) : SaleResult()
+
+    data class ValidationError(
+        val message: String,
+    ) : SaleResult()
+
+    data class ProcessingError(
+        val message: String,
+    ) : SaleResult()
 }

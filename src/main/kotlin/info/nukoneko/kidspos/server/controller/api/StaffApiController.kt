@@ -22,23 +22,27 @@ class StaffApiController {
     private lateinit var service: StaffService
 
     @GetMapping("/{barcode}")
-    fun getStaff(@PathVariable barcode: String): ResponseEntity<StaffEntity> {
-        val staff = service.findStaff(barcode)
-            ?: throw ResourceNotFoundException("Staff with barcode $barcode not found")
+    fun getStaff(
+        @PathVariable barcode: String,
+    ): ResponseEntity<StaffEntity> {
+        val staff =
+            service.findStaff(barcode)
+                ?: throw ResourceNotFoundException("Staff with barcode $barcode not found")
         return ResponseEntity.ok(staff)
     }
 
     @GetMapping
-    fun getAllStaff(): ResponseEntity<List<StaffEntity>> {
-        return ResponseEntity.ok(service.findAll())
-    }
+    fun getAllStaff(): ResponseEntity<List<StaffEntity>> = ResponseEntity.ok(service.findAll())
 
     @PostMapping
-    fun createStaff(@Valid @RequestBody request: CreateStaffRequest): ResponseEntity<StaffEntity> {
-        val staff = StaffEntity(
-            barcode = request.barcode,
-            name = request.name
-        )
+    fun createStaff(
+        @Valid @RequestBody request: CreateStaffRequest,
+    ): ResponseEntity<StaffEntity> {
+        val staff =
+            StaffEntity(
+                barcode = request.barcode,
+                name = request.name,
+            )
         val savedStaff = service.save(staff)
         return ResponseEntity.status(HttpStatus.CREATED).body(savedStaff)
     }
@@ -46,10 +50,11 @@ class StaffApiController {
     @PutMapping("/{barcode}")
     fun updateStaff(
         @PathVariable barcode: String,
-        @Valid @RequestBody request: CreateStaffRequest
+        @Valid @RequestBody request: CreateStaffRequest,
     ): ResponseEntity<StaffEntity> {
-        val existingStaff = service.findStaff(barcode)
-            ?: throw ResourceNotFoundException("Staff with barcode $barcode not found")
+        val existingStaff =
+            service.findStaff(barcode)
+                ?: throw ResourceNotFoundException("Staff with barcode $barcode not found")
 
         val updatedStaff = existingStaff.copy(name = request.name)
         val savedStaff = service.save(updatedStaff)
@@ -57,9 +62,12 @@ class StaffApiController {
     }
 
     @DeleteMapping("/{barcode}")
-    fun deleteStaff(@PathVariable barcode: String): ResponseEntity<Void> {
-        val existingStaff = service.findStaff(barcode)
-            ?: throw ResourceNotFoundException("Staff with barcode $barcode not found")
+    fun deleteStaff(
+        @PathVariable barcode: String,
+    ): ResponseEntity<Void> {
+        val existingStaff =
+            service.findStaff(barcode)
+                ?: throw ResourceNotFoundException("Staff with barcode $barcode not found")
 
         service.delete(existingStaff)
         return ResponseEntity.noContent().build()

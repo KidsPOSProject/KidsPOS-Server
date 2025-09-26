@@ -26,5 +26,5 @@ data class SaleEntity(
     val quantity: Int, // 数量
     val amount: Int, // 売り上げ
     val deposit: Int,
-    val createdAt: Date
+    val createdAt: Date,
 )

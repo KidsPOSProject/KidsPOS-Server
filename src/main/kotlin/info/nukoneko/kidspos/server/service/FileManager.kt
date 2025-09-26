@@ -28,8 +28,11 @@ class FileManager {
      * @return File content as string
      * @throws RuntimeException if file cannot be read
      */
-    fun readFileContent(filePath: String, onClose: (() -> Unit)? = null): String {
-        return try {
+    fun readFileContent(
+        filePath: String,
+        onClose: (() -> Unit)? = null,
+    ): String =
+        try {
             Files.newBufferedReader(Paths.get(filePath)).use { reader ->
                 val content = reader.readText()
                 logger.debug("Successfully read {} characters from file: {}", content.length, filePath)
@@ -41,7 +44,6 @@ class FileManager {
         } finally {
             onClose?.invoke()
         }
-    }
 
     /**
      * Copy file using proper resource management
@@ -53,7 +55,10 @@ class FileManager {
      * @param destinationPath Path to destination file
      * @throws RuntimeException if file cannot be copied
      */
-    fun copyFile(sourcePath: String, destinationPath: String) {
+    fun copyFile(
+        sourcePath: String,
+        destinationPath: String,
+    ) {
         try {
             Files.newInputStream(Paths.get(sourcePath)).use { input ->
                 Files.newOutputStream(Paths.get(destinationPath)).use { output ->
@@ -75,9 +80,7 @@ class FileManager {
      * @param filePath Path to check for file existence
      * @return True if file exists, false otherwise
      */
-    fun fileExists(filePath: String): Boolean {
-        return Files.exists(Paths.get(filePath))
-    }
+    fun fileExists(filePath: String): Boolean = Files.exists(Paths.get(filePath))
 
     /**
      * Create directory if it doesn't exist

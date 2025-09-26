@@ -14,7 +14,7 @@ data class StaffResponse(
     val storeId: Int,
     val storeName: String? = null,
     val createdAt: LocalDateTime? = null,
-    val updatedAt: LocalDateTime? = null
+    val updatedAt: LocalDateTime? = null,
 ) {
     val displayName: String
         get() = "$name (ID: $id)"

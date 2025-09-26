@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger
  * Part of ResourceManager refactoring into smaller, focused classes
  */
 class StreamProcessorTest {
-
     private lateinit var streamProcessor: StreamProcessor
 
     @BeforeEach

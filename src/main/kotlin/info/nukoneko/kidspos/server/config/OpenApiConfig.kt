@@ -18,15 +18,14 @@ import org.springframework.context.annotation.Configuration
  */
 @Configuration
 class OpenApiConfig {
-
     /**
      * Configure OpenAPI specification details
      *
      * @return OpenAPI configuration with metadata
      */
     @Bean
-    fun customOpenAPI(): OpenAPI {
-        return OpenAPI()
+    fun customOpenAPI(): OpenAPI =
+        OpenAPI()
             .info(
                 Info()
                     .title("KidsPOS Server API")
@@ -36,23 +35,19 @@ class OpenApiConfig {
                         KidsPOS (キッズPOS) is a simplified Point of Sale system designed for
                         educational and entertainment purposes. This API provides endpoints for
                         managing sales, inventory, staff, and store operations.
-                    """.trimIndent()
-                    )
-                    .contact(
+                        """.trimIndent(),
+                    ).contact(
                         Contact()
                             .name("KidsPOS Development Team")
-                            .email("support@kidspos.example.com")
-                    )
-                    .license(
+                            .email("support@kidspos.example.com"),
+                    ).license(
                         License()
                             .name("MIT License")
-                            .url("https://opensource.org/licenses/MIT")
-                    )
-            )
-            .addServersItem(
+                            .url("https://opensource.org/licenses/MIT"),
+                    ),
+            ).addServersItem(
                 Server()
                     .url("http://localhost:8080")
-                    .description("Local development server")
+                    .description("Local development server"),
             )
-    }
 }

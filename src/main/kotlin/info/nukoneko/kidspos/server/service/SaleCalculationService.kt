@@ -39,7 +39,10 @@ class SaleCalculationService {
      * @param deposit Customer deposit amount
      * @return Change amount (may be negative if insufficient funds)
      */
-    fun calculateChange(amount: Int, deposit: Int): Int {
+    fun calculateChange(
+        amount: Int,
+        deposit: Int,
+    ): Int {
         val change = deposit - amount
         logger.debug("Calculated change: {} (deposit: {}, amount: {})", change, deposit, amount)
         return change
@@ -53,9 +56,7 @@ class SaleCalculationService {
      * @param items List of items in the sale
      * @return Total quantity count
      */
-    fun calculateQuantity(items: List<ItemBean>): Int {
-        return items.size
-    }
+    fun calculateQuantity(items: List<ItemBean>): Int = items.size
 
     /**
      * Group items by their ID to handle duplicates
@@ -80,9 +81,7 @@ class SaleCalculationService {
      * @param items List of items in the sale
      * @return Map with item ID as key and quantity as value
      */
-    fun calculateItemQuantities(items: List<ItemBean>): Map<Int, Int> {
-        return groupItemsByType(items).mapValues { it.value.size }
-    }
+    fun calculateItemQuantities(items: List<ItemBean>): Map<Int, Int> = groupItemsByType(items).mapValues { it.value.size }
 
     /**
      * Calculate subtotal for each unique item
@@ -93,11 +92,10 @@ class SaleCalculationService {
      * @param items List of items in the sale
      * @return Map with item ID as key and subtotal amount as value
      */
-    fun calculateItemSubtotals(items: List<ItemBean>): Map<Int, Int> {
-        return groupItemsByType(items).mapValues { (_, itemList) ->
+    fun calculateItemSubtotals(items: List<ItemBean>): Map<Int, Int> =
+        groupItemsByType(items).mapValues { (_, itemList) ->
             itemList.sumOf { it.price }
         }
-    }
 
     /**
      * Validate that deposit covers the total amount
@@ -108,7 +106,8 @@ class SaleCalculationService {
      * @param deposit Customer deposit amount
      * @return True if deposit is sufficient, false otherwise
      */
-    fun isDepositSufficient(amount: Int, deposit: Int): Boolean {
-        return deposit >= amount
-    }
+    fun isDepositSufficient(
+        amount: Int,
+        deposit: Int,
+    ): Boolean = deposit >= amount
 }

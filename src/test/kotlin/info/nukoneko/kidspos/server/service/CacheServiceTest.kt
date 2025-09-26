@@ -111,11 +111,12 @@ class CacheServiceTest {
     @Test
     fun `should cache all items list`() {
         // Given
-        val items = listOf(
-            ItemEntity(id = 1, name = "Item 1", barcode = "001", price = 100),
-            ItemEntity(id = 2, name = "Item 2", barcode = "002", price = 200),
-            ItemEntity(id = 3, name = "Item 3", barcode = "003", price = 300)
-        )
+        val items =
+            listOf(
+                ItemEntity(id = 1, name = "Item 1", barcode = "001", price = 100),
+                ItemEntity(id = 2, name = "Item 2", barcode = "002", price = 200),
+                ItemEntity(id = 3, name = "Item 3", barcode = "003", price = 300),
+            )
         `when`(itemRepository.findAll()).thenReturn(items)
 
         // When - Multiple calls to findAll

@@ -19,7 +19,6 @@ import org.springframework.http.HttpStatus
 
 @ExtendWith(MockitoExtension::class)
 class ItemApiControllerUnitTest {
-
     @Mock
     private lateinit var itemService: ItemService
 
@@ -37,19 +36,21 @@ class ItemApiControllerUnitTest {
 
     @BeforeEach
     fun setup() {
-        testItem = ItemEntity(
-            id = 1,
-            barcode = "123456789",
-            name = "Test Item",
-            price = 100
-        )
+        testItem =
+            ItemEntity(
+                id = 1,
+                barcode = "123456789",
+                name = "Test Item",
+                price = 100,
+            )
 
-        testItemResponse = ItemResponse(
-            id = 1,
-            barcode = "123456789",
-            name = "Test Item",
-            price = 100
-        )
+        testItemResponse =
+            ItemResponse(
+                id = 1,
+                barcode = "123456789",
+                name = "Test Item",
+                price = 100,
+            )
     }
 
     @Test
@@ -148,35 +149,39 @@ class ItemApiControllerUnitTest {
     @Test
     fun `should create item successfully`() {
         // Given
-        val request = CreateItemRequest(
-            name = "New Item",
-            barcode = "987654321",
-            price = 200
-        )
+        val request =
+            CreateItemRequest(
+                name = "New Item",
+                barcode = "987654321",
+                price = 200,
+            )
 
-        val savedItem = ItemEntity(
-            id = 2,
-            barcode = "987654321",
-            name = "New Item",
-            price = 200
-        )
+        val savedItem =
+            ItemEntity(
+                id = 2,
+                barcode = "987654321",
+                name = "New Item",
+                price = 200,
+            )
 
-        val savedResponse = ItemResponse(
-            id = 2,
-            barcode = "987654321",
-            name = "New Item",
-            price = 200
-        )
+        val savedResponse =
+            ItemResponse(
+                id = 2,
+                barcode = "987654321",
+                name = "New Item",
+                price = 200,
+            )
 
         doNothing().`when`(validationService).validateBarcodeUnique(request.barcode)
         doNothing().`when`(validationService).validatePriceRange(request.price)
 
         // Create expected ItemBean for mocking
-        val expectedItemBean = ItemBean(
-            barcode = request.barcode,
-            name = request.name,
-            price = request.price
-        )
+        val expectedItemBean =
+            ItemBean(
+                barcode = request.barcode,
+                name = request.name,
+                price = request.price,
+            )
         `when`(itemService.save(expectedItemBean)).thenReturn(savedItem)
         `when`(itemMapper.toResponse(savedItem)).thenReturn(savedResponse)
 
@@ -198,37 +203,41 @@ class ItemApiControllerUnitTest {
     @Test
     fun `should update item successfully`() {
         // Given
-        val request = CreateItemRequest(
-            name = "Updated Item",
-            barcode = "123456789",
-            price = 150
-        )
+        val request =
+            CreateItemRequest(
+                name = "Updated Item",
+                barcode = "123456789",
+                price = 150,
+            )
 
-        val updatedItem = ItemEntity(
-            id = 1,
-            barcode = "123456789",
-            name = "Updated Item",
-            price = 150
-        )
+        val updatedItem =
+            ItemEntity(
+                id = 1,
+                barcode = "123456789",
+                name = "Updated Item",
+                price = 150,
+            )
 
-        val updatedResponse = ItemResponse(
-            id = 1,
-            barcode = "123456789",
-            name = "Updated Item",
-            price = 150
-        )
+        val updatedResponse =
+            ItemResponse(
+                id = 1,
+                barcode = "123456789",
+                name = "Updated Item",
+                price = 150,
+            )
 
         `when`(itemService.findItem(1)).thenReturn(testItem)
         doNothing().`when`(validationService).validateBarcodeUnique("123456789", 1)
         doNothing().`when`(validationService).validatePriceRange(150)
 
         // Create expected ItemBean for mocking
-        val expectedItemBean = ItemBean(
-            id = 1,
-            barcode = request.barcode,
-            name = request.name,
-            price = request.price
-        )
+        val expectedItemBean =
+            ItemBean(
+                id = 1,
+                barcode = request.barcode,
+                name = request.name,
+                price = request.price,
+            )
         `when`(itemService.save(expectedItemBean)).thenReturn(updatedItem)
         `when`(itemMapper.toResponse(updatedItem)).thenReturn(updatedResponse)
 
@@ -266,11 +275,12 @@ class ItemApiControllerUnitTest {
     @Test
     fun `should throw exception when updating non-existent item`() {
         // Given
-        val request = CreateItemRequest(
-            name = "Updated Item",
-            barcode = "123456789",
-            price = 150
-        )
+        val request =
+            CreateItemRequest(
+                name = "Updated Item",
+                barcode = "123456789",
+                price = 150,
+            )
 
         `when`(itemService.findItem(999)).thenReturn(null)
 
@@ -300,5 +310,4 @@ class ItemApiControllerUnitTest {
 
         verify(validationService).validateItemExists(999)
     }
-
 }

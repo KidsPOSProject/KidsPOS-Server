@@ -9,7 +9,9 @@ import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 
 class ReceiptPrinter(
-    private val ipOrHost: String, private val port: Int, detail: ReceiptDetail
+    private val ipOrHost: String,
+    private val port: Int,
+    detail: ReceiptDetail,
 ) {
     private val command = PrintCommand(Charset.forName("SJIS"))
 
@@ -45,7 +47,7 @@ class ReceiptPrinter(
         writeKV("おつり", detail.deposit - total)
         command.drawLine()
 
-        /// Footer
+        // / Footer
 
         // 注釈
         command.newLine()
@@ -65,7 +67,10 @@ class ReceiptPrinter(
      * 商品1行を印字する
      * safe** は 古いプリンタのための対応 JISだと 半角文字が干渉しておかしくなる
      */
-    private fun writeKV(key: String, value: Int) {
+    private fun writeKV(
+        key: String,
+        value: Int,
+    ) {
         val safeKey = key.toAllEm()
         val safePrefix = "リバー"
         val safeValue = value.toEm()

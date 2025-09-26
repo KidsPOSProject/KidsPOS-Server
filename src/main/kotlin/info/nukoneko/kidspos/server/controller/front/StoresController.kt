@@ -21,38 +21,47 @@ class StoresController {
     }
 
     @GetMapping("new")
-    fun newItem(model: Model): String {
-        return "stores/new"
-    }
+    fun newItem(model: Model): String = "stores/new"
 
     @GetMapping("{id}/edit")
-    fun edit(@PathVariable id: Int, model: Model): String {
+    fun edit(
+        @PathVariable id: Int,
+        model: Model,
+    ): String {
         model.addAttribute("store", storeService.findStore(id))
         return "stores/edit"
     }
 
     @PostMapping
-    fun create(@ModelAttribute store: StoreBean): String {
+    fun create(
+        @ModelAttribute store: StoreBean,
+    ): String {
         storeService.save(store)
         return "redirect:/stores"
     }
 
     @PostMapping("{id}/update")
-    fun update(@PathVariable id: Int, @ModelAttribute store: StoreBean): String {
+    fun update(
+        @PathVariable id: Int,
+        @ModelAttribute store: StoreBean,
+    ): String {
         val existingStore = storeService.findStore(id)
         if (existingStore != null) {
-            val updatedStore = StoreBean(
-                id = id,
-                name = store.name,
-                printerUri = store.printerUri
-            )
+            val updatedStore =
+                StoreBean(
+                    id = id,
+                    name = store.name,
+                    printerUri = store.printerUri,
+                )
             storeService.save(updatedStore)
         }
         return "redirect:/stores"
     }
 
     @PostMapping("{id}/delete")
-    fun delete(@PathVariable id: Int): String {
+    fun delete(
+        @PathVariable id: Int,
+    ): String {
         storeService.delete(id)
         return "redirect:/stores"
     }

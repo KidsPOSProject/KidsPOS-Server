@@ -20,7 +20,10 @@ class StreamProcessor {
     /**
      * Process lines from stream efficiently
      */
-    fun processLinesFromStream(inputStream: InputStream, processor: (String) -> Unit) {
+    fun processLinesFromStream(
+        inputStream: InputStream,
+        processor: (String) -> Unit,
+    ) {
         try {
             BufferedReader(InputStreamReader(inputStream)).use { reader ->
                 reader.lineSequence().forEach { line ->
@@ -39,7 +42,7 @@ class StreamProcessor {
     fun copyStreamWithProgress(
         inputStream: InputStream,
         outputStream: OutputStream,
-        progressCallback: (Long) -> Unit
+        progressCallback: (Long) -> Unit,
     ) {
         try {
             val buffer = ByteArray(8192)
@@ -64,7 +67,7 @@ class StreamProcessor {
     fun processStreamInChunks(
         inputStream: InputStream,
         chunkSize: Int,
-        chunkProcessor: (ByteArray) -> Unit
+        chunkProcessor: (ByteArray) -> Unit,
     ) {
         try {
             val buffer = ByteArray(chunkSize)
@@ -86,13 +89,14 @@ class StreamProcessor {
     fun copyStreamWithTimeout(
         inputStream: InputStream,
         outputStream: OutputStream,
-        timeoutMs: Long
+        timeoutMs: Long,
     ): Boolean {
         val executor = Executors.newSingleThreadExecutor()
         return try {
-            val future = executor.submit {
-                copyStreamWithProgress(inputStream, outputStream) { _ -> }
-            }
+            val future =
+                executor.submit {
+                    copyStreamWithProgress(inputStream, outputStream) { _ -> }
+                }
             future.get(timeoutMs, TimeUnit.MILLISECONDS)
             true
         } catch (e: Exception) {

@@ -56,7 +56,7 @@ class ItemApiController {
     @ApiResponse(
         responseCode = "200",
         description = "Successfully retrieved items",
-        content = [Content(array = ArraySchema(schema = Schema(implementation = ItemResponse::class)))]
+        content = [Content(array = ArraySchema(schema = Schema(implementation = ItemResponse::class)))],
     )
     fun findAll(): ResponseEntity<List<ItemResponse>> {
         logger.info("Fetching all items")
@@ -69,19 +69,21 @@ class ItemApiController {
     @ApiResponses(
         value = [
             ApiResponse(
-                responseCode = "200", description = "Item found",
-                content = [Content(schema = Schema(implementation = ItemResponse::class))]
+                responseCode = "200",
+                description = "Item found",
+                content = [Content(schema = Schema(implementation = ItemResponse::class))],
             ),
-            ApiResponse(responseCode = "404", description = "Item not found")
-        ]
+            ApiResponse(responseCode = "404", description = "Item not found"),
+        ],
     )
     fun findById(
         @Parameter(description = "Item ID", required = true)
-        @PathVariable id: Int
+        @PathVariable id: Int,
     ): ResponseEntity<ItemResponse> {
         logger.info("Fetching item with ID: {}", id)
-        val item = itemService.findItem(id)
-            ?: throw ItemNotFoundException(id = id)
+        val item =
+            itemService.findItem(id)
+                ?: throw ItemNotFoundException(id = id)
         return ResponseEntity.ok(itemMapper.toResponse(item))
     }
 
@@ -90,16 +92,17 @@ class ItemApiController {
     @ApiResponses(
         value = [
             ApiResponse(
-                responseCode = "200", description = "Item found",
-                content = [Content(schema = Schema(implementation = ItemResponse::class))]
+                responseCode = "200",
+                description = "Item found",
+                content = [Content(schema = Schema(implementation = ItemResponse::class))],
             ),
             ApiResponse(responseCode = "400", description = "Invalid barcode format"),
-            ApiResponse(responseCode = "404", description = "Item not found")
-        ]
+            ApiResponse(responseCode = "404", description = "Item not found"),
+        ],
     )
     fun findByBarcode(
         @Parameter(description = "Item barcode (4+ digits)", required = true, example = "1234567890")
-        @PathVariable barcode: String
+        @PathVariable barcode: String,
     ): ResponseEntity<ItemResponse> {
         logger.info("Fetching item with barcode: {}", barcode)
 
@@ -108,13 +111,16 @@ class ItemApiController {
             throw InvalidBarcodeException(barcode)
         }
 
-        val item = itemService.findItem(barcode)
-            ?: throw ItemNotFoundException(barcode = barcode)
+        val item =
+            itemService.findItem(barcode)
+                ?: throw ItemNotFoundException(barcode = barcode)
         return ResponseEntity.ok(itemMapper.toResponse(item))
     }
 
     @PostMapping
-    fun create(@Valid @RequestBody request: CreateItemRequest): ResponseEntity<ItemResponse> {
+    fun create(
+        @Valid @RequestBody request: CreateItemRequest,
+    ): ResponseEntity<ItemResponse> {
         logger.info("Creating new item with barcode: {}", request.barcode)
 
         // Validate barcode uniqueness
@@ -122,11 +128,12 @@ class ItemApiController {
         validationService.validatePriceRange(request.price)
 
         // Convert to legacy ItemBean for compatibility
-        val itemBean = ItemBean(
-            barcode = request.barcode,
-            name = request.name,
-            price = request.price
-        )
+        val itemBean =
+            ItemBean(
+                barcode = request.barcode,
+                name = request.name,
+                price = request.price,
+            )
 
         val savedItem = itemService.save(itemBean)
         logger.info("Item created successfully with ID: {}", savedItem.id)
@@ -139,7 +146,7 @@ class ItemApiController {
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Int,
-        @Valid @RequestBody request: CreateItemRequest
+        @Valid @RequestBody request: CreateItemRequest,
     ): ResponseEntity<ItemResponse> {
         logger.info("Updating item with ID: {}", id)
 
@@ -152,12 +159,13 @@ class ItemApiController {
         validationService.validatePriceRange(request.price)
 
         // Update the item
-        val itemBean = ItemBean(
-            id = id,
-            barcode = request.barcode,
-            name = request.name,
-            price = request.price
-        )
+        val itemBean =
+            ItemBean(
+                id = id,
+                barcode = request.barcode,
+                name = request.name,
+                price = request.price,
+            )
 
         val updatedItem = itemService.save(itemBean)
         logger.info("Item updated successfully with ID: {}", updatedItem.id)
@@ -168,13 +176,14 @@ class ItemApiController {
     @PatchMapping("/{id}")
     fun partialUpdate(
         @PathVariable id: Int,
-        @RequestBody updates: Map<String, Any>
+        @RequestBody updates: Map<String, Any>,
     ): ResponseEntity<ItemResponse> {
         logger.info("Partially updating item with ID: {}", id)
 
         // Check if item exists
-        val existingItem = itemService.findItem(id)
-            ?: throw ItemNotFoundException(id = id)
+        val existingItem =
+            itemService.findItem(id)
+                ?: throw ItemNotFoundException(id = id)
 
         // Apply updates
         val barcode = updates["barcode"]?.toString() ?: existingItem.barcode
@@ -188,12 +197,13 @@ class ItemApiController {
         validationService.validatePriceRange(price)
 
         // Update the item
-        val itemBean = ItemBean(
-            id = id,
-            barcode = barcode,
-            name = name,
-            price = price
-        )
+        val itemBean =
+            ItemBean(
+                id = id,
+                barcode = barcode,
+                name = name,
+                price = price,
+            )
 
         val updatedItem = itemService.save(itemBean)
         logger.info("Item partially updated successfully with ID: {}", updatedItem.id)
@@ -204,12 +214,12 @@ class ItemApiController {
     @GetMapping("/barcode-pdf", produces = ["application/pdf"])
     @Operation(
         summary = "Generate barcode PDF",
-        description = "Generate a PDF document containing barcodes for all items"
+        description = "Generate a PDF document containing barcodes for all items",
     )
     @ApiResponse(
         responseCode = "200",
         description = "PDF generated successfully",
-        content = [Content(mediaType = "application/pdf")]
+        content = [Content(mediaType = "application/pdf")],
     )
     fun generateBarcodePdf(): ResponseEntity<ByteArray> {
         logger.info("Generating barcode PDF for all items")
@@ -217,13 +227,15 @@ class ItemApiController {
         val items = itemService.findAll()
         val pdfBytes = barcodeService.generateBarcodePdf(items)
 
-        val headers = HttpHeaders().apply {
-            contentType = MediaType.APPLICATION_PDF
-            setContentDispositionFormData("inline", "barcodes.pdf")
-        }
+        val headers =
+            HttpHeaders().apply {
+                contentType = MediaType.APPLICATION_PDF
+                setContentDispositionFormData("inline", "barcodes.pdf")
+            }
 
         logger.info("Barcode PDF generated successfully with {} items", items.size)
-        return ResponseEntity.ok()
+        return ResponseEntity
+            .ok()
             .headers(headers)
             .body(pdfBytes)
     }
@@ -231,16 +243,16 @@ class ItemApiController {
     @PostMapping("/barcode-pdf/selected", produces = ["application/pdf"])
     @Operation(
         summary = "Generate barcode PDF for selected items",
-        description = "Generate a PDF document containing barcodes for selected items"
+        description = "Generate a PDF document containing barcodes for selected items",
     )
     @ApiResponse(
         responseCode = "200",
         description = "PDF generated successfully",
-        content = [Content(mediaType = "application/pdf")]
+        content = [Content(mediaType = "application/pdf")],
     )
     fun generateSelectedBarcodePdf(
         @RequestBody itemIds: List<Int>,
-        @RequestParam(defaultValue = "false") showBorders: Boolean
+        @RequestParam(defaultValue = "false") showBorders: Boolean,
     ): ResponseEntity<ByteArray> {
         logger.info("Generating barcode PDF for {} selected items", itemIds.size)
 
@@ -248,9 +260,10 @@ class ItemApiController {
             throw IllegalArgumentException("No items selected")
         }
 
-        val items = itemIds.mapNotNull { id ->
-            itemService.findItem(id)
-        }
+        val items =
+            itemIds.mapNotNull { id ->
+                itemService.findItem(id)
+            }
 
         if (items.isEmpty()) {
             throw ItemNotFoundException()
@@ -258,20 +271,24 @@ class ItemApiController {
 
         val pdfBytes = barcodeService.generateBarcodePdf(items, showBorders)
 
-        val headers = HttpHeaders().apply {
-            contentType = MediaType.APPLICATION_PDF
-            setContentDispositionFormData("attachment", "selected_barcodes.pdf")
-        }
+        val headers =
+            HttpHeaders().apply {
+                contentType = MediaType.APPLICATION_PDF
+                setContentDispositionFormData("attachment", "selected_barcodes.pdf")
+            }
 
         logger.info("Selected barcode PDF generated successfully with {} items", items.size)
 
-        return ResponseEntity.ok()
+        return ResponseEntity
+            .ok()
             .headers(headers)
             .body(pdfBytes)
     }
 
     @DeleteMapping("/{id}")
-    fun delete(@PathVariable id: Int): ResponseEntity<Void> {
+    fun delete(
+        @PathVariable id: Int,
+    ): ResponseEntity<Void> {
         logger.info("Deleting item with ID: {}", id)
 
         // Check if item exists

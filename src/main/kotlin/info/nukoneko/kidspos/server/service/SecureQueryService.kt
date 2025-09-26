@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class SecureQueryService(
-    private val entityManager: EntityManager
+    private val entityManager: EntityManager,
 ) {
     private val logger = LoggerFactory.getLogger(SecureQueryService::class.java)
 
@@ -22,7 +22,7 @@ class SecureQueryService(
      */
     fun <T> createTypedQuery(
         entityClass: Class<T>,
-        queryBuilder: (CriteriaBuilder, CriteriaQuery<T>) -> CriteriaQuery<T>
+        queryBuilder: (CriteriaBuilder, CriteriaQuery<T>) -> CriteriaQuery<T>,
     ): TypedQuery<T> {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(entityClass)
@@ -39,18 +39,21 @@ class SecureQueryService(
      */
     fun sanitizeInput(input: String): String {
         // Remove SQL comment indicators
-        var sanitized = input
-            .replace("--", "")
-            .replace("/*", "")
-            .replace("*/", "")
+        var sanitized =
+            input
+                .replace("--", "")
+                .replace("/*", "")
+                .replace("*/", "")
 
         // Remove common SQL injection patterns
-        sanitized = sanitized.replace(
-            Regex(
-                "\\b(union|select|insert|update|delete|drop|create|alter|exec|execute|script|javascript)\\b",
-                RegexOption.IGNORE_CASE
-            ), ""
-        )
+        sanitized =
+            sanitized.replace(
+                Regex(
+                    "\\b(union|select|insert|update|delete|drop|create|alter|exec|execute|script|javascript)\\b",
+                    RegexOption.IGNORE_CASE,
+                ),
+                "",
+            )
 
         // Escape single quotes for string literals
         sanitized = sanitized.replace("'", "''")
@@ -63,7 +66,11 @@ class SecureQueryService(
     /**
      * Validate that numeric input is within expected bounds
      */
-    fun validateNumericInput(value: Int, min: Int, max: Int): Int {
+    fun validateNumericInput(
+        value: Int,
+        min: Int,
+        max: Int,
+    ): Int {
         if (value < min || value > max) {
             logger.warn("Numeric input validation failed: value={}, min={}, max={}", value, min, max)
             throw IllegalArgumentException("Numeric value out of bounds")
@@ -74,7 +81,10 @@ class SecureQueryService(
     /**
      * Validate that string input matches expected pattern
      */
-    fun validatePattern(input: String, pattern: String): String {
+    fun validatePattern(
+        input: String,
+        pattern: String,
+    ): String {
         if (!input.matches(Regex(pattern))) {
             logger.warn("Pattern validation failed: input='{}', pattern='{}'", input, pattern)
             throw IllegalArgumentException("Input does not match expected pattern")
@@ -85,12 +95,16 @@ class SecureQueryService(
     /**
      * Create a safe LIKE pattern for queries
      */
-    fun createSafeLikePattern(searchTerm: String, position: LikePosition = LikePosition.CONTAINS): String {
+    fun createSafeLikePattern(
+        searchTerm: String,
+        position: LikePosition = LikePosition.CONTAINS,
+    ): String {
         // Escape special LIKE characters
-        val escaped = searchTerm
-            .replace("\\", "\\\\")
-            .replace("%", "\\%")
-            .replace("_", "\\_")
+        val escaped =
+            searchTerm
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
 
         return when (position) {
             LikePosition.STARTS_WITH -> "$escaped%"
@@ -104,6 +118,6 @@ class SecureQueryService(
         STARTS_WITH,
         ENDS_WITH,
         CONTAINS,
-        EXACT
+        EXACT,
     }
 }

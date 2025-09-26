@@ -43,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional
 class ItemService(
     private val repository: ItemRepository,
-    private val idGenerationService: IdGenerationService
+    private val idGenerationService: IdGenerationService,
 ) {
     private val logger = LoggerFactory.getLogger(ItemService::class.java)
 
@@ -69,17 +69,18 @@ class ItemService(
         evict = [
             CacheEvict(value = [CacheConfig.ITEMS_CACHE], allEntries = true),
             CacheEvict(value = [CacheConfig.ITEM_BY_ID_CACHE], key = "#result.id"),
-            CacheEvict(value = [CacheConfig.ITEM_BY_BARCODE_CACHE], key = "#result.barcode")
-        ]
+            CacheEvict(value = [CacheConfig.ITEM_BY_BARCODE_CACHE], key = "#result.barcode"),
+        ],
     )
     fun save(itemBean: ItemBean): ItemEntity {
         logger.info("Creating item with barcode: {}, name: {}", itemBean.barcode, itemBean.name)
         val itemId = itemBean.id
-        val generatedId = if (itemId != null && itemId > 0) {
-            itemId
-        } else {
-            idGenerationService.generateNextId(repository)
-        }
+        val generatedId =
+            if (itemId != null && itemId > 0) {
+                itemId
+            } else {
+                idGenerationService.generateNextId(repository)
+            }
         val item = ItemEntity(generatedId, itemBean.barcode, itemBean.name, itemBean.price)
         val savedItem = repository.save(item)
         logger.info("Item created successfully with ID: {}", savedItem.id)
@@ -89,8 +90,8 @@ class ItemService(
     @Caching(
         evict = [
             CacheEvict(value = [CacheConfig.ITEMS_CACHE], allEntries = true),
-            CacheEvict(value = [CacheConfig.ITEM_BY_ID_CACHE], key = "#id")
-        ]
+            CacheEvict(value = [CacheConfig.ITEM_BY_ID_CACHE], key = "#id"),
+        ],
     )
     fun delete(id: Int) {
         logger.info("Deleting item with ID: {}", id)

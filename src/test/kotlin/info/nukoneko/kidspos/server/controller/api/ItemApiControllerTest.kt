@@ -26,8 +26,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
     controllers = [ItemApiController::class],
     excludeAutoConfiguration = [
         org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration::class,
-        org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration::class
-    ]
+        org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration::class,
+    ],
 )
 @AutoConfigureMockMvc(addFilters = false)
 @Import(info.nukoneko.kidspos.server.TestConfiguration::class)
@@ -53,19 +53,21 @@ class ItemApiControllerTest {
 
     @BeforeEach
     fun setup() {
-        testItem = ItemEntity(
-            id = 1,
-            barcode = "123456789",
-            name = "Test Item",
-            price = 100
-        )
+        testItem =
+            ItemEntity(
+                id = 1,
+                barcode = "123456789",
+                name = "Test Item",
+                price = 100,
+            )
 
-        testItemResponse = ItemResponse(
-            id = 1,
-            barcode = "123456789",
-            name = "Test Item",
-            price = 100
-        )
+        testItemResponse =
+            ItemResponse(
+                id = 1,
+                barcode = "123456789",
+                name = "Test Item",
+                price = 100,
+            )
     }
 
     @Test
@@ -78,7 +80,8 @@ class ItemApiControllerTest {
         `when`(itemMapper.toResponseList(items)).thenReturn(responses)
 
         // When & Then
-        mockMvc.perform(get("/api/items"))
+        mockMvc
+            .perform(get("/api/items"))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$").isArray)
@@ -98,7 +101,8 @@ class ItemApiControllerTest {
         `when`(itemMapper.toResponse(testItem)).thenReturn(testItemResponse)
 
         // When & Then
-        mockMvc.perform(get("/api/items/1"))
+        mockMvc
+            .perform(get("/api/items/1"))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.id").value(1))
@@ -114,7 +118,8 @@ class ItemApiControllerTest {
         `when`(itemService.findItem(999)).thenReturn(null)
 
         // When & Then
-        mockMvc.perform(get("/api/items/999"))
+        mockMvc
+            .perform(get("/api/items/999"))
             .andExpect(status().isNotFound)
 
         verify(itemService).findItem(999)
@@ -128,7 +133,8 @@ class ItemApiControllerTest {
         `when`(itemMapper.toResponse(testItem)).thenReturn(testItemResponse)
 
         // When & Then
-        mockMvc.perform(get("/api/items/barcode/123456789"))
+        mockMvc
+            .perform(get("/api/items/barcode/123456789"))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.barcode").value("123456789"))
@@ -140,7 +146,8 @@ class ItemApiControllerTest {
     @Test
     fun `should throw exception for invalid barcode format`() {
         // When & Then
-        mockMvc.perform(get("/api/items/barcode/abc"))
+        mockMvc
+            .perform(get("/api/items/barcode/abc"))
             .andExpect(status().isBadRequest)
 
         verify(itemService, never()).findItem(any<String>())
@@ -152,7 +159,8 @@ class ItemApiControllerTest {
         `when`(itemService.findItem("999999999")).thenReturn(null)
 
         // When & Then
-        mockMvc.perform(get("/api/items/barcode/999999999"))
+        mockMvc
+            .perform(get("/api/items/barcode/999999999"))
             .andExpect(status().isNotFound)
 
         verify(itemService).findItem("999999999")
@@ -162,36 +170,39 @@ class ItemApiControllerTest {
     @Test
     fun `should create item successfully`() {
         // Given
-        val request = CreateItemRequest(
-            name = "New Item",
-            barcode = "987654321",
-            price = 200
-        )
+        val request =
+            CreateItemRequest(
+                name = "New Item",
+                barcode = "987654321",
+                price = 200,
+            )
 
-        val savedItem = ItemEntity(
-            id = 2,
-            barcode = "987654321",
-            name = "New Item",
-            price = 200
-        )
+        val savedItem =
+            ItemEntity(
+                id = 2,
+                barcode = "987654321",
+                name = "New Item",
+                price = 200,
+            )
 
-        val savedResponse = ItemResponse(
-            id = 2,
-            barcode = "987654321",
-            name = "New Item",
-            price = 200
-        )
+        val savedResponse =
+            ItemResponse(
+                id = 2,
+                barcode = "987654321",
+                name = "New Item",
+                price = 200,
+            )
 
         `when`(itemService.save(any<ItemBean>())).thenReturn(savedItem)
         `when`(itemMapper.toResponse(savedItem)).thenReturn(savedResponse)
 
         // When & Then
-        mockMvc.perform(
-            post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isCreated)
+        mockMvc
+            .perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isCreated)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.id").value(2))
             .andExpect(jsonPath("$.name").value("New Item"))
@@ -205,19 +216,20 @@ class ItemApiControllerTest {
     @Test
     fun `should handle validation errors during item creation`() {
         // Given
-        val request = CreateItemRequest(
-            name = "",
-            barcode = "",
-            price = -10
-        )
+        val request =
+            CreateItemRequest(
+                name = "",
+                barcode = "",
+                price = -10,
+            )
 
         // When & Then
-        mockMvc.perform(
-            post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isBadRequest)
+        mockMvc
+            .perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isBadRequest)
 
         verify(itemService, never()).save(any<ItemBean>())
     }
@@ -225,37 +237,40 @@ class ItemApiControllerTest {
     @Test
     fun `should update item successfully`() {
         // Given
-        val request = CreateItemRequest(
-            name = "Updated Item",
-            barcode = "123456789",
-            price = 150
-        )
+        val request =
+            CreateItemRequest(
+                name = "Updated Item",
+                barcode = "123456789",
+                price = 150,
+            )
 
-        val updatedItem = ItemEntity(
-            id = 1,
-            barcode = "123456789",
-            name = "Updated Item",
-            price = 150
-        )
+        val updatedItem =
+            ItemEntity(
+                id = 1,
+                barcode = "123456789",
+                name = "Updated Item",
+                price = 150,
+            )
 
-        val updatedResponse = ItemResponse(
-            id = 1,
-            barcode = "123456789",
-            name = "Updated Item",
-            price = 150
-        )
+        val updatedResponse =
+            ItemResponse(
+                id = 1,
+                barcode = "123456789",
+                name = "Updated Item",
+                price = 150,
+            )
 
         `when`(itemService.findItem(1)).thenReturn(testItem)
         `when`(itemService.save(any<ItemBean>())).thenReturn(updatedItem)
         `when`(itemMapper.toResponse(updatedItem)).thenReturn(updatedResponse)
 
         // When & Then
-        mockMvc.perform(
-            put("/api/items/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isOk)
+        mockMvc
+            .perform(
+                put("/api/items/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.name").value("Updated Item"))
             .andExpect(jsonPath("$.price").value(150))
@@ -270,21 +285,22 @@ class ItemApiControllerTest {
     @Test
     fun `should throw exception when updating non-existent item`() {
         // Given
-        val request = CreateItemRequest(
-            name = "Updated Item",
-            barcode = "123456789",
-            price = 150
-        )
+        val request =
+            CreateItemRequest(
+                name = "Updated Item",
+                barcode = "123456789",
+                price = 150,
+            )
 
         `when`(itemService.findItem(999)).thenReturn(null)
 
         // When & Then
-        mockMvc.perform(
-            put("/api/items/999")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isNotFound)
+        mockMvc
+            .perform(
+                put("/api/items/999")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isNotFound)
 
         verify(itemService).findItem(999)
         verify(itemService, never()).save(any<ItemBean>())
@@ -293,7 +309,8 @@ class ItemApiControllerTest {
     @Test
     fun `should delete item successfully`() {
         // When & Then
-        mockMvc.perform(delete("/api/items/1"))
+        mockMvc
+            .perform(delete("/api/items/1"))
             .andExpect(status().isNoContent)
 
         verify(validationService).validateItemExists(1)
@@ -302,22 +319,22 @@ class ItemApiControllerTest {
     @Test
     fun `should handle empty request body`() {
         // When & Then
-        mockMvc.perform(
-            post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("")
-        )
-            .andExpect(status().isBadRequest)
+        mockMvc
+            .perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(""),
+            ).andExpect(status().isBadRequest)
     }
 
     @Test
     fun `should handle malformed JSON`() {
         // When & Then
-        mockMvc.perform(
-            post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{invalid json")
-        )
-            .andExpect(status().isBadRequest)
+        mockMvc
+            .perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{invalid json"),
+            ).andExpect(status().isBadRequest)
     }
 }

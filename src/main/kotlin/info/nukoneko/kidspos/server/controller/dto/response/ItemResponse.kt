@@ -15,7 +15,7 @@ data class ItemResponse(
     val name: String,
     val price: Int,
     val createdAt: LocalDateTime? = null,
-    val updatedAt: LocalDateTime? = null
+    val updatedAt: LocalDateTime? = null,
 ) {
     val formattedPrice: String
         get() {

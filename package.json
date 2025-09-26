@@ -1,0 +1,17 @@
+{
+  "name": "kidspos-server-vrt",
+  "version": "1.0.0",
+  "description": "Visual Regression Testing for KidsPOS Server",
+  "scripts": {
+    "test:vrt": "playwright test",
+    "test:vrt:update": "playwright test --update-snapshots",
+    "test:vrt:report": "playwright show-report",
+    "playwright:install": "playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

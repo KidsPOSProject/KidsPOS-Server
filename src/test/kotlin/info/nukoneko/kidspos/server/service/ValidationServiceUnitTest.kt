@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 
 @ExtendWith(MockitoExtension::class)
 class ValidationServiceUnitTest {
-
     @Mock
     private lateinit var itemRepository: ItemRepository
 
@@ -50,9 +49,10 @@ class ValidationServiceUnitTest {
         `when`(itemRepository.existsById(itemId)).thenReturn(false)
 
         // Act & Assert
-        val exception = assertThrows<ValidationException> {
-            validationService.validateItemExists(itemId)
-        }
+        val exception =
+            assertThrows<ValidationException> {
+                validationService.validateItemExists(itemId)
+            }
         assertEquals("Item with ID $itemId does not exist", exception.message)
         verify(itemRepository).existsById(itemId)
     }
@@ -64,9 +64,10 @@ class ValidationServiceUnitTest {
         `when`(itemRepository.existsById(itemId)).thenReturn(false)
 
         // Act & Assert
-        val exception = assertThrows<ValidationException> {
-            validationService.validateItemExists(itemId)
-        }
+        val exception =
+            assertThrows<ValidationException> {
+                validationService.validateItemExists(itemId)
+            }
         assertEquals("Item with ID 0 does not exist", exception.message)
         verify(itemRepository).existsById(itemId)
     }
@@ -78,9 +79,10 @@ class ValidationServiceUnitTest {
         `when`(itemRepository.existsById(itemId)).thenReturn(false)
 
         // Act & Assert
-        val exception = assertThrows<ValidationException> {
-            validationService.validateItemExists(itemId)
-        }
+        val exception =
+            assertThrows<ValidationException> {
+                validationService.validateItemExists(itemId)
+            }
         assertEquals("Item with ID -1 does not exist", exception.message)
         verify(itemRepository).existsById(itemId)
     }

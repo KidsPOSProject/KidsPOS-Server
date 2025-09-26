@@ -13,7 +13,6 @@ import java.io.ByteArrayInputStream
 
 @DisplayName("BarcodeService Unit Tests")
 class BarcodeServiceTest {
-
     private lateinit var barcodeService: BarcodeService
 
     @BeforeEach
@@ -24,19 +23,19 @@ class BarcodeServiceTest {
     @Nested
     @DisplayName("generateBarcodePdf")
     inner class GenerateBarcodePdf {
-
         @Test
         @DisplayName("Should generate PDF with single item")
         fun shouldGeneratePdfWithSingleItem() {
             // Given
-            val items = listOf(
-                ItemEntity(
-                    id = 1,
-                    barcode = "1234567890",
-                    name = "Test Item",
-                    price = 100
+            val items =
+                listOf(
+                    ItemEntity(
+                        id = 1,
+                        barcode = "1234567890",
+                        name = "Test Item",
+                        price = 100,
+                    ),
                 )
-            )
 
             // When
             val pdfBytes = barcodeService.generateBarcodePdf(items)
@@ -61,26 +60,27 @@ class BarcodeServiceTest {
         @DisplayName("Should generate PDF with multiple items")
         fun shouldGeneratePdfWithMultipleItems() {
             // Given
-            val items = listOf(
-                ItemEntity(
-                    id = 1,
-                    barcode = "1234567890",
-                    name = "Item 1",
-                    price = 100
-                ),
-                ItemEntity(
-                    id = 2,
-                    barcode = "0987654321",
-                    name = "Item 2",
-                    price = 200
-                ),
-                ItemEntity(
-                    id = 3,
-                    barcode = "1111111111",
-                    name = "Item 3",
-                    price = 300
+            val items =
+                listOf(
+                    ItemEntity(
+                        id = 1,
+                        barcode = "1234567890",
+                        name = "Item 1",
+                        price = 100,
+                    ),
+                    ItemEntity(
+                        id = 2,
+                        barcode = "0987654321",
+                        name = "Item 2",
+                        price = 200,
+                    ),
+                    ItemEntity(
+                        id = 3,
+                        barcode = "1111111111",
+                        name = "Item 3",
+                        price = 300,
+                    ),
                 )
-            )
 
             // When
             val pdfBytes = barcodeService.generateBarcodePdf(items)
@@ -139,14 +139,15 @@ class BarcodeServiceTest {
         @DisplayName("Should handle items with special characters in barcode")
         fun shouldHandleSpecialCharactersInBarcode() {
             // Given
-            val items = listOf(
-                ItemEntity(
-                    id = 1,
-                    barcode = "ABC-123-XYZ",
-                    name = "Special Item",
-                    price = 999
+            val items =
+                listOf(
+                    ItemEntity(
+                        id = 1,
+                        barcode = "ABC-123-XYZ",
+                        name = "Special Item",
+                        price = 999,
+                    ),
                 )
-            )
 
             // When
             val pdfBytes = barcodeService.generateBarcodePdf(items)
@@ -168,14 +169,15 @@ class BarcodeServiceTest {
         @DisplayName("Should handle items with Japanese characters")
         fun shouldHandleJapaneseCharacters() {
             // Given
-            val items = listOf(
-                ItemEntity(
-                    id = 1,
-                    barcode = "1234567890",
-                    name = "テスト商品",
-                    price = 500
+            val items =
+                listOf(
+                    ItemEntity(
+                        id = 1,
+                        barcode = "1234567890",
+                        name = "テスト商品",
+                        price = 500,
+                    ),
                 )
-            )
 
             // When
             val pdfBytes = barcodeService.generateBarcodePdf(items)
@@ -197,14 +199,15 @@ class BarcodeServiceTest {
         fun shouldHandleVeryLongItemNames() {
             // Given
             val longName = "Very Long Item Name " + "x".repeat(100)
-            val items = listOf(
-                ItemEntity(
-                    id = 1,
-                    barcode = "1234567890",
-                    name = longName,
-                    price = 100
+            val items =
+                listOf(
+                    ItemEntity(
+                        id = 1,
+                        barcode = "1234567890",
+                        name = longName,
+                        price = 100,
+                    ),
                 )
-            )
 
             // When
             val pdfBytes = barcodeService.generateBarcodePdf(items)
@@ -226,19 +229,19 @@ class BarcodeServiceTest {
     @Nested
     @DisplayName("QR Code Generation Edge Cases")
     inner class QRCodeGenerationEdgeCases {
-
         @Test
         @DisplayName("Should handle empty barcode gracefully")
         fun shouldHandleEmptyBarcode() {
             // Given
-            val items = listOf(
-                ItemEntity(
-                    id = 1,
-                    barcode = "EMPTY",  // Use non-empty barcode to avoid exception
-                    name = "Empty Barcode Item",
-                    price = 100
+            val items =
+                listOf(
+                    ItemEntity(
+                        id = 1,
+                        barcode = "EMPTY", // Use non-empty barcode to avoid exception
+                        name = "Empty Barcode Item",
+                        price = 100,
+                    ),
                 )
-            )
 
             // When
             val pdfBytes = barcodeService.generateBarcodePdf(items)
@@ -260,14 +263,15 @@ class BarcodeServiceTest {
         @DisplayName("Should handle null values with default initialization")
         fun shouldHandleNullValuesWithDefaults() {
             // Given
-            val items = listOf(
-                ItemEntity(
-                    id = 0,  // default int value
-                    barcode = "0000000000",
-                    name = "",  // empty string
-                    price = 0
+            val items =
+                listOf(
+                    ItemEntity(
+                        id = 0, // default int value
+                        barcode = "0000000000",
+                        name = "", // empty string
+                        price = 0,
+                    ),
                 )
-            )
 
             // When
             val pdfBytes = barcodeService.generateBarcodePdf(items)

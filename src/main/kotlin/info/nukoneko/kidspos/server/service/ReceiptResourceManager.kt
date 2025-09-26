@@ -19,7 +19,11 @@ class ReceiptResourceManager {
     /**
      * Send receipt data to printer using proper resource management
      */
-    fun sendToThermalPrinter(printerHost: String, printerPort: Int, receiptData: String): Boolean {
+    fun sendToThermalPrinter(
+        printerHost: String,
+        printerPort: Int,
+        receiptData: String,
+    ): Boolean {
         val connectionKey = "$printerHost:$printerPort"
 
         return try {
@@ -45,8 +49,11 @@ class ReceiptResourceManager {
     /**
      * Save receipt to file using try-with-resources
      */
-    fun saveReceiptToFile(receiptData: String, filePath: String): Boolean {
-        return try {
+    fun saveReceiptToFile(
+        receiptData: String,
+        filePath: String,
+    ): Boolean =
+        try {
             FileOutputStream(filePath).use { fileOut ->
                 OutputStreamWriter(fileOut, StandardCharsets.UTF_8).use { writer ->
                     BufferedWriter(writer).use { bufferedWriter ->
@@ -61,13 +68,15 @@ class ReceiptResourceManager {
             logger.error("Failed to save receipt to file: {}", filePath, e)
             false
         }
-    }
 
     /**
      * Process receipt template with resource management
      */
-    fun processReceiptTemplate(templatePath: String, data: Map<String, String>): String {
-        return try {
+    fun processReceiptTemplate(
+        templatePath: String,
+        data: Map<String, String>,
+    ): String =
+        try {
             FileInputStream(templatePath).use { fileInput ->
                 InputStreamReader(fileInput, StandardCharsets.UTF_8).use { reader ->
                     BufferedReader(reader).use { bufferedReader ->
@@ -88,7 +97,6 @@ class ReceiptResourceManager {
             logger.error("Failed to process receipt template: {}", templatePath, e)
             throw RuntimeException("Unable to process receipt template", e)
         }
-    }
 
     /**
      * Batch print multiple receipts efficiently
@@ -97,7 +105,7 @@ class ReceiptResourceManager {
         printerHost: String,
         printerPort: Int,
         receipts: List<String>,
-        batchSize: Int = 10
+        batchSize: Int = 10,
     ): BatchPrintResult {
         logger.info("Starting batch print of {} receipts", receipts.size)
 
@@ -136,8 +144,12 @@ class ReceiptResourceManager {
     /**
      * Get or create a socket connection with proper resource management
      */
-    private fun getOrCreateConnection(key: String, host: String, port: Int): SocketConnection {
-        return connectionPool.compute(key) { _, existing ->
+    private fun getOrCreateConnection(
+        key: String,
+        host: String,
+        port: Int,
+    ): SocketConnection =
+        connectionPool.compute(key) { _, existing ->
             if (existing?.isValid() == true) {
                 existing
             } else {
@@ -151,7 +163,6 @@ class ReceiptResourceManager {
                 }
             }
         }!!
-    }
 
     /**
      * Clean up a failed connection
@@ -173,7 +184,9 @@ class ReceiptResourceManager {
 /**
  * Wrapper for socket connection with proper resource management
  */
-class SocketConnection(private val socket: Socket) : Closeable {
+class SocketConnection(
+    private val socket: Socket,
+) : Closeable {
     private val logger = LoggerFactory.getLogger(SocketConnection::class.java)
 
     val outputStream: OutputStream
@@ -182,9 +195,7 @@ class SocketConnection(private val socket: Socket) : Closeable {
     val inputStream: InputStream
         get() = socket.getInputStream()
 
-    fun isValid(): Boolean {
-        return !socket.isClosed && socket.isConnected
-    }
+    fun isValid(): Boolean = !socket.isClosed && socket.isConnected
 
     override fun close() {
         try {
@@ -204,7 +215,7 @@ class SocketConnection(private val socket: Socket) : Closeable {
 data class BatchPrintResult(
     val successCount: Int,
     val failureCount: Int,
-    val errors: List<String>
+    val errors: List<String>,
 ) {
     val totalProcessed: Int
         get() = successCount + failureCount

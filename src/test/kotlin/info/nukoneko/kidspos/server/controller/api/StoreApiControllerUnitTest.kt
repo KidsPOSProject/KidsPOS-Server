@@ -13,7 +13,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 
 @ExtendWith(MockitoExtension::class)
 class StoreApiControllerUnitTest {
-
     @Mock
     private lateinit var storeService: StoreService
 
@@ -23,16 +22,18 @@ class StoreApiControllerUnitTest {
     @Test
     fun `getStores should return list of stores from service`() {
         // Arrange
-        val store1 = StoreEntity(
-            id = 1,
-            name = "Store 1",
-            printerUri = "http://printer1.local"
-        )
-        val store2 = StoreEntity(
-            id = 2,
-            name = "Store 2",
-            printerUri = "http://printer2.local"
-        )
+        val store1 =
+            StoreEntity(
+                id = 1,
+                name = "Store 1",
+                printerUri = "http://printer1.local",
+            )
+        val store2 =
+            StoreEntity(
+                id = 2,
+                name = "Store 2",
+                printerUri = "http://printer2.local",
+            )
         val expectedStores = listOf(store1, store2)
         `when`(storeService.findAll()).thenReturn(expectedStores)
 

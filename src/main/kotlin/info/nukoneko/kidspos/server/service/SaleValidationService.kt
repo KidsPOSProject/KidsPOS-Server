@@ -26,7 +26,10 @@ class SaleValidationService {
      * @param items List of items being purchased
      * @throws IllegalArgumentException if any validation rule fails
      */
-    fun validateSaleRequest(saleBean: SaleBean, items: List<ItemBean>) {
+    fun validateSaleRequest(
+        saleBean: SaleBean,
+        items: List<ItemBean>,
+    ) {
         logger.debug("Validating sale request for store: {}", saleBean.storeId)
 
         validateStoreId(saleBean.storeId)
@@ -89,7 +92,10 @@ class SaleValidationService {
     /**
      * Validate deposit amount
      */
-    private fun validateDeposit(saleBean: SaleBean, items: List<ItemBean>) {
+    private fun validateDeposit(
+        saleBean: SaleBean,
+        items: List<ItemBean>,
+    ) {
         val totalAmount = items.sumOf { it.price }
 
         if (saleBean.deposit < 0) {
@@ -98,7 +104,7 @@ class SaleValidationService {
 
         if (saleBean.deposit < totalAmount) {
             throw IllegalArgumentException(
-                "Insufficient deposit: required $totalAmount, provided ${saleBean.deposit}"
+                "Insufficient deposit: required $totalAmount, provided ${saleBean.deposit}",
             )
         }
     }
@@ -111,9 +117,7 @@ class SaleValidationService {
      * @param barcode Barcode string to validate
      * @return True if barcode format is valid, false otherwise
      */
-    fun validateBarcodeFormat(barcode: String): Boolean {
-        return barcode.matches(Regex("^[0-9]{4,}$"))
-    }
+    fun validateBarcodeFormat(barcode: String): Boolean = barcode.matches(Regex("^[0-9]{4,}$"))
 
     /**
      * Validate price range
@@ -125,7 +129,9 @@ class SaleValidationService {
      * @param maxPrice Maximum allowed price (default: 1,000,000)
      * @return True if price is within range, false otherwise
      */
-    fun validatePriceRange(price: Int, minPrice: Int = 0, maxPrice: Int = 1000000): Boolean {
-        return price in minPrice..maxPrice
-    }
+    fun validatePriceRange(
+        price: Int,
+        minPrice: Int = 0,
+        maxPrice: Int = 1000000,
+    ): Boolean = price in minPrice..maxPrice
 }

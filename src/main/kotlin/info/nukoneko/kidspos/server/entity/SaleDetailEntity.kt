@@ -21,5 +21,5 @@ data class SaleDetailEntity(
     val saleId: Int, // 売り上げID
     val itemId: Int, // 商品ID
     val price: Int, // 単価
-    val quantity: Int // 数量
+    val quantity: Int, // 数量
 )

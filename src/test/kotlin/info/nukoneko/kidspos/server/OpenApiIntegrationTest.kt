@@ -26,21 +26,25 @@ class OpenApiIntegrationTest {
 
     @Test
     fun `Swagger UI should be accessible`() {
-        mockMvc.perform(get("/swagger-ui/index.html"))
+        mockMvc
+            .perform(get("/swagger-ui/index.html"))
             .andExpect(status().isOk)
     }
 
     @Test
     fun `OpenAPI JSON specification should be available`() {
-        mockMvc.perform(get("/v3/api-docs"))
+        mockMvc
+            .perform(get("/v3/api-docs"))
             .andExpect(status().isOk)
     }
 
     @Test
     fun `OpenAPI specification should include all API endpoints`() {
-        val result = mockMvc.perform(get("/v3/api-docs"))
-            .andExpect(status().isOk)
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(get("/v3/api-docs"))
+                .andExpect(status().isOk)
+                .andReturn()
         val content = result.response.contentAsString
 
         // Verify key endpoints are documented
@@ -52,9 +56,11 @@ class OpenApiIntegrationTest {
 
     @Test
     fun `OpenAPI specification should include request and response schemas`() {
-        val result = mockMvc.perform(get("/v3/api-docs"))
-            .andExpect(status().isOk)
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(get("/v3/api-docs"))
+                .andExpect(status().isOk)
+                .andReturn()
         val content = result.response.contentAsString
 
         // Verify schemas are present

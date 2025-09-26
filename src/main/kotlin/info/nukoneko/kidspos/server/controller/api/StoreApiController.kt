@@ -21,12 +21,12 @@ class StoreApiController {
     private lateinit var service: StoreService
 
     @GetMapping
-    fun getStores(): ResponseEntity<List<StoreEntity>> {
-        return ResponseEntity.ok(service.findAll())
-    }
+    fun getStores(): ResponseEntity<List<StoreEntity>> = ResponseEntity.ok(service.findAll())
 
     @PostMapping
-    fun createStore(@Valid @RequestBody store: StoreEntity): ResponseEntity<StoreEntity> {
+    fun createStore(
+        @Valid @RequestBody store: StoreEntity,
+    ): ResponseEntity<StoreEntity> {
         // Validate required fields
         if (store.name.isBlank()) {
             throw IllegalArgumentException("Store name is required")
@@ -40,14 +40,20 @@ class StoreApiController {
     }
 
     @GetMapping("/{id}")
-    fun getStore(@PathVariable id: Int): ResponseEntity<StoreEntity> {
-        val store = service.findStore(id)
-            ?: throw ResourceNotFoundException("Store with ID $id not found")
+    fun getStore(
+        @PathVariable id: Int,
+    ): ResponseEntity<StoreEntity> {
+        val store =
+            service.findStore(id)
+                ?: throw ResourceNotFoundException("Store with ID $id not found")
         return ResponseEntity.ok(store)
     }
 
     @PutMapping("/{id}")
-    fun updateStore(@PathVariable id: Int, @Valid @RequestBody store: StoreEntity): ResponseEntity<StoreEntity> {
+    fun updateStore(
+        @PathVariable id: Int,
+        @Valid @RequestBody store: StoreEntity,
+    ): ResponseEntity<StoreEntity> {
         // Check if store exists
         service.findStore(id)
             ?: throw ResourceNotFoundException("Store with ID $id not found")
@@ -65,7 +71,9 @@ class StoreApiController {
     }
 
     @DeleteMapping("/{id}")
-    fun deleteStore(@PathVariable id: Int): ResponseEntity<Void> {
+    fun deleteStore(
+        @PathVariable id: Int,
+    ): ResponseEntity<Void> {
         // Check if store exists
         service.findStore(id)
             ?: throw ResourceNotFoundException("Store with ID $id not found")

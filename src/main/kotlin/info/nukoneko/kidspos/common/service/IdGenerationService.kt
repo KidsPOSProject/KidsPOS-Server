@@ -20,16 +20,17 @@ class IdGenerationService {
      * @param repository Any repository with a getLastId() method
      * @return The next available ID (lastId + 1, or 1 if empty)
      */
-    fun <T> generateNextId(repository: T): Int {
-        return try {
-            val lastId = when (repository) {
-                is HasLastId -> repository.getLastId()
-                else -> {
-                    // Use reflection to call getLastId() if available
-                    val method = repository!!.javaClass.getMethod("getLastId")
-                    method.invoke(repository) as Int
+    fun <T> generateNextId(repository: T): Int =
+        try {
+            val lastId =
+                when (repository) {
+                    is HasLastId -> repository.getLastId()
+                    else -> {
+                        // Use reflection to call getLastId() if available
+                        val method = repository!!.javaClass.getMethod("getLastId")
+                        method.invoke(repository) as Int
+                    }
                 }
-            }
             val nextId = lastId + 1
             logger.debug("Generated next ID: {} for repository: {}", nextId, repository.javaClass.simpleName)
             nextId
@@ -40,7 +41,6 @@ class IdGenerationService {
             logger.warn("Error generating ID, defaulting to 1: {}", e.message)
             1
         }
-    }
 
     /**
      * Interface for repositories that support getLastId

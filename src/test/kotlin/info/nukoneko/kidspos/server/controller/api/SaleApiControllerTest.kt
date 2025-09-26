@@ -27,8 +27,8 @@ import java.util.*
     controllers = [SaleApiController::class],
     excludeAutoConfiguration = [
         org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration::class,
-        org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration::class
-    ]
+        org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration::class,
+    ],
 )
 @AutoConfigureMockMvc(addFilters = false)
 @Import(info.nukoneko.kidspos.server.TestConfiguration::class)
@@ -57,40 +57,44 @@ class SaleApiControllerTest {
 
     @BeforeEach
     fun setup() {
-        testSale = SaleEntity(
-            id = 1,
-            storeId = 1,
-            staffId = 1,
-            quantity = 2,
-            amount = 300,
-            deposit = 400,
-            createdAt = Date()
-        )
+        testSale =
+            SaleEntity(
+                id = 1,
+                storeId = 1,
+                staffId = 1,
+                quantity = 2,
+                amount = 300,
+                deposit = 400,
+                createdAt = Date(),
+            )
 
-        testItems = listOf(
-            ItemBean(1, "123456789", "Test Item 1", 100),
-            ItemBean(2, "987654321", "Test Item 2", 200)
-        )
+        testItems =
+            listOf(
+                ItemBean(1, "123456789", "Test Item 1", 100),
+                ItemBean(2, "987654321", "Test Item 2", 200),
+            )
     }
 
     @Test
     fun `should create sale successfully`() {
         // Given
-        val request = CreateSaleRequest(
-            storeId = 1,
-            staffBarcode = "STAFF001",
-            itemIds = "1,2",
-            deposit = 400
-        )
+        val request =
+            CreateSaleRequest(
+                storeId = 1,
+                staffBarcode = "STAFF001",
+                itemIds = "1,2",
+                deposit = 400,
+            )
 
-        val summary = SaleSummary(
-            totalAmount = 300,
-            deposit = 400,
-            change = 100,
-            itemCount = 2,
-            uniqueItems = 2,
-            itemQuantities = mapOf(1 to 1, 2 to 1)
-        )
+        val summary =
+            SaleSummary(
+                totalAmount = 300,
+                deposit = 400,
+                change = 100,
+                itemCount = 2,
+                uniqueItems = 2,
+                itemQuantities = mapOf(1 to 1, 2 to 1),
+            )
 
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(any(), any()))
@@ -98,12 +102,12 @@ class SaleApiControllerTest {
         `when`(receiptService.printReceipt(any(), any(), any(), any())).thenReturn(true)
 
         // When & Then
-        mockMvc.perform(
-            post("/api/sales")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isOk)
+        mockMvc
+            .perform(
+                post("/api/sales")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
 
         verify(itemParsingService).parseItemsFromIds("1,2")
@@ -113,24 +117,25 @@ class SaleApiControllerTest {
     @Test
     fun `should return bad request for validation error`() {
         // Given
-        val request = CreateSaleRequest(
-            storeId = 1,
-            staffBarcode = "STAFF001",
-            itemIds = "1,2",
-            deposit = 100
-        )
+        val request =
+            CreateSaleRequest(
+                storeId = 1,
+                staffBarcode = "STAFF001",
+                itemIds = "1,2",
+                deposit = 100,
+            )
 
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(any(), any()))
             .thenReturn(SaleResult.ValidationError("Insufficient deposit"))
 
         // When & Then
-        mockMvc.perform(
-            post("/api/sales")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isBadRequest)
+        mockMvc
+            .perform(
+                post("/api/sales")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isBadRequest)
 
         verify(itemParsingService).parseItemsFromIds("1,2")
         verify(saleProcessingService).processSaleWithValidation(any(), any())
@@ -140,24 +145,25 @@ class SaleApiControllerTest {
     @Test
     fun `should return internal server error for processing error`() {
         // Given
-        val request = CreateSaleRequest(
-            storeId = 1,
-            staffBarcode = "STAFF001",
-            itemIds = "1,2",
-            deposit = 400
-        )
+        val request =
+            CreateSaleRequest(
+                storeId = 1,
+                staffBarcode = "STAFF001",
+                itemIds = "1,2",
+                deposit = 400,
+            )
 
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(any(), any()))
             .thenReturn(SaleResult.ProcessingError("Database error"))
 
         // When & Then
-        mockMvc.perform(
-            post("/api/sales")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isInternalServerError)
+        mockMvc
+            .perform(
+                post("/api/sales")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isInternalServerError)
 
         verify(itemParsingService).parseItemsFromIds("1,2")
         verify(saleProcessingService).processSaleWithValidation(any(), any())
@@ -166,23 +172,24 @@ class SaleApiControllerTest {
     @Test
     fun `should handle exception during sale creation`() {
         // Given
-        val request = CreateSaleRequest(
-            storeId = 1,
-            staffBarcode = "STAFF001",
-            itemIds = "1,2",
-            deposit = 400
-        )
+        val request =
+            CreateSaleRequest(
+                storeId = 1,
+                staffBarcode = "STAFF001",
+                itemIds = "1,2",
+                deposit = 400,
+            )
 
         `when`(itemParsingService.parseItemsFromIds("1,2"))
             .thenThrow(RuntimeException("Parsing error"))
 
         // When & Then
-        mockMvc.perform(
-            post("/api/sales")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isInternalServerError)
+        mockMvc
+            .perform(
+                post("/api/sales")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)),
+            ).andExpect(status().isInternalServerError)
 
         verify(itemParsingService).parseItemsFromIds("1,2")
         verify(saleProcessingService, never()).processSaleWithValidation(any(), any())
@@ -192,24 +199,26 @@ class SaleApiControllerTest {
     fun `should get all sales successfully`() {
         // Given
         val sales = listOf(testSale)
-        val saleResponse = SaleResponse(
-            id = 1,
-            storeId = 1,
-            storeName = "Store 1",
-            staffId = "STAFF001",
-            staffName = "Test Staff",
-            totalAmount = 300,
-            deposit = 400,
-            change = 100,
-            saleTime = java.time.LocalDateTime.now(),
-            items = emptyList()
-        )
+        val saleResponse =
+            SaleResponse(
+                id = 1,
+                storeId = 1,
+                storeName = "Store 1",
+                staffId = "STAFF001",
+                staffName = "Test Staff",
+                totalAmount = 300,
+                deposit = 400,
+                change = 100,
+                saleTime = java.time.LocalDateTime.now(),
+                items = emptyList(),
+            )
 
         `when`(saleProcessingService.findAllSales()).thenReturn(sales)
         `when`(saleMapper.toResponseList(sales)).thenReturn(listOf(saleResponse))
 
         // When & Then
-        mockMvc.perform(get("/api/sales"))
+        mockMvc
+            .perform(get("/api/sales"))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$").isArray)
@@ -222,24 +231,26 @@ class SaleApiControllerTest {
     @Test
     fun `should get sale by ID successfully`() {
         // Given
-        val saleResponse = SaleResponse(
-            id = 1,
-            storeId = 1,
-            storeName = "Store 1",
-            staffId = "STAFF001",
-            staffName = "Test Staff",
-            totalAmount = 300,
-            deposit = 400,
-            change = 100,
-            saleTime = java.time.LocalDateTime.now(),
-            items = emptyList()
-        )
+        val saleResponse =
+            SaleResponse(
+                id = 1,
+                storeId = 1,
+                storeName = "Store 1",
+                staffId = "STAFF001",
+                staffName = "Test Staff",
+                totalAmount = 300,
+                deposit = 400,
+                change = 100,
+                saleTime = java.time.LocalDateTime.now(),
+                items = emptyList(),
+            )
 
         `when`(saleProcessingService.findSaleById(1)).thenReturn(testSale)
         `when`(saleMapper.toResponse(testSale)).thenReturn(saleResponse)
 
         // When & Then
-        mockMvc.perform(get("/api/sales/1"))
+        mockMvc
+            .perform(get("/api/sales/1"))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.id").value(1))
@@ -254,7 +265,8 @@ class SaleApiControllerTest {
         `when`(saleProcessingService.findSaleById(999)).thenReturn(null)
 
         // When & Then
-        mockMvc.perform(get("/api/sales/999"))
+        mockMvc
+            .perform(get("/api/sales/999"))
             .andExpect(status().isNotFound)
 
         verify(saleProcessingService).findSaleById(999)
@@ -264,7 +276,8 @@ class SaleApiControllerTest {
     @Test
     fun `should validate printer configuration successfully`() {
         // When & Then
-        mockMvc.perform(get("/api/sales/printer/validate"))
+        mockMvc
+            .perform(get("/api/sales/printer/validate"))
             .andExpect(status().isOk)
     }
 
@@ -275,7 +288,8 @@ class SaleApiControllerTest {
             .thenReturn(false)
 
         // When & Then
-        mockMvc.perform(get("/api/sales/printer/validate"))
+        mockMvc
+            .perform(get("/api/sales/printer/validate"))
             .andExpect(status().isOk)
 
         verify(receiptService).validatePrinterConfiguration(1)
@@ -284,41 +298,43 @@ class SaleApiControllerTest {
     @Test
     fun `should handle validation errors for missing parameters`() {
         // Given
-        val invalidRequest = """
+        val invalidRequest =
+            """
             {
                 "storeId": null,
                 "staffBarcode": "",
                 "itemIds": "",
                 "deposit": -100
             }
-        """.trimIndent()
+            """.trimIndent()
 
         // When & Then
-        mockMvc.perform(
-            post("/api/sales")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidRequest)
-        )
-            .andExpect(status().isBadRequest)
+        mockMvc
+            .perform(
+                post("/api/sales")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(invalidRequest),
+            ).andExpect(status().isBadRequest)
     }
 
     @Test
     fun `should handle validation errors for invalid parameters`() {
         // Given
-        val invalidRequest = CreateSaleRequest(
-            storeId = -1,
-            staffBarcode = "",
-            itemIds = "",
-            deposit = -100
-        )
+        val invalidRequest =
+            CreateSaleRequest(
+                storeId = -1,
+                staffBarcode = "",
+                itemIds = "",
+                deposit = -100,
+            )
 
         // When & Then
-        mockMvc.perform(
-            post("/api/sales")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest))
-        )
-            .andExpect(status().isBadRequest)
+        mockMvc
+            .perform(
+                post("/api/sales")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidRequest)),
+            ).andExpect(status().isBadRequest)
 
         verify(itemParsingService, never()).parseItemsFromIds(any<String>())
     }

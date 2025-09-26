@@ -20,7 +20,6 @@ import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 class SaleApiControllerUnitTest {
-
     @Mock
     private lateinit var saleProcessingService: SaleProcessingService
 
@@ -41,47 +40,52 @@ class SaleApiControllerUnitTest {
 
     @BeforeEach
     fun setup() {
-        testSale = SaleEntity(
-            id = 1,
-            storeId = 1,
-            staffId = 1,
-            quantity = 2,
-            amount = 300,
-            deposit = 400,
-            createdAt = Date()
-        )
+        testSale =
+            SaleEntity(
+                id = 1,
+                storeId = 1,
+                staffId = 1,
+                quantity = 2,
+                amount = 300,
+                deposit = 400,
+                createdAt = Date(),
+            )
 
-        testItems = listOf(
-            ItemBean(1, "123456789", "Test Item 1", 100),
-            ItemBean(2, "987654321", "Test Item 2", 200)
-        )
+        testItems =
+            listOf(
+                ItemBean(1, "123456789", "Test Item 1", 100),
+                ItemBean(2, "987654321", "Test Item 2", 200),
+            )
     }
 
     @Test
     fun `should create sale successfully`() {
         // Given
-        val request = CreateSaleRequest(
-            storeId = 1,
-            staffBarcode = "STAFF001",
-            itemIds = "1,2",
-            deposit = 400
-        )
+        val request =
+            CreateSaleRequest(
+                storeId = 1,
+                staffBarcode = "STAFF001",
+                itemIds = "1,2",
+                deposit = 400,
+            )
 
-        val summary = SaleSummary(
-            totalAmount = 300,
-            deposit = 400,
-            change = 100,
-            itemCount = 2,
-            uniqueItems = 2,
-            itemQuantities = mapOf(1 to 1, 2 to 1)
-        )
+        val summary =
+            SaleSummary(
+                totalAmount = 300,
+                deposit = 400,
+                change = 100,
+                itemCount = 2,
+                uniqueItems = 2,
+                itemQuantities = mapOf(1 to 1, 2 to 1),
+            )
 
-        val expectedSaleBean = SaleBean(
-            storeId = request.storeId,
-            staffBarcode = request.staffBarcode,
-            itemIds = request.itemIds,
-            deposit = request.deposit
-        )
+        val expectedSaleBean =
+            SaleBean(
+                storeId = request.storeId,
+                staffBarcode = request.staffBarcode,
+                itemIds = request.itemIds,
+                deposit = request.deposit,
+            )
 
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(expectedSaleBean, testItems))
@@ -110,19 +114,21 @@ class SaleApiControllerUnitTest {
     @Test
     fun `should return bad request for validation error`() {
         // Given
-        val request = CreateSaleRequest(
-            storeId = 1,
-            staffBarcode = "STAFF001",
-            itemIds = "1,2",
-            deposit = 100
-        )
+        val request =
+            CreateSaleRequest(
+                storeId = 1,
+                staffBarcode = "STAFF001",
+                itemIds = "1,2",
+                deposit = 100,
+            )
 
-        val expectedSaleBean = SaleBean(
-            storeId = request.storeId,
-            staffBarcode = request.staffBarcode,
-            itemIds = request.itemIds,
-            deposit = request.deposit
-        )
+        val expectedSaleBean =
+            SaleBean(
+                storeId = request.storeId,
+                staffBarcode = request.staffBarcode,
+                itemIds = request.itemIds,
+                deposit = request.deposit,
+            )
 
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(expectedSaleBean, testItems))
@@ -146,19 +152,21 @@ class SaleApiControllerUnitTest {
     @Test
     fun `should return internal server error for processing error`() {
         // Given
-        val request = CreateSaleRequest(
-            storeId = 1,
-            staffBarcode = "STAFF001",
-            itemIds = "1,2",
-            deposit = 400
-        )
+        val request =
+            CreateSaleRequest(
+                storeId = 1,
+                staffBarcode = "STAFF001",
+                itemIds = "1,2",
+                deposit = 400,
+            )
 
-        val expectedSaleBean = SaleBean(
-            storeId = request.storeId,
-            staffBarcode = request.staffBarcode,
-            itemIds = request.itemIds,
-            deposit = request.deposit
-        )
+        val expectedSaleBean =
+            SaleBean(
+                storeId = request.storeId,
+                staffBarcode = request.staffBarcode,
+                itemIds = request.itemIds,
+                deposit = request.deposit,
+            )
 
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(expectedSaleBean, testItems))
@@ -182,12 +190,13 @@ class SaleApiControllerUnitTest {
     @Test
     fun `should handle exception during sale creation`() {
         // Given
-        val request = CreateSaleRequest(
-            storeId = 1,
-            staffBarcode = "STAFF001",
-            itemIds = "1,2",
-            deposit = 400
-        )
+        val request =
+            CreateSaleRequest(
+                storeId = 1,
+                staffBarcode = "STAFF001",
+                itemIds = "1,2",
+                deposit = 400,
+            )
 
         `when`(itemParsingService.parseItemsFromIds("1,2"))
             .thenThrow(RuntimeException("Parsing error"))
@@ -210,19 +219,21 @@ class SaleApiControllerUnitTest {
     @Test
     fun `should return error for generic sale error`() {
         // Given
-        val request = CreateSaleRequest(
-            storeId = 1,
-            staffBarcode = "STAFF001",
-            itemIds = "1,2",
-            deposit = 400
-        )
+        val request =
+            CreateSaleRequest(
+                storeId = 1,
+                staffBarcode = "STAFF001",
+                itemIds = "1,2",
+                deposit = 400,
+            )
 
-        val expectedSaleBean = SaleBean(
-            storeId = request.storeId,
-            staffBarcode = request.staffBarcode,
-            itemIds = request.itemIds,
-            deposit = request.deposit
-        )
+        val expectedSaleBean =
+            SaleBean(
+                storeId = request.storeId,
+                staffBarcode = request.staffBarcode,
+                itemIds = request.itemIds,
+                deposit = request.deposit,
+            )
 
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(expectedSaleBean, testItems))

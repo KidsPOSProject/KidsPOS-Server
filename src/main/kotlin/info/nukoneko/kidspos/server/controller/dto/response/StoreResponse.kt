@@ -13,7 +13,7 @@ data class StoreResponse(
     val barcode: String,
     val kana: String? = null,
     val createdAt: LocalDateTime? = null,
-    val updatedAt: LocalDateTime? = null
+    val updatedAt: LocalDateTime? = null,
 ) {
     val displayName: String
         get() = kana?.let { "$name ($it)" } ?: name

@@ -15,11 +15,9 @@ data class CreateItemRequest(
     @field:NotBlank(message = "Item name is required")
     @field:Size(max = Constants.Validation.NAME_MAX_LENGTH)
     val name: String,
-
     @field:NotBlank(message = "Barcode is required")
     @field:Pattern(regexp = Constants.Validation.BARCODE_PATTERN, message = "Invalid barcode format")
     val barcode: String,
-
     @field:Min(value = 0, message = "Price must be non-negative")
-    val price: Int
+    val price: Int,
 )

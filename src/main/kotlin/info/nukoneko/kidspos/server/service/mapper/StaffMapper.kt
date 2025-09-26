@@ -48,20 +48,16 @@ import org.springframework.stereotype.Component
  */
 @Component
 class StaffMapper {
-
-    fun toResponse(entity: StaffEntity): StaffResponse {
-        return StaffResponse(
+    fun toResponse(entity: StaffEntity): StaffResponse =
+        StaffResponse(
             id = entity.barcode, // barcode is the ID in StaffEntity
             name = entity.name,
             barcode = entity.barcode,
             storeId = 1, // Default store ID since not available in entity
             storeName = null, // Not available without additional lookup
             createdAt = null, // Not available in current entity
-            updatedAt = null  // Not available in current entity
+            updatedAt = null, // Not available in current entity
         )
-    }
 
-    fun toResponseList(entities: List<StaffEntity>): List<StaffResponse> {
-        return entities.map { toResponse(it) }
-    }
+    fun toResponseList(entities: List<StaffEntity>): List<StaffResponse> = entities.map { toResponse(it) }
 }

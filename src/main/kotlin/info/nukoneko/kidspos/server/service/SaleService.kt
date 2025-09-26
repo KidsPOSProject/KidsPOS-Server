@@ -32,7 +32,7 @@ class SaleService(
     private val itemRepository: ItemRepository,
     private val saleRepository: SaleRepository,
     private val saleDetailRepository: SaleDetailRepository,
-    private val idGenerationService: IdGenerationService
+    private val idGenerationService: IdGenerationService,
 ) {
     private val logger = LoggerFactory.getLogger(SaleService::class.java)
 
@@ -42,17 +42,11 @@ class SaleService(
     @Autowired
     private lateinit var staffRepository: StaffRepository
 
-    fun findAllSale(): List<SaleEntity> {
-        return saleRepository.findAll()
-    }
+    fun findAllSale(): List<SaleEntity> = saleRepository.findAll()
 
-    fun findAllSaleDetail(): List<SaleDetailEntity> {
-        return saleDetailRepository.findAll()
-    }
+    fun findAllSaleDetail(): List<SaleDetailEntity> = saleDetailRepository.findAll()
 
-    fun findSale(id: Int): SaleEntity {
-        return saleRepository.findById(id).get()
-    }
+    fun findSale(id: Int): SaleEntity = saleRepository.findById(id).get()
 
     fun findSale(barcode: String): SaleEntity {
         val id = barcode.substring(barcode.length - Constants.Barcode.SUFFIX_LENGTH).toInt()
@@ -62,31 +56,44 @@ class SaleService(
     /**
      * 綺麗にしたい
      */
-    fun save(saleBean: SaleBean, items: List<ItemBean>): SaleEntity {
+    fun save(
+        saleBean: SaleBean,
+        items: List<ItemBean>,
+    ): SaleEntity {
         logger.info("Creating sale for store: {}, staff barcode: {}", saleBean.storeId, "***")
         val id = idGenerationService.generateNextId(saleRepository)
 
         // 売り上げを保存
-        val staffId = if (saleBean.staffBarcode.length > Constants.Barcode.MIN_LENGTH) {
-            saleBean.staffBarcode.substring(saleBean.staffBarcode.length - Constants.Barcode.SUFFIX_LENGTH)
-                .toIntOrNull() ?: 0
-        } else {
-            0
-        }
+        val staffId =
+            if (saleBean.staffBarcode.length > Constants.Barcode.MIN_LENGTH) {
+                saleBean.staffBarcode
+                    .substring(saleBean.staffBarcode.length - Constants.Barcode.SUFFIX_LENGTH)
+                    .toIntOrNull() ?: 0
+            } else {
+                0
+            }
         items.forEach {
             logger.debug("Item - ID: {}, Name: {}, Price: {}", it.id, it.name, it.price)
         }
-        val sale = SaleEntity(
-            id, saleBean.storeId, staffId,
-            items.size, items.sumOf { it.price }, saleBean.deposit, Date()
-        )
+        val sale =
+            SaleEntity(
+                id,
+                saleBean.storeId,
+                staffId,
+                items.size,
+                items.sumOf { it.price },
+                saleBean.deposit,
+                Date(),
+            )
 
         val savedSale = saleRepository.save(sale)
         logger.info("Sale created successfully with ID: {}, total amount: {}", savedSale.id, savedSale.amount)
 
         // 売り上げの詳細を保存
         items
-            .toSet().mapNotNull { it.id }.distinct()
+            .toSet()
+            .mapNotNull { it.id }
+            .distinct()
             .forEach { itemId ->
                 val saleDetailId = idGenerationService.generateNextId(saleDetailRepository)
                 val filteredItems = items.filter { it.id == itemId }
@@ -96,8 +103,8 @@ class SaleService(
                         id,
                         itemId,
                         filteredItems[0].price,
-                        filteredItems.size
-                    )
+                        filteredItems.size,
+                    ),
                 )
             }
 

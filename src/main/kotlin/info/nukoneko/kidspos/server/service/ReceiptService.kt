@@ -18,14 +18,19 @@ import java.util.*
 class ReceiptService(
     private val storeService: StoreService,
     private val staffService: StaffService,
-    private val appProperties: AppProperties
+    private val appProperties: AppProperties,
 ) {
     private val logger = LoggerFactory.getLogger(ReceiptService::class.java)
 
     /**
      * Print receipt for a sale
      */
-    fun printReceipt(storeId: Int, items: List<ItemBean>, staffBarcode: String, deposit: Int): Boolean {
+    fun printReceipt(
+        storeId: Int,
+        items: List<ItemBean>,
+        staffBarcode: String,
+        deposit: Int,
+    ): Boolean {
         logger.debug("Printing receipt for store: {}, items: {}", storeId, items.size)
 
         return try {
@@ -48,16 +53,17 @@ class ReceiptService(
         storeId: Int,
         items: List<ItemBean>,
         staffBarcode: String,
-        deposit: Int
+        deposit: Int,
     ): ReceiptDetail {
-        val itemEntities = items.map { itemBean ->
-            ItemEntity(
-                id = itemBean.id!!,
-                barcode = itemBean.barcode,
-                name = itemBean.name,
-                price = itemBean.price
-            )
-        }
+        val itemEntities =
+            items.map { itemBean ->
+                ItemEntity(
+                    id = itemBean.id!!,
+                    barcode = itemBean.barcode,
+                    name = itemBean.name,
+                    price = itemBean.price,
+                )
+            }
 
         val storeName = storeService.findStore(storeId)?.name
         val staffName = staffService.findStaff(staffBarcode)?.name
@@ -68,7 +74,7 @@ class ReceiptService(
             staffName = staffName,
             deposit = deposit,
             transactionId = UUID.randomUUID().toString(),
-            createdAt = Date()
+            createdAt = Date(),
         )
     }
 
@@ -94,12 +100,16 @@ class ReceiptService(
     /**
      * Send receipt to thermal printer
      */
-    private fun sendToPrinter(printerIp: String, receiptDetail: ReceiptDetail) {
-        val printer = ReceiptPrinter(
-            printerIp,
-            appProperties.receipt.printer.port,
-            receiptDetail
-        )
+    private fun sendToPrinter(
+        printerIp: String,
+        receiptDetail: ReceiptDetail,
+    ) {
+        val printer =
+            ReceiptPrinter(
+                printerIp,
+                appProperties.receipt.printer.port,
+                receiptDetail,
+            )
 
         try {
             printer.print()
@@ -117,7 +127,7 @@ class ReceiptService(
         storeId: Int,
         items: List<ItemBean>,
         staffBarcode: String,
-        deposit: Int
+        deposit: Int,
     ): String {
         val storeName = storeService.findStore(storeId)?.name ?: "Unknown Store"
         val staffName = staffService.findStaff(staffBarcode)?.name ?: "Unknown Staff"
@@ -144,7 +154,5 @@ class ReceiptService(
     /**
      * Validate printer configuration for store
      */
-    fun validatePrinterConfiguration(storeId: Int): Boolean {
-        return getPrinterIp(storeId) != null
-    }
+    fun validatePrinterConfiguration(storeId: Int): Boolean = getPrinterIp(storeId) != null
 }

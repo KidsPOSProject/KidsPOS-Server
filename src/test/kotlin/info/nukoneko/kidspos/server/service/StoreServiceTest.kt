@@ -33,11 +33,12 @@ class StoreServiceTest {
     fun `should find store by ID when store exists`() {
         // Given
         val storeId = 1
-        val expectedStore = StoreEntity(
-            id = storeId,
-            name = "Test Store",
-            printerUri = "192.168.1.100"
-        )
+        val expectedStore =
+            StoreEntity(
+                id = storeId,
+                name = "Test Store",
+                printerUri = "192.168.1.100",
+            )
         `when`(storeRepository.findById(storeId)).thenReturn(Optional.of(expectedStore))
 
         // When
@@ -68,15 +69,17 @@ class StoreServiceTest {
     @Test
     fun `should save store successfully`() {
         // Given
-        val storeBean = StoreBean(
-            name = "New Store",
-            printerUri = "192.168.1.200"
-        )
-        val expectedStore = StoreEntity(
-            id = 1,
-            name = "New Store",
-            printerUri = "192.168.1.200"
-        )
+        val storeBean =
+            StoreBean(
+                name = "New Store",
+                printerUri = "192.168.1.200",
+            )
+        val expectedStore =
+            StoreEntity(
+                id = 1,
+                name = "New Store",
+                printerUri = "192.168.1.200",
+            )
         `when`(idGenerationService.generateNextId(storeRepository)).thenReturn(1)
         `when`(storeRepository.save(any<StoreEntity>())).thenReturn(expectedStore)
 
@@ -95,10 +98,11 @@ class StoreServiceTest {
     @Test
     fun `should find all stores`() {
         // Given
-        val expectedStores = listOf(
-            StoreEntity(1, "Store 1", "192.168.1.100"),
-            StoreEntity(2, "Store 2", "192.168.1.200")
-        )
+        val expectedStores =
+            listOf(
+                StoreEntity(1, "Store 1", "192.168.1.100"),
+                StoreEntity(2, "Store 2", "192.168.1.200"),
+            )
         `when`(storeRepository.findAll()).thenReturn(expectedStores)
 
         // When
@@ -115,15 +119,17 @@ class StoreServiceTest {
     @Test
     fun `should save store with empty printer URI`() {
         // Given
-        val storeBean = StoreBean(
-            name = "Store without printer",
-            printerUri = ""
-        )
-        val expectedStore = StoreEntity(
-            id = 2,
-            name = "Store without printer",
-            printerUri = ""
-        )
+        val storeBean =
+            StoreBean(
+                name = "Store without printer",
+                printerUri = "",
+            )
+        val expectedStore =
+            StoreEntity(
+                id = 2,
+                name = "Store without printer",
+                printerUri = "",
+            )
         `when`(idGenerationService.generateNextId(storeRepository)).thenReturn(2)
         `when`(storeRepository.save(any<StoreEntity>())).thenReturn(expectedStore)
 

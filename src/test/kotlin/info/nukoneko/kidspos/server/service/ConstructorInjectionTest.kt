@@ -40,12 +40,13 @@ class ConstructorInjectionTest {
         val idGenerationService = mock(IdGenerationService::class.java)
 
         // When - Create service with constructor injection
-        val saleService = SaleService(
-            itemRepository,
-            saleRepository,
-            saleDetailRepository,
-            idGenerationService
-        )
+        val saleService =
+            SaleService(
+                itemRepository,
+                saleRepository,
+                saleDetailRepository,
+                idGenerationService,
+            )
 
         // Then - Service should be properly initialized
         assertThat(saleService).isNotNull
