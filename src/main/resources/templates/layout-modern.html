@@ -111,6 +111,12 @@
                 </a>
             </li>
             <li>
+                <a href="/apk" th:classappend="${#strings.contains(#request.requestURI, '/apk')} ? 'active' : ''">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>APK管理</span>
+                </a>
+            </li>
+            <li>
                 <a href="/ip" th:classappend="${#strings.contains(#request.requestURI, '/ip')} ? 'active' : ''">
                     <i class="fas fa-network-wired"></i>
                     <span>IPアドレス</span>
