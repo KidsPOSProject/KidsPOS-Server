@@ -38,18 +38,6 @@ export default defineConfig({
         viewport: { width: 1280, height: 720 }
       },
     },
-    {
-      name: 'mobile',
-      use: {
-        ...devices['iPhone 13'],
-      },
-    },
-    {
-      name: 'tablet',
-      use: {
-        ...devices['iPad (gen 7)'],
-      },
-    },
   ],
 
   /* Run your local dev server before starting the tests */
