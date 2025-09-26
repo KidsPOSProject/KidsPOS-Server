@@ -13,14 +13,14 @@ import java.nio.file.Paths
  */
 @DisplayName("Jakarta EE Migration Tests")
 class JakartaMigrationTest {
-
     @Test
     @DisplayName("Should document javax.* imports for future migration")
     fun shouldDocumentJavaxImports() {
         val sourceDir = File("src/main/kotlin")
         val javaxImports = mutableListOf<String>()
         if (sourceDir.exists()) {
-            Files.walk(Paths.get(sourceDir.path))
+            Files
+                .walk(Paths.get(sourceDir.path))
                 .filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
                 .toList()
                 .forEach { file ->
@@ -61,7 +61,7 @@ class JakartaMigrationTest {
         // Verify we're on Spring Boot 3.x
         assertTrue(
             version.startsWith("3."),
-            "Should use Spring Boot 3.x with Java 21. Current version: $version"
+            "Should use Spring Boot 3.x with Java 21. Current version: $version",
         )
     }
 
@@ -83,7 +83,7 @@ class JakartaMigrationTest {
         // Spring Boot 2.7.x works with Kotlin 1.6.x
         assertTrue(
             major > 1 || (major == 1 && minor >= 6),
-            "Kotlin version $version should be 1.6+ for Spring Boot 2.7.x"
+            "Kotlin version $version should be 1.6+ for Spring Boot 2.7.x",
         )
     }
 
@@ -100,14 +100,16 @@ class JakartaMigrationTest {
 
         if (sourceMatch != null) {
             val version = sourceMatch.groupValues[1]
-            val versionNum = if (version.startsWith("1.")) {
-                version.substring(2).toIntOrNull() ?: 0
-            } else {
-                version.toIntOrNull() ?: 0
-            }
+            val versionNum =
+                if (version.startsWith("1.")) {
+                    version.substring(2).toIntOrNull() ?: 0
+                } else {
+                    version.toIntOrNull() ?: 0
+                }
             assertEquals(
-                21, versionNum,
-                "Source compatibility should be Java 21 for Spring Boot 3.x"
+                21,
+                versionNum,
+                "Source compatibility should be Java 21 for Spring Boot 3.x",
             )
         }
 
@@ -117,14 +119,15 @@ class JakartaMigrationTest {
 
         jvmMatches.forEach { match ->
             val version = match.groupValues[1]
-            val versionNum = if (version.startsWith("1.")) {
-                version.substring(2).toIntOrNull() ?: 0
-            } else {
-                version.toIntOrNull() ?: 0
-            }
+            val versionNum =
+                if (version.startsWith("1.")) {
+                    version.substring(2).toIntOrNull() ?: 0
+                } else {
+                    version.toIntOrNull() ?: 0
+                }
             assertTrue(
                 versionNum >= 17 && versionNum <= 21,
-                "JVM target $version should be Java 17-21 for Spring Boot 3.x"
+                "JVM target $version should be Java 17-21 for Spring Boot 3.x",
             )
         }
     }
@@ -135,23 +138,25 @@ class JakartaMigrationTest {
         val buildFile = File("build.gradle")
         assertTrue(buildFile.exists(), "build.gradle not found")
         val content = buildFile.readText()
-        val dependencies = content.lines()
-            .filter { it.contains("implementation") || it.contains("compile") }
-            .joinToString("\n")
+        val dependencies =
+            content
+                .lines()
+                .filter { it.contains("implementation") || it.contains("compile") }
+                .joinToString("\n")
 
         // For Spring Boot 3.x, these should be automatically included
         // but we check if old javax dependencies are not explicitly added
         assertFalse(
             dependencies.contains("javax.servlet"),
-            "Found javax.servlet dependency, should use jakarta.servlet"
+            "Found javax.servlet dependency, should use jakarta.servlet",
         )
         assertFalse(
             dependencies.contains("javax.persistence"),
-            "Found javax.persistence dependency, should use jakarta.persistence"
+            "Found javax.persistence dependency, should use jakarta.persistence",
         )
         assertFalse(
             dependencies.contains("javax.validation"),
-            "Found javax.validation dependency, should use jakarta.validation"
+            "Found javax.validation dependency, should use jakarta.validation",
         )
     }
 }

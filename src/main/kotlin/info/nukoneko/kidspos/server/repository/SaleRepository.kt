@@ -27,13 +27,19 @@ interface SaleRepository : JpaRepository<SaleEntity, Int> {
     /**
      * Find sales by store with pagination
      */
-    fun findByStoreId(storeId: Int, pageable: Pageable): Page<SaleEntity>
+    fun findByStoreId(
+        storeId: Int,
+        pageable: Pageable,
+    ): Page<SaleEntity>
 
     /**
      * Find sales by date range for reporting
      */
     @Query("SELECT s FROM SaleEntity s WHERE s.createdAt BETWEEN :startDate AND :endDate ORDER BY s.createdAt DESC")
-    fun findByDateRange(startDate: Date, endDate: Date): List<SaleEntity>
+    fun findByDateRange(
+        startDate: Date,
+        endDate: Date,
+    ): List<SaleEntity>
 
     /**
      * Sales summary projection for dashboard
@@ -47,7 +53,7 @@ interface SaleRepository : JpaRepository<SaleEntity, Int> {
         FROM SaleEntity s
         WHERE s.createdAt >= :fromDate
         GROUP BY s.storeId
-    """
+    """,
     )
     fun findSalesSummaryByStore(fromDate: Date): List<SalesSummary>
 

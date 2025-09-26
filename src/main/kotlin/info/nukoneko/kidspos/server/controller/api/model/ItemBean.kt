@@ -4,5 +4,5 @@ data class ItemBean(
     val id: Int? = null,
     val barcode: String,
     val name: String,
-    val price: Int
+    val price: Int,
 )

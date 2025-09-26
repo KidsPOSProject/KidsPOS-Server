@@ -7,7 +7,6 @@ import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
 
-
 @Controller
 @RequestMapping("/items")
 class ItemsController {
@@ -22,40 +21,49 @@ class ItemsController {
     }
 
     @GetMapping("new")
-    fun newItem(model: Model): String {
-        return "items/new"
-    }
+    fun newItem(model: Model): String = "items/new"
 
     @GetMapping("{id}/edit")
-    fun edit(@PathVariable id: Int, model: Model): String {
+    fun edit(
+        @PathVariable id: Int,
+        model: Model,
+    ): String {
         val item = itemService.findItem(id)
         model.addAttribute("item", item)
         return "items/edit"
     }
 
     @PostMapping
-    fun create(@ModelAttribute item: ItemBean): String {
+    fun create(
+        @ModelAttribute item: ItemBean,
+    ): String {
         itemService.save(item)
         return "redirect:/items"
     }
 
     @PostMapping("{id}/update")
-    fun update(@PathVariable id: Int, @ModelAttribute item: ItemBean): String {
+    fun update(
+        @PathVariable id: Int,
+        @ModelAttribute item: ItemBean,
+    ): String {
         val existingItem = itemService.findItem(id)
         if (existingItem != null) {
-            val updatedItem = ItemBean(
-                id = id,
-                barcode = item.barcode,
-                name = item.name,
-                price = item.price
-            )
+            val updatedItem =
+                ItemBean(
+                    id = id,
+                    barcode = item.barcode,
+                    name = item.name,
+                    price = item.price,
+                )
             itemService.save(updatedItem)
         }
         return "redirect:/items"
     }
 
     @PostMapping("{id}/delete")
-    fun delete(@PathVariable id: Int): String {
+    fun delete(
+        @PathVariable id: Int,
+    ): String {
         itemService.delete(id)
         return "redirect:/items"
     }

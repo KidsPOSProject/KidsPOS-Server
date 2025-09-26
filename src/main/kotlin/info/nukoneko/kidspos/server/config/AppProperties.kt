@@ -6,28 +6,28 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class AppProperties(
     val receipt: ReceiptProperties = ReceiptProperties(),
     val barcode: BarcodeProperties = BarcodeProperties(),
-    val network: NetworkProperties = NetworkProperties()
+    val network: NetworkProperties = NetworkProperties(),
 ) {
     data class ReceiptProperties(
-        val printer: PrinterProperties = PrinterProperties()
+        val printer: PrinterProperties = PrinterProperties(),
     ) {
         data class PrinterProperties(
             val host: String = "localhost",
-            val port: Int = 9100
+            val port: Int = 9100,
         )
     }
 
     data class BarcodeProperties(
         val qrSize: Int = 200,
-        val pdf: PdfProperties = PdfProperties()
+        val pdf: PdfProperties = PdfProperties(),
     ) {
         data class PdfProperties(
             val margin: Float = 20f,
-            val imageSize: Float = 100f
+            val imageSize: Float = 100f,
         )
     }
 
     data class NetworkProperties(
-        val allowedIpPrefix: String = "192."
+        val allowedIpPrefix: String = "192.",
     )
 }

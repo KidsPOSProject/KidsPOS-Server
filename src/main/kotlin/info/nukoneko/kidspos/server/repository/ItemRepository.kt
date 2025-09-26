@@ -45,7 +45,10 @@ interface ItemRepository : JpaRepository<ItemEntity, Int> {
      * Find items with price range (uses index)
      */
     @Query("SELECT i FROM ItemEntity i WHERE i.price BETWEEN :minPrice AND :maxPrice ORDER BY i.price")
-    fun findByPriceRange(minPrice: Int, maxPrice: Int): List<ItemEntity>
+    fun findByPriceRange(
+        minPrice: Int,
+        maxPrice: Int,
+    ): List<ItemEntity>
 }
 
 /**

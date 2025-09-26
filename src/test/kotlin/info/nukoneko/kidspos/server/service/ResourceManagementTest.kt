@@ -81,9 +81,10 @@ class ResourceManagementTest {
 
         // When - Execute multiple concurrent tasks
         repeat(numberOfTasks) { index ->
-            val future = CompletableFuture.supplyAsync {
-                resourceManager.processWithTimeout("Task $index", 1000)
-            }
+            val future =
+                CompletableFuture.supplyAsync {
+                    resourceManager.processWithTimeout("Task $index", 1000)
+                }
             futures.add(future)
         }
 
@@ -151,4 +152,3 @@ class ResourceManagementTest {
         assertTrue(resourcePool.currentPoolSize <= poolSize)
     }
 }
-

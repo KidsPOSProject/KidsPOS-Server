@@ -11,7 +11,6 @@ import java.nio.file.Path
  * Part of ResourceManager refactoring into smaller, focused classes
  */
 class FileManagerTest {
-
     @TempDir
     lateinit var tempDir: Path
 

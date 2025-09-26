@@ -11,7 +11,6 @@ import java.io.File
  */
 @DisplayName("Gradle Build Optimization Tests")
 class GradleOptimizationTest {
-
     @Test
     @DisplayName("Should use latest stable Gradle version")
     fun shouldUseLatestStableGradleVersion() {
@@ -32,7 +31,7 @@ class GradleOptimizationTest {
         val isValidVersion = majorVersion > 8 || (majorVersion == 8 && minorVersion >= 5)
         assertTrue(
             isValidVersion,
-            "Should use Gradle 8.5 or newer. Current: $version"
+            "Should use Gradle 8.5 or newer. Current: $version",
         )
     }
 
@@ -42,7 +41,7 @@ class GradleOptimizationTest {
         val catalogFile = File("gradle/libs.versions.toml")
         assertTrue(
             catalogFile.exists(),
-            "Version catalog (libs.versions.toml) should exist for centralized dependency management"
+            "Version catalog (libs.versions.toml) should exist for centralized dependency management",
         )
 
         val content = catalogFile.readText()
@@ -73,8 +72,8 @@ class GradleOptimizationTest {
         // Check for build optimization configurations
         assertTrue(
             content.contains("parallel = true") ||
-                    content.contains("org.gradle.parallel=true"),
-            "Should enable parallel execution for faster builds"
+                content.contains("org.gradle.parallel=true"),
+            "Should enable parallel execution for faster builds",
         )
 
         // Check for configuration cache usage (Gradle 6.5+)
@@ -83,8 +82,8 @@ class GradleOptimizationTest {
             val properties = gradleProperties.readText()
             assertTrue(
                 properties.contains("org.gradle.configuration-cache=true") ||
-                        properties.contains("org.gradle.unsafe.configuration-cache=true"),
-                "Should enable configuration cache for faster builds"
+                    properties.contains("org.gradle.unsafe.configuration-cache=true"),
+                "Should enable configuration cache for faster builds",
             )
         }
     }
@@ -98,7 +97,7 @@ class GradleOptimizationTest {
             val content = gradleProperties.readText()
             assertTrue(
                 content.contains("org.gradle.caching=true"),
-                "Should enable build cache for incremental builds"
+                "Should enable build cache for incremental builds",
             )
         } else {
             // If gradle.properties doesn't exist, create it with optimizations
@@ -117,14 +116,14 @@ class GradleOptimizationTest {
             // Check for JVM memory settings
             assertTrue(
                 content.contains("org.gradle.jvmargs") &&
-                        content.contains("-Xmx"),
-                "Should configure JVM heap size for better performance"
+                    content.contains("-Xmx"),
+                "Should configure JVM heap size for better performance",
             )
 
             // Check for daemon mode
             assertTrue(
                 content.contains("org.gradle.daemon=true"),
-                "Should enable Gradle daemon for faster builds"
+                "Should enable Gradle daemon for faster builds",
             )
         }
     }
@@ -142,7 +141,7 @@ class GradleOptimizationTest {
         val content = settingsFile.readText()
         assertTrue(
             content.contains("enableFeaturePreview(\"TYPESAFE_PROJECT_ACCESSORS\")"),
-            "Should enable type-safe project accessors for multi-module builds"
+            "Should enable type-safe project accessors for multi-module builds",
         )
     }
 
@@ -155,8 +154,10 @@ class GradleOptimizationTest {
         val content = buildFile.readText()
 
         // Check that repositories are properly ordered (faster ones first)
-        val repoSection = content.substringAfter("repositories {")
-            .substringBefore("}")
+        val repoSection =
+            content
+                .substringAfter("repositories {")
+                .substringBefore("}")
 
         val mavenCentralIndex = repoSection.indexOf("mavenCentral()")
         assertTrue(mavenCentralIndex >= 0, "Should use mavenCentral repository")
@@ -164,7 +165,7 @@ class GradleOptimizationTest {
         // Ensure no unnecessary repositories
         assertFalse(
             repoSection.contains("jcenter()"),
-            "Should not use deprecated jcenter repository"
+            "Should not use deprecated jcenter repository",
         )
     }
 
@@ -179,9 +180,9 @@ class GradleOptimizationTest {
         // Check for lazy configuration patterns
         assertTrue(
             content.contains("tasks.withType") ||
-                    content.contains("tasks.named") ||
-                    content.contains("tasks.register"),
-            "Should use task configuration avoidance patterns"
+                content.contains("tasks.named") ||
+                content.contains("tasks.register"),
+            "Should use task configuration avoidance patterns",
         )
     }
 }

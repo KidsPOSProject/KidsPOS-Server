@@ -27,12 +27,14 @@ class SaleApiController(
     private val saleProcessingService: SaleProcessingService,
     private val itemParsingService: ItemParsingService,
     private val receiptService: ReceiptService,
-    private val saleMapper: SaleMapper
+    private val saleMapper: SaleMapper,
 ) {
     private val logger = LoggerFactory.getLogger(SaleApiController::class.java)
 
     @PostMapping
-    fun createSale(@Valid @RequestBody request: CreateSaleRequest): ResponseEntity<Map<String, Any>> {
+    fun createSale(
+        @Valid @RequestBody request: CreateSaleRequest,
+    ): ResponseEntity<Map<String, Any>> {
         logger.info("Creating sale for store: {}", request.storeId)
 
         return try {
@@ -40,12 +42,13 @@ class SaleApiController(
             val items = itemParsingService.parseItemsFromIds(request.itemIds)
 
             // Process the sale
-            val saleBean = SaleBean(
-                storeId = request.storeId,
-                staffBarcode = request.staffBarcode,
-                itemIds = request.itemIds,
-                deposit = request.deposit
-            )
+            val saleBean =
+                SaleBean(
+                    storeId = request.storeId,
+                    staffBarcode = request.staffBarcode,
+                    itemIds = request.itemIds,
+                    deposit = request.deposit,
+                )
             when (val result = saleProcessingService.processSaleWithValidation(saleBean, items)) {
                 is SaleResult.Success -> {
                     // Print receipt
@@ -53,19 +56,20 @@ class SaleApiController(
                         request.storeId,
                         items,
                         request.staffBarcode,
-                        request.deposit
+                        request.deposit,
                     )
 
                     val sale = result.sale
-                    val response = mapOf(
-                        "id" to sale.id,
-                        "amount" to sale.amount,
-                        "quantity" to sale.quantity,
-                        "deposit" to request.deposit,
-                        "change" to (request.deposit - sale.amount),
-                        "staffId" to sale.staffId,
-                        "storeId" to sale.storeId
-                    )
+                    val response =
+                        mapOf(
+                            "id" to sale.id,
+                            "amount" to sale.amount,
+                            "quantity" to sale.quantity,
+                            "deposit" to request.deposit,
+                            "change" to (request.deposit - sale.amount),
+                            "staffId" to sale.staffId,
+                            "storeId" to sale.storeId,
+                        )
                     logger.info("Sale created successfully: ID={}", sale.id)
                     ResponseEntity.status(201).body(response)
                 }
@@ -92,7 +96,9 @@ class SaleApiController(
     }
 
     @PostMapping("/create")
-    fun createSaleOld(@Valid @ModelAttribute saleBean: SaleBean): ResponseEntity<SaleResponse> {
+    fun createSaleOld(
+        @Valid @ModelAttribute saleBean: SaleBean,
+    ): ResponseEntity<SaleResponse> {
         logger.info("Creating sale for store: {}", saleBean.storeId)
 
         return try {
@@ -107,7 +113,7 @@ class SaleApiController(
                         saleBean.storeId,
                         items,
                         saleBean.staffBarcode,
-                        saleBean.deposit
+                        saleBean.deposit,
                     )
 
                     val response = saleMapper.toResponse(result.sale)
@@ -137,7 +143,9 @@ class SaleApiController(
     }
 
     @GetMapping("/{id}")
-    fun getSale(@PathVariable id: Int): ResponseEntity<SaleResponse> {
+    fun getSale(
+        @PathVariable id: Int,
+    ): ResponseEntity<SaleResponse> {
         logger.info("Fetching sale with ID: {}", id)
 
         return try {
@@ -169,11 +177,12 @@ class SaleApiController(
     }
 
     @GetMapping("/validate-printer/{storeId}")
-    fun validatePrinter(@PathVariable storeId: Int): ResponseEntity<Map<String, Boolean>> {
+    fun validatePrinter(
+        @PathVariable storeId: Int,
+    ): ResponseEntity<Map<String, Boolean>> {
         logger.info("Validating printer configuration for store: {}", storeId)
 
         val isValid = receiptService.validatePrinterConfiguration(storeId)
         return ResponseEntity.ok(mapOf("printerConfigured" to isValid))
     }
-
 }

@@ -4,7 +4,6 @@ package info.nukoneko.kidspos.common
  * Application-wide constants
  */
 object Constants {
-
     /**
      * Barcode-related constants
      */

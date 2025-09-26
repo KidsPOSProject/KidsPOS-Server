@@ -29,10 +29,11 @@ class StaffServiceTest {
     fun `should find staff by barcode when staff exists`() {
         // Given
         val barcode = "STAFF001"
-        val expectedStaff = StaffEntity(
-            barcode = barcode,
-            name = "Test Staff"
-        )
+        val expectedStaff =
+            StaffEntity(
+                barcode = barcode,
+                name = "Test Staff",
+            )
         `when`(staffRepository.findById(barcode)).thenReturn(Optional.of(expectedStaff))
 
         // When
@@ -62,10 +63,11 @@ class StaffServiceTest {
     @Test
     fun `should find all staff`() {
         // Given
-        val expectedStaff = listOf(
-            StaffEntity(barcode = "STAFF001", name = "Staff Member 1"),
-            StaffEntity(barcode = "STAFF002", name = "Staff Member 2")
-        )
+        val expectedStaff =
+            listOf(
+                StaffEntity(barcode = "STAFF001", name = "Staff Member 1"),
+                StaffEntity(barcode = "STAFF002", name = "Staff Member 2"),
+            )
         `when`(staffRepository.findAll()).thenReturn(expectedStaff)
 
         // When
@@ -97,10 +99,11 @@ class StaffServiceTest {
     fun `should handle special characters in barcode`() {
         // Given
         val barcodeWithSpecialChars = "STAFF-001_TEST"
-        val expectedStaff = StaffEntity(
-            barcode = barcodeWithSpecialChars,
-            name = "Special Staff"
-        )
+        val expectedStaff =
+            StaffEntity(
+                barcode = barcodeWithSpecialChars,
+                name = "Special Staff",
+            )
         `when`(staffRepository.findById(barcodeWithSpecialChars)).thenReturn(Optional.of(expectedStaff))
 
         // When

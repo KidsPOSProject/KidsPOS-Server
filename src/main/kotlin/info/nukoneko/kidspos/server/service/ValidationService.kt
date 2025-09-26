@@ -38,7 +38,7 @@ import org.springframework.stereotype.Service
 class ValidationService(
     private val itemRepository: ItemRepository,
     private val storeRepository: StoreRepository,
-    private val staffRepository: StaffRepository
+    private val staffRepository: StaffRepository,
 ) {
     private val logger = LoggerFactory.getLogger(ValidationService::class.java)
 
@@ -63,7 +63,10 @@ class ValidationService(
         }
     }
 
-    fun validateBarcodeUnique(barcode: String, excludeId: Int? = null) {
+    fun validateBarcodeUnique(
+        barcode: String,
+        excludeId: Int? = null,
+    ) {
         val existingItem = itemRepository.findByBarcode(barcode)
         if (existingItem != null && existingItem.id != excludeId) {
             logger.warn("Validation failed: Barcode {} already exists", barcode)
@@ -71,7 +74,10 @@ class ValidationService(
         }
     }
 
-    fun validateStaffBarcodeUnique(barcode: String, excludeId: String? = null) {
+    fun validateStaffBarcodeUnique(
+        barcode: String,
+        excludeId: String? = null,
+    ) {
         // Since StaffRepository doesn't have findByBarcode, we'll check by ID for now
         // This would need to be enhanced with a proper query method
         if (excludeId == null || excludeId != barcode) {
@@ -82,7 +88,10 @@ class ValidationService(
         }
     }
 
-    fun validateStoreBarcodeUnique(barcode: String, excludeId: Int? = null) {
+    fun validateStoreBarcodeUnique(
+        barcode: String,
+        excludeId: Int? = null,
+    ) {
         // Since StoreRepository doesn't have findByBarcode, we'll need to add it or use a different approach
         // For now, we'll skip this validation
         logger.debug("Store barcode uniqueness validation not yet implemented")

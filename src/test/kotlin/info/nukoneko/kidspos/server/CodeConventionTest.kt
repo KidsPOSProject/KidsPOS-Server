@@ -11,7 +11,6 @@ import java.nio.file.Paths
  * Part of Task 6.2: Code convention application and cleanup
  */
 class CodeConventionTest {
-
     private val srcDir = "src/main/kotlin"
 
     @Test
@@ -26,7 +25,7 @@ class CodeConventionTest {
 
         assertTrue(
             violations.isEmpty(),
-            "Import order violations found:\n${violations.joinToString("\n")}"
+            "Import order violations found:\n${violations.joinToString("\n")}",
         )
     }
 
@@ -42,7 +41,7 @@ class CodeConventionTest {
 
         assertTrue(
             violations.isEmpty(),
-            "Commented out code blocks found:\n${violations.joinToString("\n")}"
+            "Commented out code blocks found:\n${violations.joinToString("\n")}",
         )
     }
 
@@ -58,7 +57,7 @@ class CodeConventionTest {
 
         assertTrue(
             violations.isEmpty(),
-            "Naming convention violations found:\n${violations.joinToString("\n")}"
+            "Naming convention violations found:\n${violations.joinToString("\n")}",
         )
     }
 
@@ -74,7 +73,7 @@ class CodeConventionTest {
 
         assertTrue(
             violations.isEmpty(),
-            "Deprecated API usage found:\n${violations.joinToString("\n")}"
+            "Deprecated API usage found:\n${violations.joinToString("\n")}",
         )
     }
 
@@ -90,7 +89,7 @@ class CodeConventionTest {
 
         assertTrue(
             violations.isEmpty(),
-            "Code formatting issues found:\n${violations.joinToString("\n")}"
+            "Code formatting issues found:\n${violations.joinToString("\n")}",
         )
     }
 
@@ -98,14 +97,18 @@ class CodeConventionTest {
         val srcPath = Paths.get(srcDir)
         if (!Files.exists(srcPath)) return emptyList()
 
-        return Files.walk(srcPath)
+        return Files
+            .walk(srcPath)
             .filter { Files.isRegularFile(it) }
             .filter { it.toString().endsWith(".kt") }
             .map { it.toFile() }
             .toList()
     }
 
-    private fun checkImportOrder(file: File, content: String): List<String> {
+    private fun checkImportOrder(
+        file: File,
+        content: String,
+    ): List<String> {
         val violations = mutableListOf<String>()
         // Skip import order check for now - would require full implementation
         return violations
@@ -131,7 +134,10 @@ class CodeConventionTest {
         return violations
     }
 
-    private fun findCommentedCodeBlocks(file: File, content: String): List<String> {
+    private fun findCommentedCodeBlocks(
+        file: File,
+        content: String,
+    ): List<String> {
         val violations = mutableListOf<String>()
         // Skip commented code check for now
         return violations
@@ -153,14 +159,17 @@ class CodeConventionTest {
         val codeContent = line.removePrefix("//").trim()
         // Check for common code patterns
         return codeContent.contains("fun ") ||
-                codeContent.contains("class ") ||
-                codeContent.contains("val ") ||
-                codeContent.contains("var ") ||
-                (codeContent.contains("(") && codeContent.contains(")")) ||
-                codeContent.contains("return ")
+            codeContent.contains("class ") ||
+            codeContent.contains("val ") ||
+            codeContent.contains("var ") ||
+            (codeContent.contains("(") && codeContent.contains(")")) ||
+            codeContent.contains("return ")
     }
 
-    private fun checkNamingConventions(file: File, content: String): List<String> {
+    private fun checkNamingConventions(
+        file: File,
+        content: String,
+    ): List<String> {
         val violations = mutableListOf<String>()
         // Skip naming convention check for now
         return violations
@@ -198,14 +207,18 @@ class CodeConventionTest {
         return violations
     }
 
-    private fun findDeprecatedAPIUsage(file: File, content: String): List<String> {
+    private fun findDeprecatedAPIUsage(
+        file: File,
+        content: String,
+    ): List<String> {
         val violations = mutableListOf<String>()
         // Skip deprecated API check for now
         return violations
-        val deprecatedPatterns = listOf(
-            "println(" to "logger",
-            "System.out.print" to "logger"
-        )
+        val deprecatedPatterns =
+            listOf(
+                "println(" to "logger",
+                "System.out.print" to "logger",
+            )
 
         deprecatedPatterns.forEach { (deprecated, replacement) ->
             if (content.contains(deprecated)) {
@@ -216,7 +229,10 @@ class CodeConventionTest {
         return violations
     }
 
-    private fun checkCodeFormatting(file: File, content: String): List<String> {
+    private fun checkCodeFormatting(
+        file: File,
+        content: String,
+    ): List<String> {
         val violations = mutableListOf<String>()
         // Skip formatting check for now
         return violations

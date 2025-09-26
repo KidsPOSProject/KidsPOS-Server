@@ -41,3 +41,24 @@ migration-plan.md
 local.properties
 
 .playwright-mcp
+
+## Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+## Playwright
+playwright-report/
+test-results/
+tests/vrt/**/*.png-snapshots/
+tests/vrt/**/*-actual.png
+tests/vrt/**/*-diff.png
+tests/vrt/**/*-expected.png
+
+## Environment variables
+.env
+.env.local
+.env.*.local

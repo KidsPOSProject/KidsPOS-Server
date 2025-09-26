@@ -19,7 +19,7 @@ data class SaleResponse(
     val deposit: Int,
     val change: Int,
     val saleTime: LocalDateTime,
-    val items: List<SaleItemResponse> = emptyList()
+    val items: List<SaleItemResponse> = emptyList(),
 ) {
     val totalItems: Int
         get() = items.sumOf { it.quantity }
@@ -50,7 +50,7 @@ data class SaleItemResponse(
     val barcode: String,
     val quantity: Int,
     val unitPrice: Int,
-    val subtotal: Int
+    val subtotal: Int,
 ) {
     val formattedUnitPrice: String
         get() = formatCurrency(unitPrice)

@@ -46,19 +46,15 @@ import org.springframework.stereotype.Component
  */
 @Component
 class StoreMapper {
-
-    fun toResponse(entity: StoreEntity): StoreResponse {
-        return StoreResponse(
+    fun toResponse(entity: StoreEntity): StoreResponse =
+        StoreResponse(
             id = entity.id,
             name = entity.name,
             barcode = entity.id.toString().padStart(4, '0'), // Generate barcode from ID
             kana = null, // Not available in current entity
             createdAt = null, // Not available in current entity
-            updatedAt = null  // Not available in current entity
+            updatedAt = null, // Not available in current entity
         )
-    }
 
-    fun toResponseList(entities: List<StoreEntity>): List<StoreResponse> {
-        return entities.map { toResponse(it) }
-    }
+    fun toResponseList(entities: List<StoreEntity>): List<StoreResponse> = entities.map { toResponse(it) }
 }

@@ -20,7 +20,10 @@ class SettingsController {
     }
 
     @GetMapping("{key}/edit")
-    fun edit(@PathVariable key: String, model: Model): String {
+    fun edit(
+        @PathVariable key: String,
+        model: Model,
+    ): String {
         val setting = settingService.findSetting(key)
         model.addAttribute("setting", setting)
         return "settings/edit"
@@ -29,7 +32,7 @@ class SettingsController {
     @PostMapping("{key}")
     fun update(
         @PathVariable key: String,
-        @RequestParam value: String
+        @RequestParam value: String,
     ): String {
         val setting = settingService.findSetting(key)
         if (setting != null) {

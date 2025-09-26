@@ -10,7 +10,6 @@ import java.nio.file.Paths
  * Part of Task 8.1: KDoc documentation addition
  */
 class KDocComplianceTest {
-
     private val serviceDir = "src/main/kotlin/info/nukoneko/kidspos/server/service"
 
     @Test
@@ -93,7 +92,8 @@ class KDocComplianceTest {
         val servicePath = Paths.get(serviceDir)
         if (!Files.exists(servicePath)) return emptyList()
 
-        return Files.walk(servicePath)
+        return Files
+            .walk(servicePath)
             .filter { Files.isRegularFile(it) }
             .filter { it.toString().endsWith(".kt") }
             .filter { !it.toString().contains("Test") } // Exclude test files
@@ -129,7 +129,10 @@ class KDocComplianceTest {
         return false
     }
 
-    private fun findUndocumentedPublicMethods(file: File, content: String): List<String> {
+    private fun findUndocumentedPublicMethods(
+        file: File,
+        content: String,
+    ): List<String> {
         val violations = mutableListOf<String>()
         val lines = content.split("\n")
 
@@ -166,7 +169,10 @@ class KDocComplianceTest {
         return violations
     }
 
-    private fun findMethodsWithMissingParamDocs(file: File, content: String): List<String> {
+    private fun findMethodsWithMissingParamDocs(
+        file: File,
+        content: String,
+    ): List<String> {
         val violations = mutableListOf<String>()
         val methodPattern = Regex("""(/\*\*[\s\S]*?\*/)\s*fun\s+(\w+)\s*\(([^)]*)\)""")
 
@@ -176,13 +182,15 @@ class KDocComplianceTest {
             val parameters = match.groupValues[3]
 
             // Parse parameters
-            val paramNames = parameters.split(",")
-                .map { it.trim() }
-                .filter { it.isNotEmpty() && !it.startsWith("private") }
-                .mapNotNull {
-                    val paramMatch = Regex("""(\w+)\s*:""").find(it)
-                    paramMatch?.groupValues?.get(1)
-                }
+            val paramNames =
+                parameters
+                    .split(",")
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() && !it.startsWith("private") }
+                    .mapNotNull {
+                        val paramMatch = Regex("""(\w+)\s*:""").find(it)
+                        paramMatch?.groupValues?.get(1)
+                    }
 
             // Check if parameters have documentation
             paramNames.forEach { paramName ->
@@ -195,7 +203,10 @@ class KDocComplianceTest {
         return violations
     }
 
-    private fun findMethodsWithMissingReturnDocs(file: File, content: String): List<String> {
+    private fun findMethodsWithMissingReturnDocs(
+        file: File,
+        content: String,
+    ): List<String> {
         val violations = mutableListOf<String>()
         val methodPattern = Regex("""(/\*\*[\s\S]*?\*/)\s*fun\s+(\w+)\s*\([^)]*\)\s*:\s*(\w+)""")
 
@@ -213,7 +224,10 @@ class KDocComplianceTest {
         return violations
     }
 
-    private fun findMethodsWithMissingThrowsDocs(file: File, content: String): List<String> {
+    private fun findMethodsWithMissingThrowsDocs(
+        file: File,
+        content: String,
+    ): List<String> {
         val violations = mutableListOf<String>()
         val methodPattern = Regex("""(/\*\*[\s\S]*?\*/)\s*fun\s+(\w+)[\s\S]*?\{([\s\S]*?)\}""")
 
@@ -223,7 +237,8 @@ class KDocComplianceTest {
             val methodBody = match.groupValues[3]
 
             // Check if method throws exceptions
-            val throwsException = methodBody.contains("throw ") ||
+            val throwsException =
+                methodBody.contains("throw ") ||
                     methodBody.contains("RuntimeException") ||
                     methodBody.contains("IllegalArgumentException") ||
                     methodBody.contains("Exception")

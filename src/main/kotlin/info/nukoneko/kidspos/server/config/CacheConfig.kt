@@ -15,7 +15,6 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @EnableCaching
 class CacheConfig : CachingConfigurerSupport() {
-
     private val logger = LoggerFactory.getLogger(CacheConfig::class.java)
 
     companion object {
@@ -44,7 +43,7 @@ class CacheConfig : CachingConfigurerSupport() {
             STAFF_CACHE,
             STAFF_BY_ID_CACHE,
             SETTINGS_CACHE,
-            NETWORK_HOSTS_CACHE
+            NETWORK_HOSTS_CACHE,
         ).apply {
             // Allow null values to handle non-existent items
             isAllowNullValues = true
@@ -53,9 +52,7 @@ class CacheConfig : CachingConfigurerSupport() {
     }
 
     @Bean
-    fun cacheEventLogger(): CacheEventLogger {
-        return CacheEventLogger()
-    }
+    fun cacheEventLogger(): CacheEventLogger = CacheEventLogger()
 }
 
 /**
@@ -64,19 +61,31 @@ class CacheConfig : CachingConfigurerSupport() {
 class CacheEventLogger {
     private val logger = LoggerFactory.getLogger(CacheEventLogger::class.java)
 
-    fun logCacheHit(cacheName: String, key: Any) {
+    fun logCacheHit(
+        cacheName: String,
+        key: Any,
+    ) {
         logger.debug("Cache HIT - Cache: {}, Key: {}", cacheName, key)
     }
 
-    fun logCacheMiss(cacheName: String, key: Any) {
+    fun logCacheMiss(
+        cacheName: String,
+        key: Any,
+    ) {
         logger.debug("Cache MISS - Cache: {}, Key: {}", cacheName, key)
     }
 
-    fun logCachePut(cacheName: String, key: Any) {
+    fun logCachePut(
+        cacheName: String,
+        key: Any,
+    ) {
         logger.debug("Cache PUT - Cache: {}, Key: {}", cacheName, key)
     }
 
-    fun logCacheEvict(cacheName: String, key: Any) {
+    fun logCacheEvict(
+        cacheName: String,
+        key: Any,
+    ) {
         logger.debug("Cache EVICT - Cache: {}, Key: {}", cacheName, key)
     }
 }

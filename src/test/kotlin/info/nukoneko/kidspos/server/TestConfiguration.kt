@@ -17,7 +17,6 @@ import org.springframework.context.annotation.Primary
  */
 @TestConfiguration
 class TestConfiguration {
-
     // Mock all repositories
     @Bean
     @Primary

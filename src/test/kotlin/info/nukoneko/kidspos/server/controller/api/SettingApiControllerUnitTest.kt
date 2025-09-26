@@ -9,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 
 @ExtendWith(MockitoExtension::class)
 class SettingApiControllerUnitTest {
-
     @InjectMocks
     private lateinit var controller: SettingApiController
 

@@ -8,13 +8,14 @@ abstract class Commander {
     }
 
     fun writeByteArray(byte: ByteArray) {
-        commands = ByteArray(commands.size + byte.size) {
-            if (it < commands.size) {
-                commands[it]
-            } else {
-                byte[it - commands.size]
+        commands =
+            ByteArray(commands.size + byte.size) {
+                if (it < commands.size) {
+                    commands[it]
+                } else {
+                    byte[it - commands.size]
+                }
             }
-        }
     }
 
     fun build(): ByteArray = commands

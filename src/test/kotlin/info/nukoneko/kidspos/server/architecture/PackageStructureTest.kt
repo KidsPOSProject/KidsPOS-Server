@@ -7,7 +7,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 class PackageStructureTest {
-
     private val basePackage = "info.nukoneko.kidspos.server"
     private val sourcePath = Paths.get("src/main/kotlin/info/nukoneko/kidspos/server")
 
@@ -66,7 +65,8 @@ class PackageStructureTest {
     private fun findFilesInPackage(packageName: String): List<Path> {
         val path = sourcePath.resolve(packageName)
         return if (Files.exists(path)) {
-            Files.walk(path)
+            Files
+                .walk(path)
                 .filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
                 .toList()
         } else {

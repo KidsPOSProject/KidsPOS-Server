@@ -44,7 +44,10 @@ class BackupManager {
     /**
      * Restore file from backup
      */
-    fun restoreFromBackup(backupPath: String, targetPath: String) {
+    fun restoreFromBackup(
+        backupPath: String,
+        targetPath: String,
+    ) {
         val backupFile = File(backupPath)
         if (!backupFile.exists()) {
             throw RuntimeException("Backup file does not exist: $backupPath")
@@ -62,15 +65,21 @@ class BackupManager {
     /**
      * Cleanup old backups
      */
-    fun cleanupOldBackups(directory: String, maxAge: Long, maxCount: Int): Int {
+    fun cleanupOldBackups(
+        directory: String,
+        maxAge: Long,
+        maxCount: Int,
+    ): Int {
         val dir = File(directory)
         if (!dir.exists() || !dir.isDirectory()) {
             return 0
         }
 
-        val backupFiles = dir.listFiles { _, name -> name.contains(".backup.") }
-            ?.sortedByDescending { it.lastModified() }
-            ?: return 0
+        val backupFiles =
+            dir
+                .listFiles { _, name -> name.contains(".backup.") }
+                ?.sortedByDescending { it.lastModified() }
+                ?: return 0
 
         var deletedCount = 0
         val currentTime = System.currentTimeMillis()
@@ -94,8 +103,11 @@ class BackupManager {
     /**
      * Validate backup integrity
      */
-    fun validateBackupIntegrity(originalPath: String, backupPath: String): Boolean {
-        return try {
+    fun validateBackupIntegrity(
+        originalPath: String,
+        backupPath: String,
+    ): Boolean =
+        try {
             val originalHash = calculateFileHash(originalPath)
             val backupHash = calculateFileHash(backupPath)
             val isValid = originalHash == backupHash
@@ -111,7 +123,6 @@ class BackupManager {
             logger.error("Failed to validate backup integrity", e)
             false
         }
-    }
 
     private fun calculateFileHash(filePath: String): String {
         val digest = MessageDigest.getInstance("SHA-256")

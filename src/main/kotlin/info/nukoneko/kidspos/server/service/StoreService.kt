@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional
 class StoreService(
     private val repository: StoreRepository,
-    private val idGenerationService: IdGenerationService
+    private val idGenerationService: IdGenerationService,
 ) {
     private val logger = LoggerFactory.getLogger(StoreService::class.java)
 
@@ -61,17 +61,18 @@ class StoreService(
     @Caching(
         evict = [
             CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
-            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#result.id")
-        ]
+            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#result.id"),
+        ],
     )
     fun save(storeBean: StoreBean): StoreEntity {
         logger.info("Saving store with name: {}", storeBean.name)
         val storeId = storeBean.id
-        val generatedId = if (storeId != null && storeId > 0) {
-            storeId
-        } else {
-            idGenerationService.generateNextId(repository)
-        }
+        val generatedId =
+            if (storeId != null && storeId > 0) {
+                storeId
+            } else {
+                idGenerationService.generateNextId(repository)
+            }
         val store = StoreEntity(generatedId, storeBean.name, storeBean.printerUri)
         val savedStore = repository.save(store)
         logger.info("Store saved successfully with ID: {}", savedStore.id)
@@ -81,17 +82,18 @@ class StoreService(
     @Caching(
         evict = [
             CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
-            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#result.id")
-        ]
+            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#result.id"),
+        ],
     )
     fun save(store: StoreEntity): StoreEntity {
         logger.info("Saving store: {}", store.name)
-        val savedStore = if (store.id == 0) {
-            val id = idGenerationService.generateNextId(repository)
-            repository.save(store.copy(id = id))
-        } else {
-            repository.save(store)
-        }
+        val savedStore =
+            if (store.id == 0) {
+                val id = idGenerationService.generateNextId(repository)
+                repository.save(store.copy(id = id))
+            } else {
+                repository.save(store)
+            }
         logger.info("Store saved successfully with ID: {}", savedStore.id)
         return savedStore
     }
@@ -99,8 +101,8 @@ class StoreService(
     @Caching(
         evict = [
             CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
-            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#id")
-        ]
+            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#id"),
+        ],
     )
     fun delete(id: Int) {
         logger.info("Deleting store with ID: {}", id)

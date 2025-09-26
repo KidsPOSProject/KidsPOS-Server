@@ -39,26 +39,24 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ItemMapper {
-
-    fun toEntity(request: CreateItemRequest, id: Int): ItemEntity {
-        return ItemEntity(
+    fun toEntity(
+        request: CreateItemRequest,
+        id: Int,
+    ): ItemEntity =
+        ItemEntity(
             id = id,
             barcode = request.barcode,
             name = request.name,
-            price = request.price
+            price = request.price,
         )
-    }
 
-    fun toResponse(entity: ItemEntity): ItemResponse {
-        return ItemResponse(
+    fun toResponse(entity: ItemEntity): ItemResponse =
+        ItemResponse(
             id = entity.id,
             name = entity.name,
             barcode = entity.barcode,
-            price = entity.price
+            price = entity.price,
         )
-    }
 
-    fun toResponseList(entities: List<ItemEntity>): List<ItemResponse> {
-        return entities.map { toResponse(it) }
-    }
+    fun toResponseList(entities: List<ItemEntity>): List<ItemResponse> = entities.map { toResponse(it) }
 }

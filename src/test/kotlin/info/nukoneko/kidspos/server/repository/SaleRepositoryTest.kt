@@ -30,33 +30,36 @@ class SaleRepositoryTest {
         testDate = Date()
 
         // Create test data
-        testSale1 = SaleEntity(
-            id = 0,
-            storeId = 1,
-            staffId = 1,
-            quantity = 2,
-            amount = 300,
-            deposit = 400,
-            createdAt = Date(testDate.time - 86400000) // 1 day ago
-        )
-        testSale2 = SaleEntity(
-            id = 0,
-            storeId = 1,
-            staffId = 2,
-            quantity = 3,
-            amount = 500,
-            deposit = 500,
-            createdAt = Date(testDate.time - 3600000) // 1 hour ago
-        )
-        testSale3 = SaleEntity(
-            id = 0,
-            storeId = 2,
-            staffId = 1,
-            quantity = 1,
-            amount = 200,
-            deposit = 300,
-            createdAt = testDate
-        )
+        testSale1 =
+            SaleEntity(
+                id = 0,
+                storeId = 1,
+                staffId = 1,
+                quantity = 2,
+                amount = 300,
+                deposit = 400,
+                createdAt = Date(testDate.time - 86400000), // 1 day ago
+            )
+        testSale2 =
+            SaleEntity(
+                id = 0,
+                storeId = 1,
+                staffId = 2,
+                quantity = 3,
+                amount = 500,
+                deposit = 500,
+                createdAt = Date(testDate.time - 3600000), // 1 hour ago
+            )
+        testSale3 =
+            SaleEntity(
+                id = 0,
+                storeId = 2,
+                staffId = 1,
+                quantity = 1,
+                amount = 200,
+                deposit = 300,
+                createdAt = testDate,
+            )
 
         // Persist test data
         testSale1 = entityManager.persistAndFlush(testSale1)
@@ -77,15 +80,16 @@ class SaleRepositoryTest {
     @Test
     fun `should save new sale`() {
         // Given
-        val newSale = SaleEntity(
-            id = 0,
-            storeId = 3,
-            staffId = 3,
-            quantity = 4,
-            amount = 600,
-            deposit = 700,
-            createdAt = Date()
-        )
+        val newSale =
+            SaleEntity(
+                id = 0,
+                storeId = 3,
+                staffId = 3,
+                quantity = 4,
+                amount = 600,
+                deposit = 700,
+                createdAt = Date(),
+            )
 
         // When
         val savedSale = saleRepository.save(newSale)
@@ -225,15 +229,16 @@ class SaleRepositoryTest {
     @Test
     fun `should update existing sale by creating new instance`() {
         // Given - create a copy with updated amount
-        val updatedSale = SaleEntity(
-            id = testSale1.id,
-            storeId = testSale1.storeId,
-            staffId = testSale1.staffId,
-            quantity = testSale1.quantity,
-            amount = 350,
-            deposit = testSale1.deposit,
-            createdAt = testSale1.createdAt
-        )
+        val updatedSale =
+            SaleEntity(
+                id = testSale1.id,
+                storeId = testSale1.storeId,
+                staffId = testSale1.staffId,
+                quantity = testSale1.quantity,
+                amount = 350,
+                deposit = testSale1.deposit,
+                createdAt = testSale1.createdAt,
+            )
 
         // When
         val savedSale = saleRepository.save(updatedSale)

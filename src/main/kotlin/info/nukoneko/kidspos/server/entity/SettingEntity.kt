@@ -13,4 +13,7 @@ import jakarta.persistence.Table
  */
 @Entity
 @Table(name = "setting")
-data class SettingEntity(@Id val key: String, var value: String)
+data class SettingEntity(
+    @Id val key: String,
+    var value: String,
+)

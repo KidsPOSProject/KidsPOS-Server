@@ -47,12 +47,13 @@ class QueryOptimizationTest {
     fun `should use pagination for large result sets`() {
         // Given - Create 50 items
         for (i in 1..50) {
-            val item = ItemEntity(
-                id = i,
-                barcode = "BAR$i",
-                name = "Item $i",
-                price = i * 100
-            )
+            val item =
+                ItemEntity(
+                    id = i,
+                    barcode = "BAR$i",
+                    name = "Item $i",
+                    price = i * 100,
+                )
             entityManager.persist(item)
         }
         entityManager.flush()
@@ -76,28 +77,30 @@ class QueryOptimizationTest {
         val store = StoreEntity(id = 1, name = "Test Store", printerUri = "http://printer")
         entityManager.persist(store)
 
-        val sale = SaleEntity(
-            id = 1,
-            storeId = 1,
-            staffId = 1,
-            quantity = 3,
-            amount = 300,
-            deposit = 500,
-            createdAt = java.util.Date()
-        )
+        val sale =
+            SaleEntity(
+                id = 1,
+                storeId = 1,
+                staffId = 1,
+                quantity = 3,
+                amount = 300,
+                deposit = 500,
+                createdAt = java.util.Date(),
+            )
         entityManager.persist(sale)
 
         for (i in 1..3) {
             val item = ItemEntity(id = i, barcode = "BAR$i", name = "Item $i", price = 100)
             entityManager.persist(item)
 
-            val detail = SaleDetailEntity(
-                id = i,
-                saleId = 1,
-                itemId = i,
-                price = 100,
-                quantity = 1
-            )
+            val detail =
+                SaleDetailEntity(
+                    id = i,
+                    saleId = 1,
+                    itemId = i,
+                    price = 100,
+                    quantity = 1,
+                )
             entityManager.persist(detail)
         }
         entityManager.flush()
@@ -139,12 +142,13 @@ class QueryOptimizationTest {
     fun `should use projections for read-only queries`() {
         // Given - Create test data
         for (i in 1..10) {
-            val item = ItemEntity(
-                id = i,
-                barcode = "BAR$i",
-                name = "Item $i",
-                price = i * 100
-            )
+            val item =
+                ItemEntity(
+                    id = i,
+                    barcode = "BAR$i",
+                    name = "Item $i",
+                    price = i * 100,
+                )
             entityManager.persist(item)
         }
         entityManager.flush()
@@ -165,12 +169,13 @@ class QueryOptimizationTest {
     fun `should use indexed fields for faster queries`() {
         // Given - Create test data with barcodes
         for (i in 1..100) {
-            val item = ItemEntity(
-                id = i,
-                barcode = String.format("%013d", i),
-                name = "Item $i",
-                price = i * 10
-            )
+            val item =
+                ItemEntity(
+                    id = i,
+                    barcode = String.format("%013d", i),
+                    name = "Item $i",
+                    price = i * 10,
+                )
             entityManager.persist(item)
         }
         entityManager.flush()
@@ -189,12 +194,13 @@ class QueryOptimizationTest {
     fun `should optimize count queries`() {
         // Given - Create test data
         for (i in 1..100) {
-            val item = ItemEntity(
-                id = i,
-                barcode = "BAR$i",
-                name = "Item $i",
-                price = if (i % 2 == 0) 100 else 200
-            )
+            val item =
+                ItemEntity(
+                    id = i,
+                    barcode = "BAR$i",
+                    name = "Item $i",
+                    price = if (i % 2 == 0) 100 else 200,
+                )
             entityManager.persist(item)
         }
         entityManager.flush()

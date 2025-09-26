@@ -1,5 +1,3 @@
 package info.nukoneko.kidspos.common
 
-fun Int.toEm(): String {
-    return toString().toAllEm()
-}
+fun Int.toEm(): String = toString().toAllEm()

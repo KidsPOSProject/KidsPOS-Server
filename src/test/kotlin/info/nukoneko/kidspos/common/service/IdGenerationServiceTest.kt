@@ -11,7 +11,6 @@ import org.mockito.MockitoAnnotations
 import org.springframework.dao.EmptyResultDataAccessException
 
 class IdGenerationServiceTest {
-
     @Mock
     private lateinit var itemRepository: ItemRepository
 

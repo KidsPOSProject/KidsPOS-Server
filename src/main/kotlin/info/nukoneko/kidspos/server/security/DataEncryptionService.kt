@@ -84,20 +84,25 @@ class DataEncryptionService {
     /**
      * Verify if data matches a hash
      */
-    fun verifyHash(data: String, hash: String): Boolean {
-        return try {
+    fun verifyHash(
+        data: String,
+        hash: String,
+    ): Boolean =
+        try {
             val computedHash = hash(data)
             computedHash == hash
         } catch (e: Exception) {
             logger.error("Hash verification failed", e)
             false
         }
-    }
 
     /**
      * Mask sensitive data for display (e.g., credit card numbers)
      */
-    fun mask(data: String, visibleChars: Int = 4): String {
+    fun mask(
+        data: String,
+        visibleChars: Int = 4,
+    ): String {
         if (data.length <= visibleChars) {
             return "*".repeat(data.length)
         }
@@ -112,11 +117,12 @@ class DataEncryptionService {
      */
     private fun generateKey(): SecretKeySpec {
         val keyBytes = encryptionKey.toByteArray().take(16).toByteArray()
-        val paddedKey = if (keyBytes.size < 16) {
-            keyBytes + ByteArray(16 - keyBytes.size)
-        } else {
-            keyBytes
-        }
+        val paddedKey =
+            if (keyBytes.size < 16) {
+                keyBytes + ByteArray(16 - keyBytes.size)
+            } else {
+                keyBytes
+            }
         return SecretKeySpec(paddedKey, keyAlgorithm)
     }
 
@@ -124,10 +130,11 @@ class DataEncryptionService {
      * Sanitize data before encryption to prevent injection
      */
     fun sanitizeAndEncrypt(data: String): String {
-        val sanitized = data
-            .replace("\u0000", "") // Remove null characters
-            .replace("\r", "")     // Remove carriage returns
-            .trim()                // Remove leading/trailing whitespace
+        val sanitized =
+            data
+                .replace("\u0000", "") // Remove null characters
+                .replace("\r", "") // Remove carriage returns
+                .trim() // Remove leading/trailing whitespace
 
         return encrypt(sanitized)
     }

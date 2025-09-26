@@ -37,24 +37,27 @@ class ItemRepositoryTest {
         entityManager.clear()
 
         // Create test data with unique IDs
-        testItem1 = ItemEntity(
-            id = 1001,
-            barcode = "123456789",
-            name = "Test Item 1",
-            price = 100
-        )
-        testItem2 = ItemEntity(
-            id = 1002,
-            barcode = "987654321",
-            name = "Test Item 2",
-            price = 200
-        )
-        testItem3 = ItemEntity(
-            id = 1003,
-            barcode = "555666777",
-            name = "Expensive Item",
-            price = 1000
-        )
+        testItem1 =
+            ItemEntity(
+                id = 1001,
+                barcode = "123456789",
+                name = "Test Item 1",
+                price = 100,
+            )
+        testItem2 =
+            ItemEntity(
+                id = 1002,
+                barcode = "987654321",
+                name = "Test Item 2",
+                price = 200,
+            )
+        testItem3 =
+            ItemEntity(
+                id = 1003,
+                barcode = "555666777",
+                name = "Expensive Item",
+                price = 1000,
+            )
 
         // Persist test data
         testItem1 = itemRepository.save(testItem1)
@@ -103,12 +106,13 @@ class ItemRepositoryTest {
     @Test
     fun `should save new item`() {
         // Given
-        val newItem = ItemEntity(
-            id = 2001,
-            barcode = "111222333",
-            name = "New Item",
-            price = 300
-        )
+        val newItem =
+            ItemEntity(
+                id = 2001,
+                barcode = "111222333",
+                name = "New Item",
+                price = 300,
+            )
 
         // When
         val savedItem = itemRepository.save(newItem)
@@ -131,12 +135,13 @@ class ItemRepositoryTest {
     fun `should update existing item by creating new instance`() {
         // Given - fetch and update existing item
         val existingItem = itemRepository.findById(testItem1.id).orElseThrow()
-        val updatedItem = ItemEntity(
-            id = existingItem.id,
-            barcode = existingItem.barcode,
-            name = existingItem.name,
-            price = 150
-        )
+        val updatedItem =
+            ItemEntity(
+                id = existingItem.id,
+                barcode = existingItem.barcode,
+                name = existingItem.name,
+                price = 150,
+            )
 
         // When
         val savedItem = itemRepository.save(updatedItem)

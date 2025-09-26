@@ -16,7 +16,7 @@ import java.net.NetworkInterface
 @RequestMapping("/ip")
 class IpController(
     private val environment: Environment,
-    private val appProperties: AppProperties
+    private val appProperties: AppProperties,
 ) {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -42,23 +42,27 @@ class IpController(
 
         try {
             // ループバックインターフェースは除外し、アクティブなインターフェースのみ取得
-            NetworkInterface.getNetworkInterfaces()?.asSequence()
+            NetworkInterface
+                .getNetworkInterfaces()
+                ?.asSequence()
                 ?.filter { ni -> ni.isUp && !ni.isLoopback && !ni.isVirtual }
                 ?.forEach { networkInterface ->
-                    networkInterface.inetAddresses?.asSequence()
-                        ?.filterIsInstance<Inet4Address>()  // IPv4のみ取得して高速化
+                    networkInterface.inetAddresses
+                        ?.asSequence()
+                        ?.filterIsInstance<Inet4Address>() // IPv4のみ取得して高速化
                         ?.filter { inetAddress ->
                             // ローカルIPアドレスのみフィルタリング
                             !inetAddress.isLoopbackAddress &&
-                            !inetAddress.isLinkLocalAddress &&
-                            inetAddress.hostAddress.startsWith(appProperties.network.allowedIpPrefix)
-                        }
-                        ?.forEach { inetAddress ->
+                                !inetAddress.isLinkLocalAddress &&
+                                inetAddress.hostAddress.startsWith(appProperties.network.allowedIpPrefix)
+                        }?.forEach { inetAddress ->
                             // hostNameの解決は遅いので、hostAddressのみを使用
-                            hosts.add(HostBean(
-                                name = networkInterface.displayName ?: inetAddress.hostAddress,
-                                address = inetAddress.hostAddress
-                            ))
+                            hosts.add(
+                                HostBean(
+                                    name = networkInterface.displayName ?: inetAddress.hostAddress,
+                                    address = inetAddress.hostAddress,
+                                ),
+                            )
                         }
                 }
         } catch (e: Exception) {
@@ -79,7 +83,7 @@ class IpController(
 
     data class HostBean(
         val name: String,
-        val address: String
+        val address: String,
     ) {
         // IDは不要なので削除（ビューで必要なら簡単な計算で生成）
         val nameId: String get() = "name-${address.hashCode()}"

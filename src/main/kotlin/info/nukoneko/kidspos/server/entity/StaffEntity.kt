@@ -18,7 +18,6 @@ data class StaffEntity(
     @Id
     @field:NotBlank(message = "Barcode is required")
     var barcode: String,
-
     @field:NotBlank(message = "Name is required")
-    val name: String
+    val name: String,
 )

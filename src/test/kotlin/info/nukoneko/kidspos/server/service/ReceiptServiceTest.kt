@@ -38,11 +38,12 @@ class ReceiptServiceTest {
     fun `should validate printer configuration when store has printer URI`() {
         // Given
         val storeId = 1
-        val store = StoreEntity(
-            id = storeId,
-            name = "Test Store",
-            printerUri = "192.168.1.100"
-        )
+        val store =
+            StoreEntity(
+                id = storeId,
+                name = "Test Store",
+                printerUri = "192.168.1.100",
+            )
         `when`(storeService.findStore(storeId)).thenReturn(store)
 
         // When
@@ -71,11 +72,12 @@ class ReceiptServiceTest {
     fun `should fail printer validation when printer URI is empty`() {
         // Given
         val storeId = 1
-        val store = StoreEntity(
-            id = storeId,
-            name = "Test Store",
-            printerUri = ""
-        )
+        val store =
+            StoreEntity(
+                id = storeId,
+                name = "Test Store",
+                printerUri = "",
+            )
         `when`(storeService.findStore(storeId)).thenReturn(store)
 
         // When
@@ -92,10 +94,11 @@ class ReceiptServiceTest {
         val storeId = 1
         val staffBarcode = "STAFF001"
         val deposit = 1000
-        val items = listOf(
-            ItemBean(1, "123456789", "Item 1", 300),
-            ItemBean(2, "987654321", "Item 2", 400)
-        )
+        val items =
+            listOf(
+                ItemBean(1, "123456789", "Item 1", 300),
+                ItemBean(2, "987654321", "Item 2", 400),
+            )
 
         val store = StoreEntity(storeId, "Test Store", "192.168.1.100")
         val staff = StaffEntity(staffBarcode, "Test Staff")
@@ -125,9 +128,10 @@ class ReceiptServiceTest {
         val storeId = 999
         val staffBarcode = "UNKNOWN"
         val deposit = 500
-        val items = listOf(
-            ItemBean(1, "123456789", "Test Item", 200)
-        )
+        val items =
+            listOf(
+                ItemBean(1, "123456789", "Test Item", 200),
+            )
 
         `when`(storeService.findStore(storeId)).thenReturn(null)
         `when`(staffService.findStaff(staffBarcode)).thenReturn(null)

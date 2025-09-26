@@ -41,15 +41,15 @@ class StaffRepositoryTest {
     @Nested
     @DisplayName("Save Operations")
     inner class SaveOperations {
-
         @Test
         @DisplayName("Should save new staff member")
         fun shouldSaveNewStaffMember() {
             // Given
-            val staff = StaffEntity(
-                barcode = "STAFF001",
-                name = "Test Staff"
-            )
+            val staff =
+                StaffEntity(
+                    barcode = "STAFF001",
+                    name = "Test Staff",
+                )
 
             // When
             val savedStaff = staffRepository.save(staff)
@@ -70,19 +70,21 @@ class StaffRepositoryTest {
         @DisplayName("Should update existing staff member")
         fun shouldUpdateExistingStaffMember() {
             // Given
-            val staff = StaffEntity(
-                barcode = "STAFF002",
-                name = "Original Name"
-            )
+            val staff =
+                StaffEntity(
+                    barcode = "STAFF002",
+                    name = "Original Name",
+                )
             staffRepository.save(staff)
             entityManager.flush()
             entityManager.clear()
 
             // When
-            val updatedStaff = StaffEntity(
-                barcode = "STAFF002",
-                name = "Updated Name"
-            )
+            val updatedStaff =
+                StaffEntity(
+                    barcode = "STAFF002",
+                    name = "Updated Name",
+                )
             val result = staffRepository.save(updatedStaff)
             entityManager.flush()
             entityManager.clear()
@@ -99,11 +101,12 @@ class StaffRepositoryTest {
         @DisplayName("Should save multiple staff members")
         fun shouldSaveMultipleStaffMembers() {
             // Given
-            val staffList = listOf(
-                StaffEntity("STAFF003", "Staff One"),
-                StaffEntity("STAFF004", "Staff Two"),
-                StaffEntity("STAFF005", "Staff Three")
-            )
+            val staffList =
+                listOf(
+                    StaffEntity("STAFF003", "Staff One"),
+                    StaffEntity("STAFF004", "Staff Two"),
+                    StaffEntity("STAFF005", "Staff Three"),
+                )
 
             // When
             val savedStaff = staffRepository.saveAll(staffList)
@@ -117,7 +120,9 @@ class StaffRepositoryTest {
             val allStaff = staffRepository.findAll()
             assertThat(allStaff).hasSize(3)
             assertThat(allStaff.map { it.barcode }).containsExactlyInAnyOrder(
-                "STAFF003", "STAFF004", "STAFF005"
+                "STAFF003",
+                "STAFF004",
+                "STAFF005",
             )
         }
     }
@@ -125,14 +130,14 @@ class StaffRepositoryTest {
     @Nested
     @DisplayName("Find Operations")
     inner class FindOperations {
-
         @BeforeEach
         fun setUpTestData() {
-            val staffList = listOf(
-                StaffEntity("FIND001", "Alice"),
-                StaffEntity("FIND002", "Bob"),
-                StaffEntity("FIND003", "Charlie")
-            )
+            val staffList =
+                listOf(
+                    StaffEntity("FIND001", "Alice"),
+                    StaffEntity("FIND002", "Bob"),
+                    StaffEntity("FIND003", "Charlie"),
+                )
             staffRepository.saveAll(staffList)
             entityManager.flush()
             entityManager.clear()
@@ -169,7 +174,9 @@ class StaffRepositoryTest {
             // Then
             assertThat(allStaff).hasSize(3)
             assertThat(allStaff.map { it.name }).containsExactlyInAnyOrder(
-                "Alice", "Bob", "Charlie"
+                "Alice",
+                "Bob",
+                "Charlie",
             )
         }
 
@@ -186,14 +193,14 @@ class StaffRepositoryTest {
     @Nested
     @DisplayName("Delete Operations")
     inner class DeleteOperations {
-
         @BeforeEach
         fun setUpTestData() {
-            val staffList = listOf(
-                StaffEntity("DEL001", "Staff to Delete 1"),
-                StaffEntity("DEL002", "Staff to Delete 2"),
-                StaffEntity("DEL003", "Staff to Keep")
-            )
+            val staffList =
+                listOf(
+                    StaffEntity("DEL001", "Staff to Delete 1"),
+                    StaffEntity("DEL002", "Staff to Delete 2"),
+                    StaffEntity("DEL003", "Staff to Keep"),
+                )
             staffRepository.saveAll(staffList)
             entityManager.flush()
             entityManager.clear()
@@ -267,7 +274,6 @@ class StaffRepositoryTest {
     @Nested
     @DisplayName("Batch Operations")
     inner class BatchOperations {
-
         @Test
         @DisplayName("Should count staff correctly")
         fun shouldCountStaffCorrectly() {
@@ -279,8 +285,8 @@ class StaffRepositoryTest {
                 listOf(
                     StaffEntity("COUNT001", "Staff 1"),
                     StaffEntity("COUNT002", "Staff 2"),
-                    StaffEntity("COUNT003", "Staff 3")
-                )
+                    StaffEntity("COUNT003", "Staff 3"),
+                ),
             )
             entityManager.flush()
             entityManager.clear()
@@ -298,17 +304,18 @@ class StaffRepositoryTest {
                     StaffEntity("BATCH001", "Staff 1"),
                     StaffEntity("BATCH002", "Staff 2"),
                     StaffEntity("BATCH003", "Staff 3"),
-                    StaffEntity("BATCH004", "Staff 4")
-                )
+                    StaffEntity("BATCH004", "Staff 4"),
+                ),
             )
             entityManager.flush()
             entityManager.clear()
 
             // When
-            val toDelete = listOf(
-                StaffEntity("BATCH001", "Staff 1"),
-                StaffEntity("BATCH003", "Staff 3")
-            )
+            val toDelete =
+                listOf(
+                    StaffEntity("BATCH001", "Staff 1"),
+                    StaffEntity("BATCH003", "Staff 3"),
+                )
             staffRepository.deleteAll(toDelete)
             entityManager.flush()
             entityManager.clear()
@@ -328,8 +335,8 @@ class StaffRepositoryTest {
                     StaffEntity("FINDALL001", "Staff A"),
                     StaffEntity("FINDALL002", "Staff B"),
                     StaffEntity("FINDALL003", "Staff C"),
-                    StaffEntity("FINDALL004", "Staff D")
-                )
+                    StaffEntity("FINDALL004", "Staff D"),
+                ),
             )
             entityManager.flush()
             entityManager.clear()
@@ -341,7 +348,9 @@ class StaffRepositoryTest {
             // Then
             assertThat(foundStaff).hasSize(3)
             assertThat(foundStaff.map { it.barcode }).containsExactlyInAnyOrder(
-                "FINDALL001", "FINDALL003", "FINDALL004"
+                "FINDALL001",
+                "FINDALL003",
+                "FINDALL004",
             )
         }
     }
@@ -349,7 +358,6 @@ class StaffRepositoryTest {
     @Nested
     @DisplayName("Transaction and Rollback")
     inner class TransactionTests {
-
         @Test
         @DisplayName("Should rollback transaction on failure")
         fun shouldRollbackTransactionOnFailure() {

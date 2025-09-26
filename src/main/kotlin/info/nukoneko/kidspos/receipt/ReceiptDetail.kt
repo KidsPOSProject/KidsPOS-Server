@@ -9,5 +9,5 @@ data class ReceiptDetail(
     val staffName: String?,
     val deposit: Int,
     val transactionId: String?,
-    val createdAt: Date
+    val createdAt: Date,
 )

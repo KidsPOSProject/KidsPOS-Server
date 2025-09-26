@@ -17,8 +17,8 @@ import org.springframework.test.context.TestPropertySource
         "app.barcode.qr-size=250",
         "app.barcode.pdf.margin=30",
         "app.barcode.pdf.image-size=150",
-        "app.network.allowed-ip-prefix=10."
-    ]
+        "app.network.allowed-ip-prefix=10.",
+    ],
 )
 @Disabled("Spring context not configured")
 class AppPropertiesTest {

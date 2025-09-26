@@ -33,8 +33,10 @@ class DataExposureSecurityTest {
     @Test
     fun `should not expose internal system paths in errors`() {
         // エラーメッセージに内部システムパスを露出しない
-        val result = mockMvc.perform(get("/api/items/invalid-id"))
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(get("/api/items/invalid-id"))
+                .andReturn()
 
         val response = result.response.contentAsString
 
@@ -50,16 +52,18 @@ class DataExposureSecurityTest {
     @Test
     fun `should not expose database structure in errors`() {
         // エラーメッセージにデータベース構造を露出しない
-        val invalidItem = mapOf(
-            "invalid_field" to "value"
-        )
+        val invalidItem =
+            mapOf(
+                "invalid_field" to "value",
+            )
 
-        val result = mockMvc.perform(
-            post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidItem))
-        )
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(
+                    post("/api/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidItem)),
+                ).andReturn()
 
         val response = result.response.contentAsString
 
@@ -75,19 +79,21 @@ class DataExposureSecurityTest {
     @Test
     fun `should not expose technology stack details`() {
         // 技術スタックの詳細を露出しない
-        val result = mockMvc.perform(get("/api/invalid"))
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(get("/api/invalid"))
+                .andReturn()
 
         val response = result.response
 
         // 技術スタック情報が含まれていないことを確認
         assertFalse(
             response.getHeader("X-Powered-By") != null,
-            "Should not expose X-Powered-By header"
+            "Should not expose X-Powered-By header",
         )
         assertFalse(
             response.getHeader("Server")?.contains("version") == true,
-            "Should not expose server version"
+            "Should not expose server version",
         )
 
         val body = response.contentAsString
@@ -99,8 +105,10 @@ class DataExposureSecurityTest {
     @Test
     fun `should not include sensitive headers`() {
         // センシティブなヘッダーが含まれていないことを確認
-        val result = mockMvc.perform(get("/api/items"))
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(get("/api/items"))
+                .andReturn()
 
         val response = result.response
 
@@ -114,19 +122,23 @@ class DataExposureSecurityTest {
     @Test
     fun `should implement proper error masking`() {
         // 適切なエラーマスキングを実装
-        val testCases = listOf(
-            "/api/staff/999999",  // 存在しないID
-            "/api/stores/999999",  // 存在しないID
-            "/api/items/NONEXISTENT"  // 存在しないバーコード
-        )
+        val testCases =
+            listOf(
+                "/api/staff/999999", // 存在しないID
+                "/api/stores/999999", // 存在しないID
+                "/api/items/NONEXISTENT", // 存在しないバーコード
+            )
 
         testCases.forEach { path ->
-            val result = mockMvc.perform(get(path))
-                .andReturn()
+            val result =
+                mockMvc
+                    .perform(get(path))
+                    .andReturn()
 
             assertEquals(
-                404, result.response.status,
-                "Should return 404 for non-existent resources"
+                404,
+                result.response.status,
+                "Should return 404 for non-existent resources",
             )
 
             val response = result.response.contentAsString
@@ -138,9 +150,11 @@ class DataExposureSecurityTest {
     @Test
     fun `should not expose internal IDs in URLs`() {
         // URLに内部IDを露出しない（セキュリティベストプラクティス）
-        val result = mockMvc.perform(get("/api/items"))
-            .andExpect(status().isOk())
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(get("/api/items"))
+                .andExpect(status().isOk())
+                .andReturn()
 
         result.response.contentAsString
 
@@ -152,21 +166,22 @@ class DataExposureSecurityTest {
     @Test
     fun `should sanitize log output`() {
         // ログ出力のサニタイズ
-        val sensitiveData = mapOf(
-            "barcode" to "TEST001",
-            "name" to "Test Item",
-            "price" to 100,
-            "password" to "should_not_be_logged",
-            "creditCard" to "4111111111111111",
-            "ssn" to "123-45-6789"
-        )
+        val sensitiveData =
+            mapOf(
+                "barcode" to "TEST001",
+                "name" to "Test Item",
+                "price" to 100,
+                "password" to "should_not_be_logged",
+                "creditCard" to "4111111111111111",
+                "ssn" to "123-45-6789",
+            )
 
-        mockMvc.perform(
-            post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(sensitiveData))
-        )
-            .andReturn()
+        mockMvc
+            .perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(sensitiveData)),
+            ).andReturn()
 
         // ログに機密情報が記録されていないことを確認
         // （実際のログ検証はログファイルへのアクセスが必要）
@@ -176,11 +191,12 @@ class DataExposureSecurityTest {
     @Test
     fun `should not expose session IDs in URLs`() {
         // URLにセッションIDを露出しない
-        val result = mockMvc.perform(
-            get("/api/items")
-                .param("jsessionid", "ABC123DEF456")
-        )
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(
+                    get("/api/items")
+                        .param("jsessionid", "ABC123DEF456"),
+                ).andReturn()
 
         val response = result.response
 
@@ -189,11 +205,11 @@ class DataExposureSecurityTest {
         if (location != null) {
             assertFalse(
                 location.contains("jsessionid"),
-                "Should not include session ID in URL"
+                "Should not include session ID in URL",
             )
             assertFalse(
                 location.contains("sessionid"),
-                "Should not include session ID in URL"
+                "Should not include session ID in URL",
             )
         }
     }
@@ -201,19 +217,22 @@ class DataExposureSecurityTest {
     @Test
     fun `should implement secure headers`() {
         // セキュアなヘッダーが実装されていることを確認
-        val result = mockMvc.perform(get("/"))
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(get("/"))
+                .andReturn()
 
         val response = result.response
 
         // セキュリティヘッダーの確認
         assertNotNull(
             response.getHeader("X-Content-Type-Options"),
-            "Should include X-Content-Type-Options"
+            "Should include X-Content-Type-Options",
         )
         assertEquals(
-            "nosniff", response.getHeader("X-Content-Type-Options"),
-            "X-Content-Type-Options should be nosniff"
+            "nosniff",
+            response.getHeader("X-Content-Type-Options"),
+            "X-Content-Type-Options should be nosniff",
         )
 
         // その他の推奨セキュリティヘッダー
@@ -232,12 +251,14 @@ class DataExposureSecurityTest {
         // 複数回実行して時間を計測
         repeat(10) {
             val startValid = System.currentTimeMillis()
-            mockMvc.perform(get("/api/items/$validBarcode"))
+            mockMvc
+                .perform(get("/api/items/$validBarcode"))
                 .andReturn()
             validTimes.add(System.currentTimeMillis() - startValid)
 
             val startInvalid = System.currentTimeMillis()
-            mockMvc.perform(get("/api/items/$invalidBarcode"))
+            mockMvc
+                .perform(get("/api/items/$invalidBarcode"))
                 .andReturn()
             invalidTimes.add(System.currentTimeMillis() - startInvalid)
         }
@@ -250,34 +271,41 @@ class DataExposureSecurityTest {
         // タイミングの差が100ms以内であることを確認（調整可能）
         assertTrue(
             timeDifference < 100,
-            "Timing difference should be minimal to prevent timing attacks"
+            "Timing difference should be minimal to prevent timing attacks",
         )
     }
 
     @Test
     fun `should not expose debug information in production`() {
         // 本番環境でデバッグ情報を露出しない
-        val result = mockMvc.perform(get("/api/debug"))
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(get("/api/debug"))
+                .andReturn()
 
         assertEquals(
-            404, result.response.status,
-            "Debug endpoints should not be accessible"
+            404,
+            result.response.status,
+            "Debug endpoints should not be accessible",
         )
 
         // Actuatorエンドポイントへのアクセスも確認
-        mockMvc.perform(get("/actuator/beans"))
+        mockMvc
+            .perform(get("/actuator/beans"))
             .andExpect(status().is4xxClientError())
 
-        mockMvc.perform(get("/actuator/mappings"))
+        mockMvc
+            .perform(get("/actuator/mappings"))
             .andExpect(status().is4xxClientError())
     }
 
     @Test
     fun `should mask sensitive data in responses`() {
         // レスポンスでセンシティブデータをマスク
-        val result = mockMvc.perform(get("/api/staff/1"))
-            .andReturn()
+        val result =
+            mockMvc
+                .perform(get("/api/staff/1"))
+                .andReturn()
 
         if (result.response.status == 200) {
             val response = result.response.contentAsString
@@ -289,7 +317,7 @@ class DataExposureSecurityTest {
                 if (email != null && email.contains("@")) {
                     assertTrue(
                         email.contains("***") || email.length < email.count { it == '@' },
-                        "Email should be partially masked"
+                        "Email should be partially masked",
                     )
                 }
             }
@@ -297,7 +325,7 @@ class DataExposureSecurityTest {
             // パスワードフィールドが含まれていないことを確認
             assertFalse(
                 staff.containsKey("password"),
-                "Password should never be included in response"
+                "Password should never be included in response",
             )
         }
     }
@@ -305,17 +333,19 @@ class DataExposureSecurityTest {
     @Test
     fun `should prevent directory listing`() {
         // ディレクトリリスティングを防ぐ
-        val paths = listOf(
-            "/static/",
-            "/images/",
-            "/css/",
-            "/js/",
-            "/WEB-INF/",
-            "/META-INF/"
-        )
+        val paths =
+            listOf(
+                "/static/",
+                "/images/",
+                "/css/",
+                "/js/",
+                "/WEB-INF/",
+                "/META-INF/",
+            )
 
         paths.forEach { path ->
-            mockMvc.perform(get(path))
+            mockMvc
+                .perform(get(path))
                 .andExpect(status().is4xxClientError())
         }
     }
@@ -323,18 +353,20 @@ class DataExposureSecurityTest {
     @Test
     fun `should not expose backup files`() {
         // バックアップファイルを露出しない
-        val backupPaths = listOf(
-            "/web.xml.bak",
-            "/application.properties.backup",
-            "/database.sql",
-            "/.git/config",
-            "/.env",
-            "/config.json~",
-            "/backup.zip"
-        )
+        val backupPaths =
+            listOf(
+                "/web.xml.bak",
+                "/application.properties.backup",
+                "/database.sql",
+                "/.git/config",
+                "/.env",
+                "/config.json~",
+                "/backup.zip",
+            )
 
         backupPaths.forEach { path ->
-            mockMvc.perform(get(path))
+            mockMvc
+                .perform(get(path))
                 .andExpect(status().isNotFound())
         }
     }

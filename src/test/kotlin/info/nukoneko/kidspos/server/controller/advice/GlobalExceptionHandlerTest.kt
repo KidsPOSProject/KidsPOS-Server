@@ -28,13 +28,13 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
     includeFilters = [
         org.springframework.context.annotation.ComponentScan.Filter(
             type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
-            classes = [GlobalExceptionHandler::class]
-        )
+            classes = [GlobalExceptionHandler::class],
+        ),
     ],
     excludeAutoConfiguration = [
         org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration::class,
-        org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration::class
-    ]
+        org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration::class,
+    ],
 )
 @AutoConfigureMockMvc(addFilters = false)
 @Import(info.nukoneko.kidspos.server.TestConfiguration::class)
@@ -61,7 +61,8 @@ class GlobalExceptionHandlerTest {
         `when`(itemService.findItem(999)).thenThrow(ItemNotFoundException(id = 999))
 
         // When & Then
-        mockMvc.perform(get("/api/items/999"))
+        mockMvc
+            .perform(get("/api/items/999"))
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.code").value("ITEM_NOT_FOUND"))
             .andExpect(jsonPath("$.message").value("Item with ID 999 not found"))
@@ -71,19 +72,20 @@ class GlobalExceptionHandlerTest {
     @Test
     fun `should handle validation errors with detailed messages`() {
         // Given
-        val invalidRequest = CreateItemRequest(
-            name = "",  // Invalid: empty name
-            barcode = "abc",  // Invalid: not numeric
-            price = -100  // Invalid: negative price
-        )
+        val invalidRequest =
+            CreateItemRequest(
+                name = "", // Invalid: empty name
+                barcode = "abc", // Invalid: not numeric
+                price = -100, // Invalid: negative price
+            )
 
         // When & Then
-        mockMvc.perform(
-            post("/api/items")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidRequest))
-        )
-            .andExpect(status().isBadRequest)
+        mockMvc
+            .perform(
+                post("/api/items")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalidRequest)),
+            ).andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
             .andExpect(jsonPath("$.message").exists())
     }
@@ -95,7 +97,8 @@ class GlobalExceptionHandlerTest {
             .thenThrow(RuntimeException("Database connection failed at 192.168.1.100"))
 
         // When & Then
-        mockMvc.perform(get("/api/items/1"))
+        mockMvc
+            .perform(get("/api/items/1"))
             .andExpect(status().isInternalServerError)
             .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
             .andExpect(jsonPath("$.message").value("An unexpected error occurred"))
@@ -109,7 +112,8 @@ class GlobalExceptionHandlerTest {
             .thenThrow(InvalidBarcodeException("invalid"))
 
         // When & Then
-        mockMvc.perform(get("/api/items/barcode/invalid"))
+        mockMvc
+            .perform(get("/api/items/barcode/invalid"))
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.code").value("INVALID_BARCODE"))
             .andExpect(jsonPath("$.message").value("Invalid barcode format: invalid"))

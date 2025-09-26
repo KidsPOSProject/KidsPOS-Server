@@ -4,7 +4,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class ConstantsTest {
-
     @Test
     fun `should have barcode constants defined`() {
         assertThat(Constants.Barcode.SUFFIX_LENGTH).isEqualTo(3)

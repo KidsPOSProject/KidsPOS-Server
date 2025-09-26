@@ -16,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 
 @ExtendWith(MockitoExtension::class)
 class StaffApiControllerUnitTest {
-
     @Mock
     private lateinit var staffService: StaffService
 
@@ -27,10 +26,11 @@ class StaffApiControllerUnitTest {
     fun `getStaff should return staff when found`() {
         // Arrange
         val barcode = "ST123456"
-        val expectedStaff = StaffEntity(
-            barcode = barcode,
-            name = "Test Staff"
-        )
+        val expectedStaff =
+            StaffEntity(
+                barcode = barcode,
+                name = "Test Staff",
+            )
         `when`(staffService.findStaff(barcode)).thenReturn(expectedStaff)
 
         // Act
@@ -53,9 +53,10 @@ class StaffApiControllerUnitTest {
         `when`(staffService.findStaff(barcode)).thenReturn(null)
 
         // Act & Assert
-        val exception = assertThrows<ResourceNotFoundException> {
-            controller.getStaff(barcode)
-        }
+        val exception =
+            assertThrows<ResourceNotFoundException> {
+                controller.getStaff(barcode)
+            }
         assertEquals("Staff with barcode $barcode not found", exception.message)
         verify(staffService).findStaff(barcode)
     }
@@ -67,9 +68,10 @@ class StaffApiControllerUnitTest {
         `when`(staffService.findStaff(barcode)).thenReturn(null)
 
         // Act & Assert
-        val exception = assertThrows<ResourceNotFoundException> {
-            controller.getStaff(barcode)
-        }
+        val exception =
+            assertThrows<ResourceNotFoundException> {
+                controller.getStaff(barcode)
+            }
         assertEquals("Staff with barcode  not found", exception.message)
         verify(staffService).findStaff(barcode)
     }

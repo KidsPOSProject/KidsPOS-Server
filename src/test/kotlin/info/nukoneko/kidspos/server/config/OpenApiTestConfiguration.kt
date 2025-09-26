@@ -19,7 +19,6 @@ import org.springframework.context.annotation.Primary
  */
 @TestConfiguration
 class OpenApiTestConfiguration {
-
     @Bean
     @Primary
     fun idGenerationService(): IdGenerationService = mock(IdGenerationService::class.java)
@@ -60,15 +59,11 @@ class OpenApiTestConfiguration {
     @Primary
     fun validationService(): ValidationService = mock(ValidationService::class.java)
 
-
     @Bean
     @Primary
     fun receiptService(): ReceiptService = mock(ReceiptService::class.java)
 
-
     @Bean
     @Primary
     fun saleProcessingService(): SaleProcessingService = mock(SaleProcessingService::class.java)
-
-
 }

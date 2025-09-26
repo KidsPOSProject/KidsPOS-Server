@@ -80,25 +80,25 @@ class SaleMapper(
     private val storeRepository: StoreRepository,
     private val staffRepository: StaffRepository,
     private val itemRepository: ItemRepository,
-    private val saleDetailRepository: SaleDetailRepository
+    private val saleDetailRepository: SaleDetailRepository,
 ) {
-
     fun toResponse(entity: SaleEntity): SaleResponse {
         val store = storeRepository.findById(entity.storeId).orElse(null)
         val staff = staffRepository.findById(entity.staffId.toString()).orElse(null)
         val saleDetails = saleDetailRepository.findBySaleId(entity.id)
 
-        val items = saleDetails.map { detail ->
-            val item = itemRepository.findById(detail.itemId).orElse(null)
-            SaleItemResponse(
-                itemId = detail.itemId,
-                itemName = item?.name ?: "Unknown",
-                barcode = item?.barcode ?: "",
-                quantity = detail.quantity,
-                unitPrice = detail.price,
-                subtotal = detail.price * detail.quantity
-            )
-        }
+        val items =
+            saleDetails.map { detail ->
+                val item = itemRepository.findById(detail.itemId).orElse(null)
+                SaleItemResponse(
+                    itemId = detail.itemId,
+                    itemName = item?.name ?: "Unknown",
+                    barcode = item?.barcode ?: "",
+                    quantity = detail.quantity,
+                    unitPrice = detail.price,
+                    subtotal = detail.price * detail.quantity,
+                )
+            }
 
         return SaleResponse(
             id = entity.id,
@@ -110,11 +110,9 @@ class SaleMapper(
             deposit = entity.deposit,
             change = entity.deposit - entity.amount,
             saleTime = LocalDateTime.ofInstant(entity.createdAt.toInstant(), ZoneId.systemDefault()),
-            items = items
+            items = items,
         )
     }
 
-    fun toResponseList(entities: List<SaleEntity>): List<SaleResponse> {
-        return entities.map { toResponse(it) }
-    }
+    fun toResponseList(entities: List<SaleEntity>): List<SaleResponse> = entities.map { toResponse(it) }
 }

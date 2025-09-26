@@ -7,4 +7,6 @@ import org.springframework.web.bind.annotation.ResponseStatus
  * Exception thrown when attempting to create a duplicate resource
  */
 @ResponseStatus(HttpStatus.CONFLICT)
-class DuplicateResourceException(message: String) : RuntimeException(message)
+class DuplicateResourceException(
+    message: String,
+) : RuntimeException(message)

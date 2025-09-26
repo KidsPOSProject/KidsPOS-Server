@@ -1,7 +1,7 @@
 package info.nukoneko.kidspos.common
 
-fun Char.toEm(): String {
-    return when (this) {
+fun Char.toEm(): String =
+    when (this) {
         '0' -> "０"
         '1' -> "１"
         '2' -> "２"
@@ -17,4 +17,3 @@ fun Char.toEm(): String {
         ' ' -> "　"
         else -> this.toString()
     }
-}
