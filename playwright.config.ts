@@ -56,7 +56,7 @@ export default defineConfig({
   webServer: process.env.CI ? {
     command: './gradlew bootRun',
     port: 8080,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 120 * 1000,
   } : undefined,
 });
