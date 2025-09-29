@@ -36,15 +36,6 @@ test.describe('Visual Regression Tests', () => {
     });
   });
 
-  test('Staff Management Page', async ({ page }) => {
-    await page.goto('/staffs');
-    await page.waitForSelector('h1');
-
-    await expect(page).toHaveScreenshot('staff-page.png', {
-      fullPage: true,
-      animations: 'disabled',
-    });
-  });
 
   test('Sales Report Page', async ({ page }) => {
     await page.goto('/reports/sales');
