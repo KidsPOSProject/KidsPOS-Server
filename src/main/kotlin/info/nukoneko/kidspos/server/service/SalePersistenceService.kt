@@ -102,8 +102,8 @@ class SalePersistenceService(
     /**
      * Extract staff ID from barcode
      */
-    private fun extractStaffId(staffBarcode: String): Int =
-        if (staffBarcode.length > 4) {
+    private fun extractStaffId(staffBarcode: String?): Int =
+        if (!staffBarcode.isNullOrEmpty() && staffBarcode.length > 4) {
             staffBarcode.takeLast(3).toIntOrNull() ?: 0
         } else {
             0

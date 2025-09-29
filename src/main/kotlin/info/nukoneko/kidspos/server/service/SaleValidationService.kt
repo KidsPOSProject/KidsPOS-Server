@@ -33,7 +33,8 @@ class SaleValidationService {
         logger.debug("Validating sale request for store: {}", saleBean.storeId)
 
         validateStoreId(saleBean.storeId)
-        validateStaffBarcode(saleBean.staffBarcode)
+        // staffBarcode is now optional, skip validation
+        // validateStaffBarcode(saleBean.staffBarcode)
         validateItems(items)
         validateDeposit(saleBean, items)
 

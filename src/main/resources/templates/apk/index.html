@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout::base_header('APK管理')}"></head>
+<body>
+<!-- ナビゲーションバー -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-store"></i> KidsPOS
+        </a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/">
+                <i class="fas fa-home"></i> ダッシュボード
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="main-container">
+    <!-- Main Content -->
+    <div class="container-wrapper">
+        <div class="content-area">
+            <div class="container-fluid mt-3">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card-modern">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h4 class="mb-0">
+                                        <i class="fas fa-mobile-alt text-purple me-2"></i>
+                                        APKバージョン管理
+                                    </h4>
+                                    <a href="/apk/upload" class="btn btn-primary">
+                                        <i class="fas fa-cloud-upload"></i> 新しいAPKをアップロード
+                                    </a>
+                                </div>
+                    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <span th:text="${successMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <span th:text="${errorMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+
+                    <div th:if="${latestVersion}" class="alert alert-info">
+                        <h5 class="alert-heading">最新バージョン</h5>
+                        <p class="mb-0">
+                            <strong>バージョン:</strong> <span th:text="${latestVersion.version}"></span>
+                            (コード: <span th:text="${latestVersion.versionCode}"></span>)
+                        </p>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small>アップロード日時: <span th:text="${#temporals.format(latestVersion.uploadedAt, 'yyyy-MM-dd HH:mm')}"></span></small>
+                            <a th:href="@{/api/apk/download/latest}" class="btn btn-sm btn-success">
+                                <i class="bi bi-download"></i> 最新版をダウンロード
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="apkTable">
+                            <thead>
+                            <tr>
+                                <th>バージョン</th>
+                                <th>バージョンコード</th>
+                                <th>ファイル名</th>
+                                <th>ファイルサイズ</th>
+                                <th>リリースノート</th>
+                                <th>アップロード日時</th>
+                                <th>状態</th>
+                                <th>操作</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="version : ${versions}">
+                                <td>
+                                    <strong th:text="${version.version}"></strong>
+                                    <span th:if="${latestVersion != null and version.id == latestVersion.id}"
+                                          class="badge bg-success ms-1">最新</span>
+                                </td>
+                                <td th:text="${version.versionCode}"></td>
+                                <td th:text="${version.fileName}"></td>
+                                <td th:text="${#numbers.formatDecimal(version.fileSize / 1048576.0, 1, 2)} + ' MB'"></td>
+                                <td>
+                                    <span th:if="${version.releaseNotes}"
+                                          th:text="${#strings.abbreviate(version.releaseNotes, 50)}"
+                                          th:title="${version.releaseNotes}"></span>
+                                    <span th:unless="${version.releaseNotes}" class="text-muted">-</span>
+                                </td>
+                                <td th:text="${#temporals.format(version.uploadedAt, 'yyyy-MM-dd HH:mm')}"></td>
+                                <td>
+                                    <span th:if="${version.isActive}" class="badge bg-success">有効</span>
+                                    <span th:unless="${version.isActive}" class="badge bg-secondary">無効</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <!-- ダウンロードボタン -->
+                                        <a th:href="@{/api/apk/download/{id}(id=${version.id})}"
+                                           class="btn btn-outline-primary"
+                                           title="APKファイルをダウンロード"
+                                           data-bs-toggle="tooltip"
+                                           data-bs-placement="top">
+                                            <i class="bi bi-download me-1"></i>ダウンロード
+                                        </a>
+
+                                        <!-- 有効/無効化ボタン -->
+                                        <button th:if="${version.isActive}"
+                                                type="button"
+                                                class="btn btn-outline-warning"
+                                                onclick="deactivateVersion(this)"
+                                                th:data-id="${version.id}"
+                                                th:data-version="${version.version}"
+                                                title="このバージョンを無効化（アプリの自動更新対象から除外）"
+                                                data-bs-toggle="tooltip"
+                                                data-bs-placement="top">
+                                            <i class="bi bi-pause-circle me-1"></i>無効化
+                                        </button>
+                                        <button th:unless="${version.isActive}"
+                                                type="button"
+                                                class="btn btn-outline-success"
+                                                onclick="activateVersion(this)"
+                                                th:data-id="${version.id}"
+                                                th:data-version="${version.version}"
+                                                title="このバージョンを有効化（アプリの自動更新対象に含める）"
+                                                data-bs-toggle="tooltip"
+                                                data-bs-placement="top">
+                                            <i class="bi bi-play-circle me-1"></i>有効化
+                                        </button>
+
+                                        <!-- 削除ボタン -->
+                                        <button type="button"
+                                                class="btn btn-outline-danger"
+                                                onclick="deleteVersion(this)"
+                                                th:data-id="${version.id}"
+                                                th:data-version="${version.version}"
+                                                th:data-filename="${version.fileName}"
+                                                title="このバージョンを完全に削除（復元不可）"
+                                                data-bs-toggle="tooltip"
+                                                data-bs-placement="top">
+                                            <i class="bi bi-trash me-1"></i>削除
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- API情報カード -->
+                    <div class="card-modern mt-4">
+                        <div class="card-body">
+                            <h5 class="mb-3">
+                                <i class="fas fa-code"></i> API エンドポイント
+                            </h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <tr>
+                                <th style="width: 200px;">最新バージョン取得</th>
+                                <td><code>GET /api/apk/version/latest</code></td>
+                            </tr>
+                            <tr>
+                                <th>アップデート確認</th>
+                                <td><code>GET /api/apk/version/check?currentVersionCode={versionCode}</code></td>
+                            </tr>
+                            <tr>
+                                <th>最新APKダウンロード</th>
+                                <td><code>GET /api/apk/download/latest</code></td>
+                            </tr>
+                            <tr>
+                                <th>特定バージョンダウンロード</th>
+                                <td><code>GET /api/apk/download/{id}</code></td>
+                            </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+/*<![CDATA[*/
+    // Bootstrap ツールチップの初期化
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+
+    function deactivateVersion(button) {
+        const id = button.getAttribute('data-id');
+        const version = button.getAttribute('data-version');
+
+        // より詳細な確認ダイアログ
+        const message = `バージョン ${version} を無効化しますか？\n\n無効化すると：\n・アプリの自動更新対象から除外されます\n・直接ダウンロードは引き続き可能です\n・後で有効化することができます`;
+
+        if (confirm(message)) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/apk/${id}/deactivate`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function activateVersion(button) {
+        const id = button.getAttribute('data-id');
+        const version = button.getAttribute('data-version');
+
+        const message = `バージョン ${version} を有効化しますか？\n\n有効化すると：\n・アプリの自動更新対象に含まれます\n・最新バージョンの候補として扱われます`;
+
+        if (confirm(message)) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/apk/${id}/activate`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function deleteVersion(button) {
+        const id = button.getAttribute('data-id');
+        const version = button.getAttribute('data-version');
+        const filename = button.getAttribute('data-filename');
+
+        // より詳細で警告的な確認ダイアログ
+        const message = `⚠️ 警告：バージョン ${version} を完全に削除しますか？\n\nファイル名：${filename}\n\n削除されるもの：\n・データベースからのレコード\n・サーバー上のAPKファイル\n\n⚠️ この操作は取り消すことができません！\n\n本当に削除しますか？`;
+
+        if (confirm(message)) {
+            // 二重確認
+            if (confirm(`最終確認：本当にバージョン ${version} を削除しますか？`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/apk/${id}/delete`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    }
+
+    // DataTable initialization removed due to Thymeleaf compatibility issues
+/*]]>*/
+</script>
+</body>
+</html>

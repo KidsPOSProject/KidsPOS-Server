@@ -3,43 +3,84 @@
 <head th:replace="~{layout::base_header('商品編集')}">
 </head>
 <body>
-<div class="page-container">
-    <div class="form-container">
-        <h1><i class="fas fa-edit"></i> 商品編集</h1>
-        <form th:action="@{/items/{id}/update(id=${item.id})}" method="post">
-            <div class="form-group">
-                <label for="barcode">バーコード</label>
-                <input type="text" id="barcode" name="barcode" th:value="${item.barcode}" required
-                       placeholder="8〜13桁の数字で入力">
-            </div>
-            <div class="form-group">
-                <label for="name">商品名</label>
-                <input type="text" id="name" name="name" th:value="${item.name}" required
-                       placeholder="商品名を入力してください">
-            </div>
-            <div class="form-group">
-                <label for="price">価格 (円)</label>
-                <input type="number" id="price" name="price" th:value="${item.price}" required min="0"
-                       placeholder="価格を入力してください">
-            </div>
+<!-- ナビゲーションバー -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-store"></i> KidsPOS
+        </a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/items">
+                <i class="fas fa-box"></i> 商品管理
+            </a>
+            <a class="nav-link" href="/">
+                <i class="fas fa-home"></i> ダッシュボード
+            </a>
+        </div>
+    </div>
+</nav>
 
-            <div class="btn-group">
-                <button type="submit" class="btn btn-modern btn-modern-primary">
-                    <i class="fas fa-save"></i> 更新
-                </button>
-                <a href="/items" class="btn btn-modern btn-modern-secondary">
-                    <i class="fas fa-times"></i> キャンセル
-                </a>
-            </div>
-        </form>
+<div class="main-container">
+    <!-- Main Content -->
+    <div class="container-wrapper">
+        <div class="content-area">
+            <div class="container-fluid mt-3">
+                <div class="row">
+                    <div class="col-12 col-md-8 col-lg-6 mx-auto">
+                        <div class="card-modern">
+                            <div class="card-body">
+                                <h4 class="mb-4 text-center">
+                                    <i class="fas fa-edit text-warning me-2"></i>
+                                    商品編集
+                                </h4>
+                                <form th:action="@{/items/{id}/update(id=${item.id})}" method="post">
+                                    <div class="mb-3">
+                                        <label for="barcode" class="form-label">バーコード <span class="text-danger">*</span></label>
+                                        <input type="text" id="barcode" name="barcode" class="form-control" th:value="${item.barcode}" required
+                                               placeholder="8〜13桁の数字で入力"
+                                               pattern="^\d{8,13}$"
+                                               title="バーコードは8〜13桁の数字で入力してください">
+                                        <div class="form-text">バーコードは8〜13桁の数字で入力してください</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">商品名 <span class="text-danger">*</span></label>
+                                        <input type="text" id="name" name="name" class="form-control" th:value="${item.name}" required
+                                               placeholder="商品名を入力してください">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="price" class="form-label">価格 <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">¥</span>
+                                            <input type="number" id="price" name="price" class="form-control" th:value="${item.price}" required min="0"
+                                                   placeholder="価格を入力してください">
+                                        </div>
+                                    </div>
 
-        <div class="section-spacing">
-            <form th:action="@{/items/{id}/delete(id=${item.id})}" method="post"
-                  onsubmit="return confirm('この商品を削除しますか？')">
-                <button type="submit" class="btn btn-modern btn-modern-danger">
-                    <i class="fas fa-trash"></i> 削除
-                </button>
-            </form>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <a href="/items" class="btn btn-secondary">
+                                            <i class="fas fa-arrow-left"></i> 戻る
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> 更新
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <hr class="my-4">
+
+                                <div class="text-center">
+                                    <form th:action="@{/items/{id}/delete(id=${item.id})}" method="post"
+                                          onsubmit="return confirm('この商品を削除しますか？この操作は取り消しできません。')">
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="fas fa-trash"></i> 商品を削除する
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

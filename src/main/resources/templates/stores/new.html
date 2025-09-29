@@ -1,27 +1,72 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
-<!--suppress HtmlRequiredTitleElement -->
-<head th:replace="~{layout::base_header(${title})}">
-</head>
+<head th:replace="~{layout::base_header('店舗作成')}"></head>
 <body>
-<div class="container">
-    <h1>New Store</h1>
-    <form th:action="@{/stores}" th:method="post">
-        <div class="form-group">
-            <label class="control-label">店舗名</label>
-            <input class="form-control" name="name" type="text" required/>
+<!-- ナビゲーションバー -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-store"></i> KidsPOS
+        </a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/stores">
+                <i class="fas fa-store-alt"></i> 店舗管理
+            </a>
+            <a class="nav-link" href="/">
+                <i class="fas fa-home"></i> ダッシュボード
+            </a>
         </div>
-        <div class="form-group">
-            <label class="control-label">プリンタIP</label>
-            <input class="form-control" name="printerUri" type="text"
-                   placeholder="例: 192.168.1.100"
-                   pattern="^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-                   title="有効なIPアドレスを入力してください"/>
+    </div>
+</nav>
+
+<div class="main-container">
+    <!-- Main Content -->
+    <div class="container-wrapper">
+        <div class="content-area">
+            <div class="container-fluid mt-3">
+                <div class="row">
+                    <div class="col-12 col-md-8 col-lg-6 mx-auto">
+                        <div class="card-modern">
+                            <div class="card-body">
+                                <h4 class="mb-4 text-center">
+                                    <i class="fas fa-plus-circle text-success me-2"></i>
+                                    新規店舗作成
+                                </h4>
+                                <form th:action="@{/stores}" th:method="post">
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">店舗名 <span class="text-danger">*</span></label>
+                                        <input id="name" name="name" type="text" class="form-control"
+                                               required
+                                               placeholder="店舗名を入力してください"
+                                               maxlength="100"/>
+                                        <div class="form-text">店舗を識別するための名前を入力してください</div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label for="printerUri" class="form-label">プリンタURI</label>
+                                        <input id="printerUri" name="printerUri" type="text" class="form-control"
+                                               placeholder="例: http://192.168.1.100:8080"/>
+                                        <div class="form-text">
+                                            レシート印刷用のプリンタURIを入力してください（任意）<br/>
+                                            <small class="text-muted">形式: http://IPアドレス:ポート番号</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between">
+                                        <a class="btn btn-secondary" href="/stores">
+                                            <i class="fas fa-arrow-left"></i> 戻る
+                                        </a>
+                                        <button class="btn btn-success" type="submit">
+                                            <i class="fas fa-save"></i> 作成
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <button class="btn btn-outline-primary" type="submit">作成</button>
-    </form>
-    <div class="pull-right">
-        <a class="btn btn-outline-warning" href="/stores">一覧画面へ</a>
     </div>
 </div>
 <script src="/validation.js"></script>
