@@ -24,7 +24,6 @@ class SaleExcelReportService(
     private val saleDetailRepository: SaleDetailRepository,
     private val itemRepository: ItemRepository,
     private val storeRepository: StoreRepository,
-    private val staffRepository: StaffRepository,
 ) {
     private val logger = LoggerFactory.getLogger(SaleExcelReportService::class.java)
     private val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm")
@@ -63,12 +62,6 @@ class SaleExcelReportService(
     private fun prepareSalesReportData(sales: List<SaleEntity>): List<SaleReportData> =
         sales.map { sale ->
             val store = storeRepository.findById(sale.storeId).orElse(null)
-            val staff =
-                if (sale.staffId > 0) {
-                    staffRepository.findById(sale.staffId.toString()).orElse(null)
-                } else {
-                    null
-                }
             val details =
                 saleDetailRepository.findBySaleId(sale.id).map { detail ->
                     val item = itemRepository.findById(detail.itemId).orElse(null)
@@ -85,8 +78,6 @@ class SaleExcelReportService(
                 saleId = sale.id,
                 storeId = sale.storeId,
                 storeName = store?.name ?: "不明な店舗",
-                staffId = sale.staffId,
-                staffName = staff?.name ?: "不明なスタッフ",
                 quantity = sale.quantity,
                 amount = sale.amount,
                 createdAt = sale.createdAt,
@@ -224,7 +215,7 @@ class SaleExcelReportService(
 
         // ヘッダー行
         val headerRow = sheet.createRow(rowNum++)
-        val headers = listOf("売上ID", "日時", "店舗名", "スタッフ名", "商品数", "金額", "商品明細")
+        val headers = listOf("売上ID", "日時", "店舗名", "商品数", "金額", "商品明細")
         headers.forEachIndexed { index, header ->
             val cell = headerRow.createCell(index)
             cell.setCellValue(header)
@@ -241,10 +232,9 @@ class SaleExcelReportService(
             dateCell.cellStyle = dateStyle
 
             row.createCell(2).setCellValue(sale.storeName)
-            row.createCell(3).setCellValue(sale.staffName)
-            row.createCell(4).setCellValue(sale.quantity.toDouble())
+            row.createCell(3).setCellValue(sale.quantity.toDouble())
 
-            val amountCell = row.createCell(5)
+            val amountCell = row.createCell(4)
             amountCell.setCellValue(sale.amount.toDouble())
             amountCell.cellStyle = currencyStyle
 
@@ -256,18 +246,18 @@ class SaleExcelReportService(
                 } else {
                     "-"
                 }
-            row.createCell(6).setCellValue(detailText)
+            row.createCell(5).setCellValue(detailText)
         }
 
         // 合計行
         val totalRow = sheet.createRow(rowNum++)
-        totalRow.createCell(3).setCellValue("合計")
-        val totalCell = totalRow.createCell(5)
+        totalRow.createCell(2).setCellValue("合計")
+        val totalCell = totalRow.createCell(4)
         totalCell.setCellValue(reportData.sumOf { it.amount }.toDouble())
         totalCell.cellStyle = currencyStyle
 
         // 列幅の自動調整
-        for (i in 0..6) {
+        for (i in 0..5) {
             sheet.autoSizeColumn(i)
         }
     }

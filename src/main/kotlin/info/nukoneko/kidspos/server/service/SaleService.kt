@@ -39,9 +39,6 @@ class SaleService(
     @Autowired
     private lateinit var storeRepository: StoreRepository
 
-    @Autowired
-    private lateinit var staffRepository: StaffRepository
-
     fun findAllSale(): List<SaleEntity> = saleRepository.findAll()
 
     fun findAllSaleDetail(): List<SaleDetailEntity> = saleDetailRepository.findAll()
@@ -64,14 +61,6 @@ class SaleService(
         val id = idGenerationService.generateNextId(saleRepository)
 
         // 売り上げを保存
-        val staffId =
-            if (!saleBean.staffBarcode.isNullOrEmpty() && saleBean.staffBarcode.length > Constants.Barcode.MIN_LENGTH) {
-                saleBean.staffBarcode
-                    .substring(saleBean.staffBarcode.length - Constants.Barcode.SUFFIX_LENGTH)
-                    .toIntOrNull() ?: 0
-            } else {
-                0
-            }
         items.forEach {
             logger.debug("Item - ID: {}, Name: {}, Price: {}", it.id, it.name, it.price)
         }
@@ -79,7 +68,6 @@ class SaleService(
             SaleEntity(
                 id,
                 saleBean.storeId,
-                staffId,
                 items.size,
                 items.sumOf { it.price },
                 saleBean.deposit,

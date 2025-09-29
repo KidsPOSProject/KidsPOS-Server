@@ -31,7 +31,6 @@ class SaleReportService(
     private val saleDetailRepository: SaleDetailRepository,
     private val itemRepository: ItemRepository,
     private val storeRepository: StoreRepository,
-    private val staffRepository: StaffRepository,
 ) {
     private val logger = LoggerFactory.getLogger(SaleReportService::class.java)
     private val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm")
@@ -70,12 +69,6 @@ class SaleReportService(
     private fun prepareSalesReportData(sales: List<SaleEntity>): List<SaleReportData> =
         sales.map { sale ->
             val store = storeRepository.findById(sale.storeId).orElse(null)
-            val staff =
-                if (sale.staffId > 0) {
-                    staffRepository.findById(sale.staffId.toString()).orElse(null)
-                } else {
-                    null
-                }
             val details =
                 saleDetailRepository.findBySaleId(sale.id).map { detail ->
                     val item = itemRepository.findById(detail.itemId).orElse(null)
@@ -92,8 +85,6 @@ class SaleReportService(
                 saleId = sale.id,
                 storeId = sale.storeId,
                 storeName = store?.name ?: "不明な店舗",
-                staffId = sale.staffId,
-                staffName = staff?.name ?: "不明なスタッフ",
                 quantity = sale.quantity,
                 amount = sale.amount,
                 createdAt = sale.createdAt,
@@ -209,14 +200,13 @@ class SaleReportService(
         document.add(tableTitle)
 
         val table =
-            Table(UnitValue.createPercentArray(floatArrayOf(10f, 20f, 15f, 15f, 15f, 15f, 10f)))
+            Table(UnitValue.createPercentArray(floatArrayOf(10f, 20f, 20f, 15f, 15f, 20f)))
                 .useAllAvailableWidth()
 
         // ヘッダー行
         table.addHeaderCell(createHeaderCell("売上ID"))
         table.addHeaderCell(createHeaderCell("日時"))
         table.addHeaderCell(createHeaderCell("店舗"))
-        table.addHeaderCell(createHeaderCell("スタッフ"))
         table.addHeaderCell(createHeaderCell("商品数"))
         table.addHeaderCell(createHeaderCell("金額"))
         table.addHeaderCell(createHeaderCell("詳細"))
@@ -226,7 +216,6 @@ class SaleReportService(
             table.addCell(createDataCell(sale.saleId.toString()))
             table.addCell(createDataCell(dateFormat.format(sale.createdAt)))
             table.addCell(createDataCell(sale.storeName))
-            table.addCell(createDataCell(sale.staffName))
             table.addCell(createDataCell(sale.quantity.toString()))
             table.addCell(createDataCell("¥${numberFormat.format(sale.amount)}"))
 

@@ -12,7 +12,6 @@ import jakarta.validation.constraints.NotNull
 data class CreateSaleRequest(
     @field:NotNull(message = "Store ID is required")
     val storeId: Int,
-    val staffBarcode: String? = null,
     @field:NotBlank(message = "Item IDs are required")
     val itemIds: String = "",
     @field:Min(value = 0, message = "Deposit must be non-negative")

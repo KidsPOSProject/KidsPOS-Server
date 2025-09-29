@@ -34,7 +34,6 @@ class SaleRepositoryTest {
             SaleEntity(
                 id = 0,
                 storeId = 1,
-                staffId = 1,
                 quantity = 2,
                 amount = 300,
                 deposit = 400,
@@ -44,7 +43,6 @@ class SaleRepositoryTest {
             SaleEntity(
                 id = 0,
                 storeId = 1,
-                staffId = 2,
                 quantity = 3,
                 amount = 500,
                 deposit = 500,
@@ -54,7 +52,6 @@ class SaleRepositoryTest {
             SaleEntity(
                 id = 0,
                 storeId = 2,
-                staffId = 1,
                 quantity = 1,
                 amount = 200,
                 deposit = 300,
@@ -84,7 +81,6 @@ class SaleRepositoryTest {
             SaleEntity(
                 id = 0,
                 storeId = 3,
-                staffId = 3,
                 quantity = 4,
                 amount = 600,
                 deposit = 700,
@@ -233,7 +229,6 @@ class SaleRepositoryTest {
             SaleEntity(
                 id = testSale1.id,
                 storeId = testSale1.storeId,
-                staffId = testSale1.staffId,
                 quantity = testSale1.quantity,
                 amount = 350,
                 deposit = testSale1.deposit,

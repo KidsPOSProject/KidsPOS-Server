@@ -44,7 +44,6 @@ class SaleApiControllerUnitTest {
             SaleEntity(
                 id = 1,
                 storeId = 1,
-                staffId = 1,
                 quantity = 2,
                 amount = 300,
                 deposit = 400,
@@ -64,7 +63,6 @@ class SaleApiControllerUnitTest {
         val request =
             CreateSaleRequest(
                 storeId = 1,
-                staffBarcode = "STAFF001",
                 itemIds = "1,2",
                 deposit = 400,
             )
@@ -82,7 +80,6 @@ class SaleApiControllerUnitTest {
         val expectedSaleBean =
             SaleBean(
                 storeId = request.storeId,
-                staffBarcode = request.staffBarcode,
                 itemIds = request.itemIds,
                 deposit = request.deposit,
             )
@@ -90,7 +87,7 @@ class SaleApiControllerUnitTest {
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(expectedSaleBean, testItems))
             .thenReturn(SaleResult.Success(testSale, summary))
-        `when`(receiptService.printReceipt(1, testItems, "STAFF001", 400)).thenReturn(true)
+        `when`(receiptService.printReceipt(1, testItems, 400)).thenReturn(true)
 
         // When
         val result = controller.createSale(request)
@@ -108,7 +105,7 @@ class SaleApiControllerUnitTest {
 
         verify(itemParsingService).parseItemsFromIds("1,2")
         verify(saleProcessingService).processSaleWithValidation(expectedSaleBean, testItems)
-        verify(receiptService).printReceipt(1, testItems, "STAFF001", 400)
+        verify(receiptService).printReceipt(1, testItems, 400)
     }
 
     @Test
@@ -117,7 +114,6 @@ class SaleApiControllerUnitTest {
         val request =
             CreateSaleRequest(
                 storeId = 1,
-                staffBarcode = "STAFF001",
                 itemIds = "1,2",
                 deposit = 100,
             )
@@ -125,7 +121,6 @@ class SaleApiControllerUnitTest {
         val expectedSaleBean =
             SaleBean(
                 storeId = request.storeId,
-                staffBarcode = request.staffBarcode,
                 itemIds = request.itemIds,
                 deposit = request.deposit,
             )
@@ -155,7 +150,6 @@ class SaleApiControllerUnitTest {
         val request =
             CreateSaleRequest(
                 storeId = 1,
-                staffBarcode = "STAFF001",
                 itemIds = "1,2",
                 deposit = 400,
             )
@@ -163,7 +157,6 @@ class SaleApiControllerUnitTest {
         val expectedSaleBean =
             SaleBean(
                 storeId = request.storeId,
-                staffBarcode = request.staffBarcode,
                 itemIds = request.itemIds,
                 deposit = request.deposit,
             )
@@ -193,7 +186,6 @@ class SaleApiControllerUnitTest {
         val request =
             CreateSaleRequest(
                 storeId = 1,
-                staffBarcode = "STAFF001",
                 itemIds = "1,2",
                 deposit = 400,
             )
@@ -222,7 +214,6 @@ class SaleApiControllerUnitTest {
         val request =
             CreateSaleRequest(
                 storeId = 1,
-                staffBarcode = "STAFF001",
                 itemIds = "1,2",
                 deposit = 400,
             )
@@ -230,7 +221,6 @@ class SaleApiControllerUnitTest {
         val expectedSaleBean =
             SaleBean(
                 storeId = request.storeId,
-                staffBarcode = request.staffBarcode,
                 itemIds = request.itemIds,
                 deposit = request.deposit,
             )

@@ -81,7 +81,6 @@ class QueryOptimizationTest {
             SaleEntity(
                 id = 1,
                 storeId = 1,
-                staffId = 1,
                 quantity = 3,
                 amount = 300,
                 deposit = 500,

@@ -6,8 +6,6 @@ data class SaleReportData(
     val saleId: Int,
     val storeId: Int,
     val storeName: String,
-    val staffId: Int,
-    val staffName: String,
     val quantity: Int,
     val amount: Int,
     val createdAt: Date,

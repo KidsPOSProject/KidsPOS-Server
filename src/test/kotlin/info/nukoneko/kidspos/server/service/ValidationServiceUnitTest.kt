@@ -2,7 +2,6 @@ package info.nukoneko.kidspos.server.service
 
 import info.nukoneko.kidspos.server.domain.exception.ValidationException
 import info.nukoneko.kidspos.server.repository.ItemRepository
-import info.nukoneko.kidspos.server.repository.StaffRepository
 import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -22,9 +21,6 @@ class ValidationServiceUnitTest {
 
     @Mock
     private lateinit var storeRepository: StoreRepository
-
-    @Mock
-    private lateinit var staffRepository: StaffRepository
 
     @InjectMocks
     private lateinit var validationService: ValidationService

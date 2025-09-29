@@ -17,7 +17,6 @@ import java.util.*
 @Service
 class ReceiptService(
     private val storeService: StoreService,
-    private val staffService: StaffService,
     private val appProperties: AppProperties,
 ) {
     private val logger = LoggerFactory.getLogger(ReceiptService::class.java)
@@ -28,13 +27,12 @@ class ReceiptService(
     fun printReceipt(
         storeId: Int,
         items: List<ItemBean>,
-        staffBarcode: String,
         deposit: Int,
     ): Boolean {
         logger.debug("Printing receipt for store: {}, items: {}", storeId, items.size)
 
         return try {
-            val receiptDetail = createReceiptDetail(storeId, items, staffBarcode, deposit)
+            val receiptDetail = createReceiptDetail(storeId, items, deposit)
             val printerIp = getPrinterIp(storeId) ?: return false
 
             sendToPrinter(printerIp, receiptDetail)
@@ -52,7 +50,6 @@ class ReceiptService(
     private fun createReceiptDetail(
         storeId: Int,
         items: List<ItemBean>,
-        staffBarcode: String,
         deposit: Int,
     ): ReceiptDetail {
         val itemEntities =
@@ -66,12 +63,10 @@ class ReceiptService(
             }
 
         val storeName = storeService.findStore(storeId)?.name
-        val staffName = staffService.findStaff(staffBarcode)?.name
 
         return ReceiptDetail(
             items = itemEntities,
             storeName = storeName,
-            staffName = staffName,
             deposit = deposit,
             transactionId = UUID.randomUUID().toString(),
             createdAt = Date(),
@@ -126,18 +121,15 @@ class ReceiptService(
     fun generateReceiptContent(
         storeId: Int,
         items: List<ItemBean>,
-        staffBarcode: String,
         deposit: Int,
     ): String {
         val storeName = storeService.findStore(storeId)?.name ?: "Unknown Store"
-        val staffName = staffService.findStaff(staffBarcode)?.name ?: "Unknown Staff"
         val totalAmount = items.sumOf { it.price }
         val change = deposit - totalAmount
 
         return buildString {
             appendLine("========== RECEIPT ==========")
             appendLine("Store: $storeName")
-            appendLine("Staff: $staffName")
             appendLine("Date: ${Date()}")
             appendLine("-----------------------------")
             items.forEach { item ->

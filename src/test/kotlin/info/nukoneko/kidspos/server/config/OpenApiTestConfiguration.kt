@@ -4,7 +4,6 @@ import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.service.*
 import info.nukoneko.kidspos.server.service.mapper.ItemMapper
 import info.nukoneko.kidspos.server.service.mapper.SaleMapper
-import info.nukoneko.kidspos.server.service.mapper.StaffMapper
 import info.nukoneko.kidspos.server.service.mapper.StoreMapper
 import org.mockito.Mockito.mock
 import org.springframework.boot.test.context.TestConfiguration
@@ -37,19 +36,11 @@ class OpenApiTestConfiguration {
 
     @Bean
     @Primary
-    fun staffService(): StaffService = mock(StaffService::class.java)
-
-    @Bean
-    @Primary
     fun itemMapper(): ItemMapper = mock(ItemMapper::class.java)
 
     @Bean
     @Primary
     fun storeMapper(): StoreMapper = mock(StoreMapper::class.java)
-
-    @Bean
-    @Primary
-    fun staffMapper(): StaffMapper = mock(StaffMapper::class.java)
 
     @Bean
     @Primary

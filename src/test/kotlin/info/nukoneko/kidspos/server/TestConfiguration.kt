@@ -3,7 +3,6 @@ package info.nukoneko.kidspos.server
 import info.nukoneko.kidspos.server.repository.*
 import info.nukoneko.kidspos.server.service.SaleService
 import info.nukoneko.kidspos.server.service.SettingService
-import info.nukoneko.kidspos.server.service.StaffService
 import info.nukoneko.kidspos.server.service.StoreService
 import org.mockito.Mockito.mock
 import org.springframework.boot.test.context.TestConfiguration
@@ -36,10 +35,6 @@ class TestConfiguration {
 
     @Bean
     @Primary
-    fun mockStaffRepository(): StaffRepository = mock(StaffRepository::class.java)
-
-    @Bean
-    @Primary
     fun mockSettingRepository(): SettingRepository = mock(SettingRepository::class.java)
 
     // Mock all services that might be autowired
@@ -50,10 +45,6 @@ class TestConfiguration {
     @Bean
     @Primary
     fun mockStoreService(): StoreService = mock(StoreService::class.java)
-
-    @Bean
-    @Primary
-    fun mockStaffService(): StaffService = mock(StaffService::class.java)
 
     @Bean
     @Primary

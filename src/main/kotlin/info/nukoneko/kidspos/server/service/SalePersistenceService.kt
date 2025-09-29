@@ -34,7 +34,6 @@ class SalePersistenceService(
         items: List<ItemBean>,
     ): SaleEntity {
         val saleId = idGenerationService.generateNextId(saleRepository)
-        val staffId = extractStaffId(saleBean.staffBarcode)
         val totalAmount = saleCalculationService.calculateSaleAmount(items)
         val quantity = saleCalculationService.calculateQuantity(items)
 
@@ -42,7 +41,6 @@ class SalePersistenceService(
             SaleEntity(
                 id = saleId,
                 storeId = saleBean.storeId,
-                staffId = staffId,
                 quantity = quantity,
                 amount = totalAmount,
                 deposit = saleBean.deposit,
@@ -98,16 +96,6 @@ class SalePersistenceService(
         logger.info("Saved {} sale detail records for sale ID: {}", savedDetails.size, saleId)
         return savedDetails
     }
-
-    /**
-     * Extract staff ID from barcode
-     */
-    private fun extractStaffId(staffBarcode: String?): Int =
-        if (!staffBarcode.isNullOrEmpty() && staffBarcode.length > 4) {
-            staffBarcode.takeLast(3).toIntOrNull() ?: 0
-        } else {
-            0
-        }
 
     /**
      * Find sale by ID

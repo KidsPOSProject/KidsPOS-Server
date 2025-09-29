@@ -61,7 +61,6 @@ class SaleApiControllerTest {
             SaleEntity(
                 id = 1,
                 storeId = 1,
-                staffId = 1,
                 quantity = 2,
                 amount = 300,
                 deposit = 400,
@@ -81,7 +80,6 @@ class SaleApiControllerTest {
         val request =
             CreateSaleRequest(
                 storeId = 1,
-                staffBarcode = "STAFF001",
                 itemIds = "1,2",
                 deposit = 400,
             )
@@ -99,7 +97,7 @@ class SaleApiControllerTest {
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(any(), any()))
             .thenReturn(SaleResult.Success(testSale, summary))
-        `when`(receiptService.printReceipt(any(), any(), any(), any())).thenReturn(true)
+        `when`(receiptService.printReceipt(any(), any(), any())).thenReturn(true)
 
         // When & Then
         mockMvc
@@ -120,7 +118,6 @@ class SaleApiControllerTest {
         val request =
             CreateSaleRequest(
                 storeId = 1,
-                staffBarcode = "STAFF001",
                 itemIds = "1,2",
                 deposit = 100,
             )
@@ -139,7 +136,7 @@ class SaleApiControllerTest {
 
         verify(itemParsingService).parseItemsFromIds("1,2")
         verify(saleProcessingService).processSaleWithValidation(any(), any())
-        verify(receiptService, never()).printReceipt(any(), any(), any(), any())
+        verify(receiptService, never()).printReceipt(any(), any(), any())
     }
 
     @Test
@@ -148,7 +145,6 @@ class SaleApiControllerTest {
         val request =
             CreateSaleRequest(
                 storeId = 1,
-                staffBarcode = "STAFF001",
                 itemIds = "1,2",
                 deposit = 400,
             )
@@ -175,7 +171,6 @@ class SaleApiControllerTest {
         val request =
             CreateSaleRequest(
                 storeId = 1,
-                staffBarcode = "STAFF001",
                 itemIds = "1,2",
                 deposit = 400,
             )
@@ -204,8 +199,6 @@ class SaleApiControllerTest {
                 id = 1,
                 storeId = 1,
                 storeName = "Store 1",
-                staffId = "STAFF001",
-                staffName = "Test Staff",
                 totalAmount = 300,
                 deposit = 400,
                 change = 100,
@@ -236,8 +229,6 @@ class SaleApiControllerTest {
                 id = 1,
                 storeId = 1,
                 storeName = "Store 1",
-                staffId = "STAFF001",
-                staffName = "Test Staff",
                 totalAmount = 300,
                 deposit = 400,
                 change = 100,
@@ -302,7 +293,6 @@ class SaleApiControllerTest {
             """
             {
                 "storeId": null,
-                "staffBarcode": "",
                 "itemIds": "",
                 "deposit": -100
             }
@@ -323,7 +313,6 @@ class SaleApiControllerTest {
         val invalidRequest =
             CreateSaleRequest(
                 storeId = -1,
-                staffBarcode = "",
                 itemIds = "",
                 deposit = -100,
             )
