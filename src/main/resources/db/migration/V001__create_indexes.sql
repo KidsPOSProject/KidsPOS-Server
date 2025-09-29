@@ -17,8 +17,6 @@ CREATE INDEX IF NOT EXISTS idx_sale_created_at ON sale (created_at);
 CREATE INDEX IF NOT EXISTS idx_sale_detail_sale_id ON sale_detail (sale_id);
 CREATE INDEX IF NOT EXISTS idx_sale_detail_item_id ON sale_detail (item_id);
 
--- Index on staff barcode for authentication
-CREATE INDEX IF NOT EXISTS idx_staff_barcode ON staff (barcode);
 
 -- Index on setting key for configuration lookups
 CREATE INDEX IF NOT EXISTS idx_setting_key ON setting (key);
