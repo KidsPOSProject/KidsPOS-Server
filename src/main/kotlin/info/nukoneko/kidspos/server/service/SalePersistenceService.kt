@@ -36,6 +36,7 @@ class SalePersistenceService(
         val saleId = idGenerationService.generateNextId(saleRepository)
         val totalAmount = saleCalculationService.calculateSaleAmount(items)
         val quantity = saleCalculationService.calculateQuantity(items)
+        val changeAmount = saleCalculationService.calculateChange(saleBean.deposit, totalAmount)
 
         val sale =
             SaleEntity(
@@ -44,6 +45,7 @@ class SalePersistenceService(
                 quantity = quantity,
                 amount = totalAmount,
                 deposit = saleBean.deposit,
+                changeAmount = changeAmount,
                 createdAt = Date(),
             )
 

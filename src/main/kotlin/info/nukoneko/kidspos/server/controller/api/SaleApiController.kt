@@ -11,8 +11,10 @@ import info.nukoneko.kidspos.server.service.mapper.SaleMapper
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
+import org.springframework.scheduling.annotation.Async
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
+import java.util.concurrent.CompletableFuture
 
 /**
  * 販売APIコントローラー
@@ -50,12 +52,18 @@ class SaleApiController(
                 )
             when (val result = saleProcessingService.processSaleWithValidation(saleBean, items)) {
                 is SaleResult.Success -> {
-                    // Print receipt
-                    receiptService.printReceipt(
-                        request.storeId,
-                        items,
-                        request.deposit,
-                    )
+                    // Print receipt asynchronously (non-blocking)
+                    CompletableFuture.runAsync {
+                        try {
+                            receiptService.printReceipt(
+                                request.storeId,
+                                items,
+                                request.deposit,
+                            )
+                        } catch (e: Exception) {
+                            logger.error("Failed to print receipt asynchronously", e)
+                        }
+                    }
 
                     val sale = result.sale
                     val response =
