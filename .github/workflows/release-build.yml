@@ -47,14 +47,15 @@ jobs:
       - name: Rename JAR file
         run: |
           cd build/libs
-          # bootJarで生成されたJARファイルを見つける
-          JAR_FILE=$(ls kidspos-*.jar | grep -v plain | head -1)
+          # bootJarで生成されたJARファイルを見つける（server-*.jar）
+          JAR_FILE=$(ls server-*.jar 2>/dev/null | grep -v plain | head -1)
           if [ -n "$JAR_FILE" ]; then
             mv "$JAR_FILE" kidspos-${{ steps.get_version.outputs.VERSION }}.jar
             echo "Renamed to: kidspos-${{ steps.get_version.outputs.VERSION }}.jar"
             ls -lh
           else
             echo "Error: JAR file not found"
+            ls -la
             exit 1
           fi
 
