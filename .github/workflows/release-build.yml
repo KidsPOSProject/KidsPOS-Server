@@ -1,0 +1,159 @@
+name: Release Build
+
+# バイナリファイル（JAR）を生成してアーティファクトとして提供
+
+on:
+  # 手動実行を許可
+  workflow_dispatch:
+
+  # リリースタグ（v*）がプッシュされた時に実行
+  push:
+    tags:
+      - 'v*'
+
+  # mainブランチへのプルリクエスト時にビルドテスト
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-release:
+    name: Build Release Binary
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew clean bootJar -x test -x detekt
+
+      - name: Get version from build.gradle
+        id: get_version
+        run: |
+          VERSION=$(./gradlew properties -q | grep "^version:" | awk '{print $2}')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Rename JAR file
+        run: |
+          cd build/libs
+          # bootJarで生成されたJARファイルを見つける
+          JAR_FILE=$(ls kidspos-*.jar | grep -v plain | head -1)
+          if [ -n "$JAR_FILE" ]; then
+            mv "$JAR_FILE" kidspos-${{ steps.get_version.outputs.VERSION }}.jar
+            echo "Renamed to: kidspos-${{ steps.get_version.outputs.VERSION }}.jar"
+            ls -lh
+          else
+            echo "Error: JAR file not found"
+            exit 1
+          fi
+
+      - name: Upload JAR as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kidspos-jar-${{ steps.get_version.outputs.VERSION }}
+          path: build/libs/kidspos-${{ steps.get_version.outputs.VERSION }}.jar
+          retention-days: 90
+
+      - name: Create Release Info
+        run: |
+          echo "# Release Build Information" > release-info.txt
+          echo "" >> release-info.txt
+          echo "Version: ${{ steps.get_version.outputs.VERSION }}" >> release-info.txt
+          echo "Build Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> release-info.txt
+          echo "Commit: ${{ github.sha }}" >> release-info.txt
+          echo "Branch: ${{ github.ref_name }}" >> release-info.txt
+          echo "" >> release-info.txt
+          echo "## Deploy to Raspberry Pi" >> release-info.txt
+          echo "" >> release-info.txt
+          echo "1. Download the JAR file from GitHub Actions Artifacts" >> release-info.txt
+          echo "2. Transfer to Raspberry Pi:" >> release-info.txt
+          echo "   scp kidspos-*.jar pi@[raspberry-pi-ip]:~/kidspos/" >> release-info.txt
+          echo "3. Run on Raspberry Pi:" >> release-info.txt
+          echo "   java -Xmx512m -jar ~/kidspos/kidspos-*.jar" >> release-info.txt
+          cat release-info.txt
+
+      - name: Upload Release Info
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-info
+          path: release-info.txt
+          retention-days: 90
+
+  # タグプッシュ時にGitHub Releaseを作成
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-release
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: get_tag_version
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_OUTPUT
+          echo "Tag version: $TAG_VERSION"
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          pattern: kidspos-jar-*
+          merge-multiple: true
+          path: ./artifacts
+
+      - name: Download Release Info
+        uses: actions/download-artifact@v4
+        with:
+          name: release-info
+          path: ./artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./artifacts/*.jar
+            ./artifacts/release-info.txt
+          body: |
+            ## KidsPOS Release ${{ steps.get_tag_version.outputs.TAG_VERSION }}
+
+            ### ダウンロード
+
+            下記のAssetsセクションから `kidspos-*.jar` ファイルをダウンロードしてください。
+
+            ### Raspberry Piへのデプロイ
+
+            詳細なデプロイ手順は[README.md](https://github.com/KidsPOSProject/KidsPOS-Server#raspberry-pi%E3%81%B8%E3%81%AE%E3%83%87%E3%83%97%E3%83%AD%E3%82%A4)をご覧ください。
+
+            ```bash
+            # Raspberry Piでの起動
+            java -Xmx512m -jar kidspos-*.jar
+            ```
+
+            ### システム要件
+
+            - Java 21以上
+            - メモリ: 最小512MB（推奨1GB）
+            - 対応: Raspberry Pi 3/4/5, Zero W/2W
+
+            詳細は `release-info.txt` を参照してください。
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

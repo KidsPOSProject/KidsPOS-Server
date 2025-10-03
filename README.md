@@ -95,6 +95,196 @@ java -jar app.jar
 
 SQLiteデータベース（`kidspos.db`）は初回起動時に自動生成されます。追加の設定は不要です。
 
+## Raspberry Piへのデプロイ
+
+KidsPOSはRaspberry Piで動作するため、学校や教育機関で低コストで展開できます。
+
+### 対応ハードウェア
+
+- Raspberry Pi 5
+- Raspberry Pi 4 Model B
+- Raspberry Pi 3 Model B/B+
+- Raspberry Pi Zero W/2W
+
+### システム要件
+
+- Raspberry Pi OS (Bullseye以降推奨)
+- Java 21以上
+- 最小メモリ: 512MB（推奨: 1GB以上）
+- ストレージ: 最小200MB
+
+### Java 21のインストール
+
+Raspberry PiにJava 21をインストールします:
+
+```bash
+# システムパッケージの更新
+sudo apt update && sudo apt upgrade -y
+
+# OpenJDK 21のインストール
+sudo apt install openjdk-21-jdk -y
+
+# インストール確認
+java -version
+```
+
+### デプロイ方法
+
+#### 方法1: ビルド済みバイナリの使用（推奨）
+
+GitHubのActionsページからビルド済みJARファイルをダウンロード:
+
+```bash
+# 作業ディレクトリの作成
+mkdir -p ~/kidspos
+cd ~/kidspos
+
+# GitHubからビルド済みJARファイルをダウンロード
+# (GitHub Actionsの最新成功ビルドからArtifactsをダウンロード)
+# ダウンロードしたファイルを展開
+unzip kidspos-*.zip
+
+# JARファイルの実行権限を設定
+chmod +x kidspos-*.jar
+```
+
+#### 方法2: ソースからビルド
+
+```bash
+# リポジトリのクローン
+git clone https://github.com/KidsPOSProject/KidsPOS-Server.git
+cd KidsPOS-Server
+
+# ビルド
+./gradlew bootJar
+
+# JARファイルを作業ディレクトリにコピー
+mkdir -p ~/kidspos
+cp build/libs/kidspos-*.jar ~/kidspos/app.jar
+cd ~/kidspos
+```
+
+### アプリケーションの起動
+
+```bash
+# 手動起動
+java -jar kidspos-*.jar
+
+# メモリオプション付きで起動（512MBヒープ）
+java -Xmx512m -jar kidspos-*.jar
+
+# バックグラウンドで起動
+nohup java -jar kidspos-*.jar > kidspos.log 2>&1 &
+```
+
+ブラウザで `http://[Raspberry PiのIPアドレス]:8080` にアクセスしてください。
+
+### 自動起動設定（Systemdサービス）
+
+システム起動時に自動的にKidsPOSを起動するようにSystemdサービスを設定します:
+
+```bash
+# サービスファイルの作成
+sudo nano /etc/systemd/system/kidspos.service
+```
+
+以下の内容を入力:
+
+```ini
+[Unit]
+Description=KidsPOS Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=$HOME$/kidspos
+ExecStart=/usr/bin/java -Xmx512m -jar $HOME$/kidspos/app.jar
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:$HOME$/kidspos/kidspos.log
+StandardError=append:$HOME$/kidspos/kidspos-error.log
+
+[Install]
+WantedBy=multi-user.target
+```
+
+サービスを有効化して起動:
+
+```bash
+# サービスのリロード
+sudo systemctl daemon-reload
+
+# サービスの有効化（自動起動）
+sudo systemctl enable kidspos
+
+# サービスの起動
+sudo systemctl start kidspos
+
+# ステータス確認
+sudo systemctl status kidspos
+```
+
+### サービス管理コマンド
+
+```bash
+# サービスの停止
+sudo systemctl stop kidspos
+
+# サービスの再起動
+sudo systemctl restart kidspos
+
+# ログの確認
+journalctl -u kidspos -f
+
+# アプリケーションログの確認
+tail -f ~/kidspos/kidspos.log
+```
+
+### トラブルシューティング
+
+#### ポート8080が既に使用されている場合
+
+別のポートを使用する:
+
+```bash
+java -Dserver.port=8081 -jar kidspos-*.jar
+```
+
+#### メモリ不足エラーの場合
+
+ヒープサイズを調整:
+
+```bash
+# 最小メモリ: 256MB、最大メモリ: 512MB
+java -Xms256m -Xmx512m -jar kidspos-*.jar
+```
+
+#### IPアドレスの確認
+
+```bash
+hostname -I
+```
+
+#### ファイアウォール設定
+
+```bash
+# ポート8080を開放（UFWを使用している場合）
+sudo ufw allow 8080/tcp
+```
+
+### パフォーマンスチューニング
+
+Raspberry Piでの最適なパフォーマンスのための推奨設定:
+
+```bash
+# 推奨起動コマンド
+java -Xms256m -Xmx512m \
+     -XX:+UseG1GC \
+     -XX:MaxGCPauseMillis=200 \
+     -jar kidspos-*.jar
+```
+
 ## 使用方法
 
 ### アクセス
