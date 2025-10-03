@@ -126,6 +126,35 @@ class SettingApiController {
     }
 
     /**
+     * レシートのテスト印刷を実行
+     *
+     * @param storeId 店舗ID
+     * @return 印刷結果
+     */
+    @PostMapping("/printer/{storeId}/test")
+    fun testPrint(
+        @PathVariable storeId: Int,
+    ): ResponseEntity<Map<String, Any>> =
+        try {
+            service.testPrintReceipt(storeId)
+            ResponseEntity.ok(
+                mapOf(
+                    "success" to true,
+                    "message" to "テスト印刷を送信しました",
+                    "storeId" to storeId,
+                ),
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                mapOf(
+                    "success" to false,
+                    "message" to "印刷に失敗しました: ${e.message}",
+                    "storeId" to storeId,
+                ),
+            )
+        }
+
+    /**
      * ステータス情報を表現するデータクラス
      */
     class StatusBean(

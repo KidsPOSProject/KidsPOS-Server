@@ -61,6 +61,43 @@
                                     </table>
                                 </div>
 
+                                <!-- プリンタテストセクション -->
+                                <div class="card mt-4">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-print text-primary me-2"></i>
+                                            レシートプリンタテスト
+                                        </h5>
+                                        <p class="card-text text-muted">
+                                            プリンタの接続とレシート印刷をテストします。
+                                        </p>
+                                        <div th:if="${#lists.isEmpty(stores)}" class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            店舗が登録されていません。先に店舗を登録してください。
+                                        </div>
+                                        <div th:unless="${#lists.isEmpty(stores)}">
+                                            <div class="row g-3 align-items-end">
+                                                <div class="col-md-4">
+                                                    <label for="storeSelect" class="form-label">店舗選択</label>
+                                                    <select class="form-select" id="storeSelect">
+                                                        <option value="" disabled selected>店舗を選択してください</option>
+                                                        <option th:each="store : ${stores}"
+                                                                th:value="${store.id}"
+                                                                th:text="${store.name + ' (ID: ' + store.id + ')'}">
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    <button type="button" class="btn btn-primary" id="testPrintBtn" onclick="testPrint()" disabled>
+                                                        <i class="fas fa-print me-2"></i>テスト印刷
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div id="printResult" class="mt-3" style="display: none;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="mt-3">
                                     <a class="btn btn-secondary" href="/">
                                         <i class="fas fa-arrow-left"></i> 戻る
@@ -74,5 +111,71 @@
         </div>
     </div>
 </div>
+
+<script>
+// 店舗選択時にボタンを有効化
+document.addEventListener('DOMContentLoaded', function() {
+    const storeSelect = document.getElementById('storeSelect');
+    const testPrintBtn = document.getElementById('testPrintBtn');
+
+    if (storeSelect) {
+        storeSelect.addEventListener('change', function() {
+            if (this.value) {
+                testPrintBtn.disabled = false;
+            } else {
+                testPrintBtn.disabled = true;
+            }
+        });
+    }
+});
+
+function testPrint() {
+    const storeSelect = document.getElementById('storeSelect');
+    const storeId = storeSelect ? storeSelect.value : null;
+    const resultDiv = document.getElementById('printResult');
+    const button = document.getElementById('testPrintBtn');
+
+    if (!storeId || storeId < 1) {
+        showResult('danger', '店舗を選択してください');
+        return;
+    }
+
+    // ボタンを無効化してローディング表示
+    button.disabled = true;
+    const originalButtonContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>印刷中...';
+
+    // テスト印刷APIを呼び出し
+    fetch(`/api/setting/printer/${storeId}/test`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResult('success', data.message);
+        } else {
+            showResult('danger', data.message);
+        }
+    })
+    .catch(error => {
+        showResult('danger', '印刷リクエストの送信に失敗しました: ' + error.message);
+    })
+    .finally(() => {
+        // ボタンを再度有効化
+        button.disabled = false;
+        button.innerHTML = originalButtonContent;
+    });
+}
+
+function showResult(type, message) {
+    const resultDiv = document.getElementById('printResult');
+    resultDiv.style.display = 'block';
+    resultDiv.className = `alert alert-${type}`;
+    resultDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}`;
+}
+</script>
 </body>
 </html>
