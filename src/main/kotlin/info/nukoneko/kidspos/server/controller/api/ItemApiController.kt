@@ -101,13 +101,13 @@ class ItemApiController {
         ],
     )
     fun findByBarcode(
-        @Parameter(description = "Item barcode (4+ digits)", required = true, example = "1234567890")
+        @Parameter(description = "Item barcode (format: A01XXXXXXA)", required = true, example = "A01000001A")
         @PathVariable barcode: String,
     ): ResponseEntity<ItemResponse> {
         logger.info("Fetching item with barcode: {}", barcode)
 
-        // Validate barcode format
-        if (!barcode.matches(Regex("^[0-9]{4,}$"))) {
+        // Validate barcode format (A + 種別(2桁) + ID(6桁) + A)
+        if (!barcode.matches(Regex("^A(00|01|02)\\d{6}A$"))) {
             throw InvalidBarcodeException(barcode)
         }
 
