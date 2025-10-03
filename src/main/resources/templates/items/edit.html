@@ -35,12 +35,18 @@
                                 </h4>
                                 <form th:action="@{/items/{id}/update(id=${item.id})}" method="post">
                                     <div class="mb-3">
-                                        <label for="barcode" class="form-label">バーコード <span class="text-danger">*</span></label>
-                                        <input type="text" id="barcode" name="barcode" class="form-control" th:value="${item.barcode}" required
-                                               placeholder="8〜13桁の数字で入力"
-                                               pattern="^\d{8,13}$"
-                                               title="バーコードは8〜13桁の数字で入力してください">
-                                        <div class="form-text">バーコードは8〜13桁の数字で入力してください</div>
+                                        <label for="barcodeId" class="form-label">バーコードID <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">A01</span>
+                                            <input type="text" id="barcodeId" class="form-control" required
+                                                   placeholder="6桁の数字"
+                                                   pattern="^\d{6}$"
+                                                   maxlength="6"
+                                                   title="6桁の数字を入力してください"/>
+                                            <span class="input-group-text">A</span>
+                                        </div>
+                                        <input type="hidden" id="barcode" name="barcode" th:value="${item.barcode}"/>
+                                        <div class="form-text">6桁の数字を入力（例: 000001 → A01000001A）</div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="name" class="form-label">商品名 <span class="text-danger">*</span></label>
@@ -84,5 +90,37 @@
         </div>
     </div>
 </div>
+<script>
+    // ページ読み込み時に既存のバーコードから6桁のIDを抽出
+    window.addEventListener('DOMContentLoaded', function() {
+        const barcodeField = document.getElementById('barcode');
+        const barcodeIdField = document.getElementById('barcodeId');
+
+        if (barcodeField.value) {
+            // A01XXXXXXA から XXXXXX を抽出（3文字目から6文字）
+            const match = barcodeField.value.match(/^A\d{2}(\d{6})A$/);
+            if (match) {
+                barcodeIdField.value = match[1];
+            }
+        }
+    });
+
+    // バーコードIDの入力を監視してフォーマット
+    document.getElementById('barcodeId').addEventListener('input', function(e) {
+        // 数字のみ許可
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // フォーム送信時にバーコードを生成
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const barcodeId = document.getElementById('barcodeId').value;
+        const barcodeField = document.getElementById('barcode');
+
+        if (barcodeId && barcodeId.length === 6) {
+            // 6桁の場合、A01 + ID + A のフォーマットで設定
+            barcodeField.value = 'A01' + barcodeId + 'A';
+        }
+    });
+</script>
 </body>
 </html>

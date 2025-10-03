@@ -40,12 +40,18 @@
                                         <input id="name" name="name" type="text" class="form-control" required placeholder="商品名を入力してください"/>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="barcode" class="form-label">バーコード</label>
-                                        <input id="barcode" name="barcode" type="text" class="form-control"
-                                               placeholder="8〜13桁の数字で入力"
-                                               pattern="^\d{8,13}$"
-                                               title="バーコードは8〜13桁の数字で入力してください"/>
-                                        <div class="form-text">バーコードは8〜13桁の数字で入力してください（任意）</div>
+                                        <label for="barcodeId" class="form-label">バーコードID</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">A01</span>
+                                            <input id="barcodeId" type="text" class="form-control"
+                                                   placeholder="6桁の数字（空欄で自動生成）"
+                                                   pattern="^\d{6}$"
+                                                   maxlength="6"
+                                                   title="6桁の数字を入力してください"/>
+                                            <span class="input-group-text">A</span>
+                                        </div>
+                                        <input type="hidden" id="barcode" name="barcode"/>
+                                        <div class="form-text">6桁の数字を入力（空欄で自動生成、例: 000001 → A01000001A）</div>
                                     </div>
                                     <div class="mb-4">
                                         <label for="price" class="form-label">価格 <span class="text-danger">*</span></label>
@@ -73,5 +79,26 @@
     </div>
 </div>
 <script src="/validation.js"></script>
+<script>
+    // バーコードIDの入力を監視してフォーマット
+    document.getElementById('barcodeId').addEventListener('input', function(e) {
+        // 数字のみ許可
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // フォーム送信時にバーコードを生成
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const barcodeId = document.getElementById('barcodeId').value;
+        const barcodeField = document.getElementById('barcode');
+
+        if (barcodeId && barcodeId.length === 6) {
+            // 6桁の場合、A01 + ID + A のフォーマットで設定
+            barcodeField.value = 'A01' + barcodeId + 'A';
+        } else {
+            // 空欄の場合は空のまま（サーバー側で自動生成）
+            barcodeField.value = '';
+        }
+    });
+</script>
 </body>
 </html>

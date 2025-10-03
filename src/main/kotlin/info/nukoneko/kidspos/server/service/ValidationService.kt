@@ -54,9 +54,14 @@ class ValidationService(
     }
 
     fun validateBarcodeUnique(
-        barcode: String,
+        barcode: String?,
         excludeId: Int? = null,
     ) {
+        // nullの場合は自動生成されるためバリデーションスキップ
+        if (barcode.isNullOrBlank()) {
+            return
+        }
+
         val existingItem = itemRepository.findByBarcode(barcode)
         if (existingItem != null && existingItem.id != excludeId) {
             logger.warn("Validation failed: Barcode {} already exists", barcode)

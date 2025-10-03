@@ -56,7 +56,7 @@ class ReceiptService(
             items.map { itemBean ->
                 ItemEntity(
                     id = itemBean.id!!,
-                    barcode = itemBean.barcode,
+                    barcode = itemBean.barcode ?: "",
                     name = itemBean.name,
                     price = itemBean.price,
                 )

@@ -45,7 +45,7 @@ class ItemMapper {
     ): ItemEntity =
         ItemEntity(
             id = id,
-            barcode = request.barcode,
+            barcode = request.barcode ?: "",
             name = request.name,
             price = request.price,
         )
