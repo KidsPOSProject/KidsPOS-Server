@@ -838,3 +838,16 @@ body {
         width: 100% !important;
     }
 }
+
+/* QR Code Container */
+.qr-code-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.qr-code-container img {
+    display: block;
+    margin: 0 auto;
+}

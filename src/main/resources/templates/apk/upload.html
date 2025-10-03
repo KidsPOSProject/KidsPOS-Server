@@ -40,7 +40,13 @@
                                 <form method="post" action="/apk/upload" enctype="multipart/form-data" onsubmit="return validateForm()">
                                     <div class="mb-3">
                                         <label for="file" class="form-label">APKファイル <span class="text-danger">*</span></label>
-                                        <input type="file" class="form-control" id="file" name="file" accept=".apk" required>
+                                        <div class="input-group">
+                                            <input type="file" class="form-control" id="file" name="file" accept=".apk" required style="display: none;">
+                                            <input type="text" class="form-control" id="fileDisplay" readonly placeholder="ファイルが選択されていません">
+                                            <button class="btn btn-outline-secondary" type="button" id="fileSelectBtn">
+                                                <i class="fas fa-folder-open"></i> ファイルを選択
+                                            </button>
+                                        </div>
                                         <div class="form-text">最大ファイルサイズ: 100MB</div>
                                     </div>
 
@@ -129,19 +135,26 @@
         return confirm('APKファイルをアップロードしますか？');
     }
 
+    // ファイル選択ボタンのクリックイベント
+    document.getElementById('fileSelectBtn').addEventListener('click', function() {
+        document.getElementById('file').click();
+    });
+
+    // ファイル選択時の処理
     document.getElementById('file').addEventListener('change', function(e) {
         const file = e.target.files[0];
+        const fileDisplay = document.getElementById('fileDisplay');
+
         if (file) {
             const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-            const fileInfo = document.createElement('div');
-            fileInfo.className = 'form-text text-info mt-1';
-            fileInfo.textContent = `選択されたファイル: ${file.name} (${sizeMB} MB)`;
-
-            const existingInfo = e.target.parentNode.querySelector('.text-info');
-            if (existingInfo) {
-                existingInfo.remove();
-            }
-            e.target.parentNode.appendChild(fileInfo);
+            fileDisplay.value = `${file.name} (${sizeMB} MB)`;
+            fileDisplay.classList.remove('text-muted');
+            fileDisplay.classList.add('text-success');
+        } else {
+            fileDisplay.value = '';
+            fileDisplay.placeholder = 'ファイルが選択されていません';
+            fileDisplay.classList.remove('text-success');
+            fileDisplay.classList.add('text-muted');
         }
     });
 </script>
