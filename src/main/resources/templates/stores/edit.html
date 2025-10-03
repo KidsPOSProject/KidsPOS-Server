@@ -44,14 +44,21 @@
                                     </div>
 
                                     <div class="mb-4">
-                                        <label for="printerUri" class="form-label">プリンタURI</label>
-                                        <input id="printerUri" name="printerUri" type="text" class="form-control"
-                                               th:value="${store.printerUri}"
-                                               placeholder="例: http://192.168.1.100:8080"/>
-                                        <div class="form-text">
-                                            レシート印刷用のプリンタURIを入力してください（任意）<br/>
-                                            <small class="text-muted">形式: http://IPアドレス:ポート番号</small>
+                                        <label class="form-label">プリンタIPアドレス</label>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input id="printerIp1" type="number" class="form-control text-center ip-input"
+                                                   min="0" max="255" style="width: 70px;">
+                                            <span>.</span>
+                                            <input id="printerIp2" type="number" class="form-control text-center ip-input"
+                                                   min="0" max="255" style="width: 70px;">
+                                            <span>.</span>
+                                            <input id="printerIp3" type="number" class="form-control text-center ip-input"
+                                                   min="0" max="255" style="width: 70px;">
+                                            <span>.</span>
+                                            <input id="printerIp4" type="number" class="form-control text-center ip-input"
+                                                   min="0" max="255" style="width: 70px;">
                                         </div>
+                                        <input id="printerUri" name="printerUri" type="hidden" th:value="${store.printerUri}"/>
                                     </div>
 
                                     <div class="d-flex justify-content-between">
@@ -87,5 +94,80 @@
     </div>
 </div>
 <script src="/validation.js"></script>
+<script th:inline="javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    const ip1 = document.getElementById('printerIp1');
+    const ip2 = document.getElementById('printerIp2');
+    const ip3 = document.getElementById('printerIp3');
+    const ip4 = document.getElementById('printerIp4');
+    const printerUri = document.getElementById('printerUri');
+    const form = document.querySelector('form[method="post"]');
+
+    // 既存のIPアドレスから値を解析して設定
+    const existingUri = /*[[${store.printerUri}]]*/ '';
+    if (existingUri) {
+        // IPアドレスのみの場合
+        const ipMatch = existingUri.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+        if (ipMatch) {
+            ip1.value = ipMatch[1];
+            ip2.value = ipMatch[2];
+            ip3.value = ipMatch[3];
+            ip4.value = ipMatch[4];
+        } else {
+            // 旧形式（http://IP:port）の場合も対応
+            const uriMatch = existingUri.match(/http:\/\/(\d+)\.(\d+)\.(\d+)\.(\d+)/);
+            if (uriMatch) {
+                ip1.value = uriMatch[1];
+                ip2.value = uriMatch[2];
+                ip3.value = uriMatch[3];
+                ip4.value = uriMatch[4];
+            }
+        }
+    }
+
+    // IPアドレス自動フォーカス移動
+    function setupAutoFocus(currentInput, nextInput) {
+        currentInput.addEventListener('input', function(e) {
+            const value = parseInt(this.value);
+            if (this.value.length >= 3 || value >= 100) {
+                if (nextInput) nextInput.focus();
+            }
+        });
+
+        currentInput.addEventListener('keydown', function(e) {
+            if (e.key === '.' && nextInput) {
+                e.preventDefault();
+                nextInput.focus();
+            }
+        });
+    }
+
+    setupAutoFocus(ip1, ip2);
+    setupAutoFocus(ip2, ip3);
+    setupAutoFocus(ip3, ip4);
+
+    // フォーム送信時にURIを構築
+    form.addEventListener('submit', function(e) {
+        const ipParts = [ip1.value, ip2.value, ip3.value, ip4.value];
+        const hasAnyIpValue = ipParts.some(part => part !== '');
+
+        if (hasAnyIpValue) {
+            // IPアドレスの一部が入力されている場合、全て必須
+            const isValidIp = ipParts.every(part => part !== '' && parseInt(part) >= 0 && parseInt(part) <= 255);
+            if (!isValidIp) {
+                e.preventDefault();
+                alert('IPアドレスを正しく入力してください（各欄に0-255の数値）');
+                return;
+            }
+
+            const ipAddress = ipParts.join('.');
+            printerUri.value = ipAddress;
+        } else {
+            // IPアドレスが未入力の場合は空文字列
+            printerUri.value = '';
+        }
+    });
+});
+</script>
 </body>
 </html>
