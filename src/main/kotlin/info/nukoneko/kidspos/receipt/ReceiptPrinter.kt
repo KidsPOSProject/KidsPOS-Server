@@ -87,7 +87,10 @@ class ReceiptPrinter(
 
     @Throws(IOException::class)
     fun print() {
-        Socket(ipOrHost, port).use { socket ->
+        Socket().apply {
+            soTimeout = 5000 // 5秒でタイムアウト
+            connect(java.net.InetSocketAddress(ipOrHost, port), 5000) // 接続タイムアウト5秒
+        }.use { socket ->
             socket.getOutputStream().use {
                 it.write(command.build())
             }
