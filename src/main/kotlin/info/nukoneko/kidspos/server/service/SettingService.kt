@@ -1,6 +1,9 @@
 package info.nukoneko.kidspos.server.service
 
+import info.nukoneko.kidspos.receipt.ReceiptDetail
+import info.nukoneko.kidspos.receipt.ReceiptPrinter
 import info.nukoneko.kidspos.server.config.CacheConfig
+import info.nukoneko.kidspos.server.entity.ItemEntity
 import info.nukoneko.kidspos.server.entity.SettingEntity
 import info.nukoneko.kidspos.server.repository.SettingRepository
 import org.slf4j.LoggerFactory
@@ -9,6 +12,7 @@ import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.Date
 
 /**
  * Service for managing application settings and configurations
@@ -107,6 +111,45 @@ class SettingService(
         } else {
             null
         }
+    }
+
+    /**
+     * レシートのテスト印刷を実行
+     *
+     * @param storeId 店舗ID
+     * @throws IllegalStateException プリンタ設定が見つからない場合
+     * @throws Exception 印刷に失敗した場合
+     */
+    fun testPrintReceipt(storeId: Int) {
+        logger.info("Test print receipt for store ID: {}", storeId)
+
+        // プリンタ設定を取得
+        val printerSettings =
+            findPrinterHostPortById(storeId)
+                ?: throw IllegalStateException("プリンタ設定が見つかりません（店舗ID: $storeId）")
+
+        val (host, port) = printerSettings
+
+        // テスト印刷用のレシート詳細を作成
+        val testDetail =
+            ReceiptDetail(
+                storeName = "テスト店舗",
+                items =
+                    listOf(
+                        ItemEntity(1, "TEST-001", "テスト商品A", 100),
+                        ItemEntity(2, "TEST-002", "テスト商品B", 200),
+                        ItemEntity(3, "TEST-003", "テスト商品C", 300),
+                    ),
+                deposit = 1000,
+                createdAt = Date(),
+                transactionId = "TEST-${System.currentTimeMillis()}",
+            )
+
+        // レシートを印刷
+        val printer = ReceiptPrinter(host, port, testDetail)
+        printer.print()
+
+        logger.info("Test print completed successfully for store ID: {}", storeId)
     }
 
     private companion object {
