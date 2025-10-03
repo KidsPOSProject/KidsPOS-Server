@@ -14,21 +14,6 @@ CREATE TABLE IF NOT EXISTS store
     printer_uri VARCHAR(255)
 );
 
--- Staff table
-CREATE TABLE IF NOT EXISTS staff
-(
-    id
-             INTEGER
-        PRIMARY
-            KEY
-        AUTOINCREMENT,
-    barcode
-             VARCHAR(255) NOT NULL UNIQUE,
-    name     VARCHAR(255) NOT NULL,
-    discount DECIMAL(5,
-                 2) DEFAULT 0,
-    password VARCHAR(255)
-);
 
 -- Item table
 CREATE TABLE IF NOT EXISTS item
@@ -55,8 +40,6 @@ CREATE TABLE IF NOT EXISTS sale
         AUTOINCREMENT,
     store_id
         INTEGER,
-    staff_id
-        INTEGER,
     amount
         INTEGER
         NOT
@@ -78,13 +61,6 @@ CREATE TABLE IF NOT EXISTS sale
         (
          store_id
             ) REFERENCES store
-        (
-         id
-            ),
-    FOREIGN KEY
-        (
-         staff_id
-            ) REFERENCES staff
         (
          id
             )

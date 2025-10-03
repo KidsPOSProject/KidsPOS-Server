@@ -230,7 +230,7 @@ class ItemApiController {
         val headers =
             HttpHeaders().apply {
                 contentType = MediaType.APPLICATION_PDF
-                setContentDispositionFormData("inline", "barcodes.pdf")
+                setContentDispositionFormData("attachment", "barcodes.pdf")
             }
 
         logger.info("Barcode PDF generated successfully with {} items", items.size)

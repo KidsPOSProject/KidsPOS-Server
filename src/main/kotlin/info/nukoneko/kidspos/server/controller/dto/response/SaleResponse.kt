@@ -13,8 +13,6 @@ data class SaleResponse(
     val id: Int,
     val storeId: Int,
     val storeName: String,
-    val staffId: String,
-    val staffName: String,
     val totalAmount: Int,
     val deposit: Int,
     val change: Int,

@@ -1,5 +1,6 @@
 package info.nukoneko.kidspos.server.service
 
+import info.nukoneko.kidspos.common.Constants
 import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.config.CacheConfig
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
@@ -81,9 +82,19 @@ class ItemService(
             } else {
                 idGenerationService.generateNextId(repository)
             }
-        val item = ItemEntity(generatedId, itemBean.barcode, itemBean.name, itemBean.price)
+
+        // バーコードが空の場合は自動生成（A + 種別コード01 + ID(6桁) + A）
+        val finalBarcode =
+            if (itemBean.barcode.isNullOrBlank()) {
+                val idPadded = generatedId.toString().padStart(Constants.Barcode.ID_LENGTH, '0')
+                "${Constants.Barcode.PREFIX}${Constants.Barcode.TYPE_ITEM}$idPadded${Constants.Barcode.SUFFIX}"
+            } else {
+                itemBean.barcode
+            }
+
+        val item = ItemEntity(generatedId, finalBarcode, itemBean.name, itemBean.price)
         val savedItem = repository.save(item)
-        logger.info("Item created successfully with ID: {}", savedItem.id)
+        logger.info("Item created successfully with ID: {}, barcode: {}", savedItem.id, savedItem.barcode)
         return savedItem
     }
 

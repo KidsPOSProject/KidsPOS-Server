@@ -93,12 +93,6 @@
                 </a>
             </li>
             <li>
-                <a href="/staffs" th:classappend="${#strings.contains(#request.requestURI, '/staffs')} ? 'active' : ''">
-                    <i class="fas fa-users"></i>
-                    <span>スタッフ管理</span>
-                </a>
-            </li>
-            <li>
                 <a href="/sales" th:classappend="${#strings.contains(#request.requestURI, '/sales')} ? 'active' : ''">
                     <i class="fas fa-chart-line"></i>
                     <span>売上管理</span>

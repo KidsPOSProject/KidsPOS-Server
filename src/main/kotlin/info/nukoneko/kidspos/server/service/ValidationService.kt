@@ -3,7 +3,6 @@ package info.nukoneko.kidspos.server.service
 import info.nukoneko.kidspos.common.Constants
 import info.nukoneko.kidspos.server.domain.exception.ValidationException
 import info.nukoneko.kidspos.server.repository.ItemRepository
-import info.nukoneko.kidspos.server.repository.StaffRepository
 import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -24,21 +23,19 @@ import org.springframework.stereotype.Service
  * - Centralizing business rule logic for maintainability
  *
  * Validation categories:
- * - Entity existence validation (items, stores, staff)
- * - Uniqueness validation (barcodes, staff IDs)
+ * - Entity existence validation (items, stores)
+ * - Uniqueness validation (barcodes)
  * - Range validation (prices, quantities)
  * - Business rule enforcement
  *
  * @constructor Creates ValidationService with required repositories
  * @param itemRepository Repository for item data validation
  * @param storeRepository Repository for store data validation
- * @param staffRepository Repository for staff data validation
  */
 @Service
 class ValidationService(
     private val itemRepository: ItemRepository,
     private val storeRepository: StoreRepository,
-    private val staffRepository: StaffRepository,
 ) {
     private val logger = LoggerFactory.getLogger(ValidationService::class.java)
 
@@ -56,35 +53,19 @@ class ValidationService(
         }
     }
 
-    fun validateStaffExists(staffId: String) {
-        if (!staffRepository.existsById(staffId)) {
-            logger.warn("Validation failed: Staff with ID {} does not exist", staffId)
-            throw ValidationException("Staff with ID $staffId does not exist")
-        }
-    }
-
     fun validateBarcodeUnique(
-        barcode: String,
+        barcode: String?,
         excludeId: Int? = null,
     ) {
+        // nullの場合は自動生成されるためバリデーションスキップ
+        if (barcode.isNullOrBlank()) {
+            return
+        }
+
         val existingItem = itemRepository.findByBarcode(barcode)
         if (existingItem != null && existingItem.id != excludeId) {
             logger.warn("Validation failed: Barcode {} already exists", barcode)
             throw ValidationException("Barcode $barcode already exists")
-        }
-    }
-
-    fun validateStaffBarcodeUnique(
-        barcode: String,
-        excludeId: String? = null,
-    ) {
-        // Since StaffRepository doesn't have findByBarcode, we'll check by ID for now
-        // This would need to be enhanced with a proper query method
-        if (excludeId == null || excludeId != barcode) {
-            if (staffRepository.existsById(barcode)) {
-                logger.warn("Validation failed: Staff barcode {} already exists", barcode)
-                throw ValidationException("Staff barcode $barcode already exists")
-            }
         }
     }
 

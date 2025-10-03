@@ -181,11 +181,6 @@ body {
     padding: 1.5rem 2rem;
 }
 
-/* Fix for duplicate elements */
-.card-modern .d-flex:nth-child(2) {
-    display: none !important;
-}
-
 /* Override old styles */
 body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;

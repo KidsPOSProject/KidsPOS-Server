@@ -40,7 +40,7 @@ class SaleProcessingServiceTest {
     @Test
     fun `should process sale with multiple items correctly`() {
         // Given
-        val saleBean = SaleBean(storeId = 1, staffBarcode = "1001", itemIds = "1,2,3", deposit = 1000)
+        val saleBean = SaleBean(storeId = 1, itemIds = "1,2,3", deposit = 1000)
         val items =
             listOf(
                 ItemBean(1, "001", "Item 1", 300),
@@ -52,7 +52,6 @@ class SaleProcessingServiceTest {
             SaleEntity(
                 id = 1,
                 storeId = 1,
-                staffId = 1,
                 quantity = 3,
                 amount = 900,
                 deposit = 1000,
@@ -90,7 +89,7 @@ class SaleProcessingServiceTest {
     @Test
     fun `should handle duplicate items correctly`() {
         // Given
-        val saleBean = SaleBean(storeId = 1, staffBarcode = "1001", itemIds = "1,1,2", deposit = 800)
+        val saleBean = SaleBean(storeId = 1, itemIds = "1,1,2", deposit = 800)
         val items =
             listOf(
                 ItemBean(1, "001", "Item 1", 300),
@@ -204,7 +203,7 @@ class SaleValidationServiceTest {
     @Test
     fun `should validate valid sale request`() {
         // Given
-        val saleBean = SaleBean(storeId = 1, staffBarcode = "1001", itemIds = "1,2", deposit = 500)
+        val saleBean = SaleBean(storeId = 1, itemIds = "1,2", deposit = 500)
         val items =
             listOf(
                 ItemBean(1, "001", "Item 1", 200),
@@ -220,7 +219,7 @@ class SaleValidationServiceTest {
     @Test
     fun `should throw exception for insufficient deposit`() {
         // Given
-        val saleBean = SaleBean(storeId = 1, staffBarcode = "1001", itemIds = "1,2", deposit = 300)
+        val saleBean = SaleBean(storeId = 1, itemIds = "1,2", deposit = 300)
         val items =
             listOf(
                 ItemBean(1, "001", "Item 1", 200),
@@ -236,7 +235,7 @@ class SaleValidationServiceTest {
     @Test
     fun `should throw exception for empty items`() {
         // Given
-        val saleBean = SaleBean(storeId = 1, staffBarcode = "1001", itemIds = "", deposit = 1000)
+        val saleBean = SaleBean(storeId = 1, itemIds = "", deposit = 1000)
         val items = emptyList<ItemBean>()
 
         // When & Then

@@ -22,13 +22,10 @@ class ReceiptPrinter(
         command.writeTextLine(dateFormat.format(detail.createdAt))
         command.newLine()
 
-        // 店舗名・担当者
+        // 店舗名
         command.setGravity(PrintCommand.Direction.LEFT)
         if (!detail.storeName.isNullOrEmpty()) {
             command.writeTextLine("店舗名：${detail.storeName.toAllEm()}")
-        }
-        if (!detail.staffName.isNullOrEmpty()) {
-            command.writeTextLine("担　当：${detail.staffName.toAllEm()}")
         }
         command.drawLine()
 

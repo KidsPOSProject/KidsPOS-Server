@@ -26,10 +26,10 @@
                         <div class="card-modern">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h4 class="mb-0">
+                                    <h1 class="mb-0">
                                         <i class="fas fa-chart-line text-warning me-2"></i>
                                         売上管理
-                                    </h4>
+                                    </h1>
                                     <div class="d-flex gap-2">
                                         <button class="btn btn-info btn-sm">
                                             <i class="fas fa-download"></i> エクスポート
@@ -80,7 +80,6 @@
                                             <tr>
                                                 <th>取引ID</th>
                                                 <th>店舗</th>
-                                                <th>スタッフ</th>
                                                 <th>数量</th>
                                                 <th>合計金額</th>
                                                 <th>受取金額</th>
@@ -95,9 +94,6 @@
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-primary" th:text="${'店舗' + sale.storeId}"></span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-info" th:text="${'スタッフ' + sale.staffId}"></span>
                                                 </td>
                                                 <td style="text-align: center;">
                                                     <strong th:text="${sale.quantity}"></strong>

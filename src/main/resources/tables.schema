@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS sale
 (
   id        INTEGER PRIMARY KEY,
   store_id  INTEGER,
-  staff_id  INTEGER,
   quantity  INTEGER,
   amount    INTEGER,
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -30,12 +29,6 @@ CREATE TABLE IF NOT EXISTS store
   name varchar(255) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS staff
-(
-  id   INTEGER PRIMARY KEY,
-  barcode varchar(255) NOT NULL UNIQUE,
-  name    varchar(255) NOT NULL
-);
 
 CREATE TABLE IF NOT EXISTS setting
 (

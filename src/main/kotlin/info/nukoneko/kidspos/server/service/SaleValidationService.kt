@@ -33,8 +33,6 @@ class SaleValidationService {
         logger.debug("Validating sale request for store: {}", saleBean.storeId)
 
         validateStoreId(saleBean.storeId)
-        // staffBarcode is now optional, skip validation
-        // validateStaffBarcode(saleBean.staffBarcode)
         validateItems(items)
         validateDeposit(saleBean, items)
 
@@ -47,15 +45,6 @@ class SaleValidationService {
     private fun validateStoreId(storeId: Int) {
         if (storeId <= 0) {
             throw IllegalArgumentException("Store ID must be positive")
-        }
-    }
-
-    /**
-     * Validate staff barcode
-     */
-    private fun validateStaffBarcode(staffBarcode: String) {
-        if (staffBarcode.isBlank()) {
-            throw IllegalArgumentException("Staff barcode cannot be empty")
         }
     }
 

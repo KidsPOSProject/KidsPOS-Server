@@ -26,10 +26,10 @@
                         <div class="card-modern">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h4 class="mb-0">
+                                    <h1 class="mb-0">
                                         <i class="fas fa-box text-primary me-2"></i>
                                         商品管理
-                                    </h4>
+                                    </h1>
                                     <a href="/items/new" class="btn btn-primary">
                                         <i class="fas fa-plus"></i> 新規作成
                                     </a>
@@ -41,9 +41,9 @@
                                         <button id="printSelected" class="btn btn-success btn-sm" disabled>
                                             <i class="fas fa-print"></i> 選択印刷
                                         </button>
-                                        <a href="/api/item/barcode-pdf" class="btn btn-info btn-sm" target="_blank">
+                                        <button id="downloadPdf" class="btn btn-info btn-sm">
                                             <i class="fas fa-file-pdf"></i> PDF出力
-                                        </a>
+                                        </button>
                                     </div>
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="form-check mb-0">
@@ -160,6 +160,36 @@
                 }
                 printButton.disabled = !anyChecked;
             }
+
+            // PDF出力ボタン
+            const downloadPdfButton = document.getElementById('downloadPdf');
+            downloadPdfButton.addEventListener('click', function () {
+                fetch('/api/item/barcode-pdf')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('PDF生成に失敗しました');
+                        }
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        // PDFをダウンロード
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'barcodes.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    })
+                    .catch(error => {
+                        if (window.Swal) {
+                            Swal.fire('エラー', error.message, 'error');
+                        } else {
+                            alert('エラー: ' + error.message);
+                        }
+                    });
+            });
 
             // 選択した商品を印刷
             printButton.addEventListener('click', function () {

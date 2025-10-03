@@ -52,7 +52,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y sqlite3
           sqlite3 test.db "CREATE TABLE item (id INTEGER PRIMARY KEY, barcode TEXT, name TEXT, price INTEGER);
-                           CREATE TABLE sale (id INTEGER PRIMARY KEY, storeId INTEGER, staffId INTEGER, quantity INTEGER, amount INTEGER, deposit INTEGER, createdAt TEXT);
+                           CREATE TABLE sale (id INTEGER PRIMARY KEY, storeId INTEGER, quantity INTEGER, amount INTEGER, deposit INTEGER, createdAt TEXT);
                            CREATE TABLE sale_detail (id INTEGER PRIMARY KEY, saleId INTEGER, itemId INTEGER, price INTEGER, quantity INTEGER);
                            INSERT INTO item VALUES (1, 'test-barcode', 'Test Item', 100);
                            INSERT INTO item VALUES (2, 'test-barcode-2', 'Test Item 2', 200);"

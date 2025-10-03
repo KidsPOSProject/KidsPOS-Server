@@ -45,17 +45,15 @@ class SaleApiController(
             val saleBean =
                 SaleBean(
                     storeId = request.storeId,
-                    staffBarcode = request.staffBarcode,
                     itemIds = request.itemIds,
                     deposit = request.deposit,
                 )
             when (val result = saleProcessingService.processSaleWithValidation(saleBean, items)) {
                 is SaleResult.Success -> {
-                    // Print receipt (staffBarcode is now nullable)
+                    // Print receipt
                     receiptService.printReceipt(
                         request.storeId,
                         items,
-                        request.staffBarcode ?: "",
                         request.deposit,
                     )
 
@@ -67,7 +65,6 @@ class SaleApiController(
                             "quantity" to sale.quantity,
                             "deposit" to request.deposit,
                             "change" to (request.deposit - sale.amount),
-                            "staffId" to sale.staffId,
                             "storeId" to sale.storeId,
                         )
                     logger.info("Sale created successfully: ID={}", sale.id)
@@ -108,11 +105,10 @@ class SaleApiController(
             // Process the sale
             when (val result = saleProcessingService.processSaleWithValidation(saleBean, items)) {
                 is SaleResult.Success -> {
-                    // Print receipt (staffBarcode is now nullable)
+                    // Print receipt
                     receiptService.printReceipt(
                         saleBean.storeId,
                         items,
-                        saleBean.staffBarcode ?: "",
                         saleBean.deposit,
                     )
 
