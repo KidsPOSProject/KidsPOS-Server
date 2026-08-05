@@ -74,4 +74,14 @@ master ブランチの `api.yaml` が更新されると、GitHub Actions（`.git
 - 配布: GitHub Release（タグ `sdk-vX.Y.Z.N`）に zip として添付
 - クライアント連携: KidsPOSProject/KidsPOS-for-Android の `sdk/` ディレクトリを更新するPRを自動作成
 
-クライアントPRの自動作成には、リポジトリの Secrets に `SDK_PR_PAT`（KidsPOS-for-Android への書き込み権限を持つ Personal Access Token）の登録が必要です。未登録の場合、Release への添付までが実行されます。
+クライアントPRの自動作成には GitHub App を使用します。以下のセットアップが必要です（未設定の場合、Release への添付までが実行されます）。
+
+1. KidsPOSProject Organization で GitHub App を作成する
+   - Repository permissions: Contents（Read and write）と Pull requests（Read and write）のみ
+   - Webhook は不要（Active のチェックを外す）
+2. 作成した App を KidsPOS-for-Android のみにインストールする
+3. KidsPOS-Server の Secrets（Settings → Secrets and variables → Actions）に以下を登録する
+   - `SDK_APP_ID`: App ID
+   - `SDK_APP_PRIVATE_KEY`: App の秘密鍵（PEM ファイルの内容）
+
+ワークフロー実行時に App の installation token（約1時間で自動失効）を発行して push と PR 作成に使用するため、長命の Personal Access Token は不要です。

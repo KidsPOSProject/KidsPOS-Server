@@ -18,7 +18,8 @@ env:
   SDK_GROUP_ID: info.nukoneko.kidspos
   SDK_ARTIFACT_ID: kidspos-sdk
   SDK_PACKAGE: info.nukoneko.kidspos.sdk
-  CLIENT_REPO: KidsPOSProject/KidsPOS-for-Android
+  CLIENT_REPO_OWNER: KidsPOSProject
+  CLIENT_REPO_NAME: KidsPOS-for-Android
   CLIENT_SDK_DIR: sdk
 
 jobs:
@@ -128,17 +129,29 @@ jobs:
     needs: generate-sdk
 
     env:
-      SDK_PR_PAT: ${{ secrets.SDK_PR_PAT }}
       SDK_VERSION: ${{ needs.generate-sdk.outputs.sdk-version }}
       ASSET_ID: ${{ needs.generate-sdk.outputs.asset-id }}
 
     steps:
-      - name: Check PAT availability
+      - name: Check GitHub App credentials
+        env:
+          SDK_APP_ID: ${{ secrets.SDK_APP_ID }}
+          SDK_APP_PRIVATE_KEY: ${{ secrets.SDK_APP_PRIVATE_KEY }}
         run: |
-          if [ -z "$SDK_PR_PAT" ]; then
-            echo "::warning::SDK_PR_PAT が未設定のためクライアントリポジトリへの PR 作成をスキップします"
+          if [ -z "$SDK_APP_ID" ] || [ -z "$SDK_APP_PRIVATE_KEY" ]; then
+            echo "::warning::SDK_APP_ID / SDK_APP_PRIVATE_KEY が未設定のためクライアントリポジトリへの PR 作成をスキップします"
             echo "SKIP_PR=true" >> "$GITHUB_ENV"
           fi
+
+      - name: Generate GitHub App installation token
+        if: env.SKIP_PR != 'true'
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.SDK_APP_ID }}
+          private-key: ${{ secrets.SDK_APP_PRIVATE_KEY }}
+          owner: ${{ env.CLIENT_REPO_OWNER }}
+          repositories: ${{ env.CLIENT_REPO_NAME }}
 
       - name: Download SDK from release asset
         if: env.SKIP_PR != 'true'
@@ -153,8 +166,10 @@ jobs:
 
       - name: Clone client repository and update SDK
         if: env.SKIP_PR != 'true'
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git clone "https://x-access-token:${SDK_PR_PAT}@github.com/${CLIENT_REPO}.git" client
+          git clone "https://x-access-token:${APP_TOKEN}@github.com/${CLIENT_REPO_OWNER}/${CLIENT_REPO_NAME}.git" client
           cd client
           DEFAULT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|origin/||')
           echo "DEFAULT_BRANCH=$DEFAULT_BRANCH" >> "$GITHUB_ENV"
@@ -177,6 +192,8 @@ jobs:
 
       - name: Create pull request on client repository
         if: env.SKIP_PR != 'true'
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           PR_BODY=$(cat <<EOF
           KidsPOS-Server の api.yaml 更新に伴い、Kotlin SDK を ${SDK_VERSION} に更新します。
@@ -193,8 +210,8 @@ jobs:
             --arg body "$PR_BODY" \
             '{title: $title, head: $head, base: $base, body: $body}')
           PR_URL=$(curl -sSf -X POST \
-            -H "Authorization: Bearer ${SDK_PR_PAT}" \
+            -H "Authorization: Bearer ${APP_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -d "$PR_JSON" \
-            "${GITHUB_API_URL}/repos/${CLIENT_REPO}/pulls" | jq -r '.html_url')
+            "${GITHUB_API_URL}/repos/${CLIENT_REPO_OWNER}/${CLIENT_REPO_NAME}/pulls" | jq -r '.html_url')
           echo "::notice::クライアント PR を作成しました: $PR_URL"
