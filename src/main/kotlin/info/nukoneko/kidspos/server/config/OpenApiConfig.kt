@@ -1,10 +1,13 @@
 package info.nukoneko.kidspos.server.config
 
+import info.nukoneko.kidspos.server.service.StatusService
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Contact
 import io.swagger.v3.oas.models.info.Info
 import io.swagger.v3.oas.models.info.License
 import io.swagger.v3.oas.models.servers.Server
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.boot.info.BuildProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -17,7 +20,9 @@ import org.springframework.context.annotation.Configuration
  * Part of Task 8.2: OpenAPI specification integration
  */
 @Configuration
-class OpenApiConfig {
+class OpenApiConfig(
+    private val buildProperties: ObjectProvider<BuildProperties>,
+) {
     /**
      * Configure OpenAPI specification details
      *
@@ -29,7 +34,7 @@ class OpenApiConfig {
             .info(
                 Info()
                     .title("KidsPOS Server API")
-                    .version("1.0.0")
+                    .version(buildProperties.ifAvailable?.version ?: StatusService.UNKNOWN_VERSION)
                     .description(
                         """
                         KidsPOS (キッズPOS) is a simplified Point of Sale system designed for

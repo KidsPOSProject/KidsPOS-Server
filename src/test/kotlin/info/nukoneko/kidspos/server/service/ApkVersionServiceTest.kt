@@ -10,13 +10,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
-import org.springframework.test.util.ReflectionTestUtils
 import org.springframework.web.multipart.MultipartFile
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -31,7 +29,6 @@ class ApkVersionServiceTest {
     @Mock
     private lateinit var multipartFile: MultipartFile
 
-    @InjectMocks
     private lateinit var apkVersionService: ApkVersionService
 
     private val testUploadDir = "./test-uploads/apk"
@@ -39,8 +36,7 @@ class ApkVersionServiceTest {
 
     @BeforeEach
     fun setUp() {
-        ReflectionTestUtils.setField(apkVersionService, "uploadDir", testUploadDir)
-        ReflectionTestUtils.setField(apkVersionService, "maxFileSize", maxFileSize)
+        apkVersionService = ApkVersionService(apkVersionRepository, testUploadDir, maxFileSize)
 
         // テスト用ディレクトリをクリーンアップ
         val testDir = Paths.get(testUploadDir)
@@ -50,6 +46,8 @@ class ApkVersionServiceTest {
                 .sorted(Comparator.reverseOrder())
                 .forEach { Files.deleteIfExists(it) }
         }
+
+        apkVersionService.init()
     }
 
     @Test
@@ -63,7 +61,6 @@ class ApkVersionServiceTest {
         whenever(multipartFile.isEmpty).thenReturn(false)
         whenever(multipartFile.size).thenReturn(1000L)
         whenever(multipartFile.contentType).thenReturn("application/vnd.android.package-archive")
-        whenever(multipartFile.originalFilename).thenReturn("test.apk")
         whenever(multipartFile.inputStream).thenReturn(fileContent.inputStream())
 
         whenever(apkVersionRepository.existsByVersion(version)).thenReturn(false)

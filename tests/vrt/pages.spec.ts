@@ -1,4 +1,14 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+async function pinSalesReportDates(page: Page) {
+  await page.evaluate(() => {
+    (document.getElementById('startDate') as HTMLInputElement).value = '2025-10-01';
+    (document.getElementById('endDate') as HTMLInputElement).value = '2025-10-03';
+    const year = document.getElementById('year') as HTMLSelectElement;
+    year.innerHTML = '<option value="2025" selected>2025年</option>';
+    (document.getElementById('month') as HTMLSelectElement).value = '10';
+  });
+}
 
 test.describe('Visual Regression Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -43,6 +53,7 @@ test.describe('Visual Regression Tests', () => {
 
     // Wait for store dropdown to be populated
     await page.waitForSelector('#storeId option', { state: 'attached' });
+    await pinSalesReportDates(page);
 
     await expect(page).toHaveScreenshot('sales-report-page.png', {
       fullPage: true,
@@ -81,6 +92,7 @@ test.describe('Mobile Visual Regression Tests', () => {
     await page.goto('/reports/sales');
     await page.waitForSelector('h1');
     await page.waitForSelector('#storeId option', { state: 'attached' });
+    await pinSalesReportDates(page);
 
     await expect(page).toHaveScreenshot('mobile-sales-report.png', {
       fullPage: true,
