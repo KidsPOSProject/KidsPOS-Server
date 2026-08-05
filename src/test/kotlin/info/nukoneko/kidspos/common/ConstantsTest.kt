@@ -19,7 +19,7 @@ class ConstantsTest {
     @Test
     fun `should have validation constants defined`() {
         assertThat(Constants.Validation.NAME_MAX_LENGTH).isEqualTo(255)
-        assertThat(Constants.Validation.BARCODE_PATTERN).isEqualTo("^[0-9]{4,}$")
+        assertThat(Constants.Validation.BARCODE_PATTERN).isEqualTo("^A(00|01|02)\\d{6}A$")
     }
 
     @Test
