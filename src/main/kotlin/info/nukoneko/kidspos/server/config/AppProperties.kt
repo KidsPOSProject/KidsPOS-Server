@@ -4,6 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "app")
 data class AppProperties(
+    val apiVersion: String = "1.0.0",
     val receipt: ReceiptProperties = ReceiptProperties(),
     val barcode: BarcodeProperties = BarcodeProperties(),
     val network: NetworkProperties = NetworkProperties(),
