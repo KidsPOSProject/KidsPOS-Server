@@ -67,7 +67,7 @@ API関連の作業（エンドポイントの追加・変更・削除）を行�
 
 ## クライアントSDKの自動生成
 
-master ブランチの `api.yaml` が更新されると、GitHub Actions（`.github/workflows/generate-sdk.yml`）が Kotlin クライアントSDKを自動生成します（workflow_dispatch による手動実行も可能）。
+main ブランチの `api.yaml` が更新されると、GitHub Actions（`.github/workflows/generate-sdk.yml`）が Kotlin クライアントSDKを自動生成します（workflow_dispatch による手動実行も可能）。
 
 - SDKバージョン: build.gradle の version + ワークフロー実行番号（例: 1.0.0.42）
 - 生成方式: OpenAPI Generator（kotlin / jvm-okhttp4、パッケージ: info.nukoneko.kidspos.sdk）

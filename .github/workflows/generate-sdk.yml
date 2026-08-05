@@ -5,7 +5,7 @@ name: Generate Client SDK
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - 'api.yaml'
 
