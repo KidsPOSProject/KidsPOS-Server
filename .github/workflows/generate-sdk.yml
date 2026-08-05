@@ -20,7 +20,7 @@ env:
   SDK_PACKAGE: info.nukoneko.kidspos.sdk
   CLIENT_REPO_OWNER: KidsPOSProject
   CLIENT_REPO_NAME: KidsPOS-for-Android
-  CLIENT_SDK_DIR: sdk
+  CLIENT_SPEC_PATH: app/openapi/api.yaml
 
 jobs:
   generate-sdk:
@@ -32,7 +32,6 @@ jobs:
 
     outputs:
       sdk-version: ${{ steps.version.outputs.SDK_VERSION }}
-      asset-id: ${{ steps.release.outputs.ASSET_ID }}
 
     steps:
       - name: Checkout repository
@@ -130,9 +129,11 @@ jobs:
 
     env:
       SDK_VERSION: ${{ needs.generate-sdk.outputs.sdk-version }}
-      ASSET_ID: ${{ needs.generate-sdk.outputs.asset-id }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
       - name: Check GitHub App credentials
         env:
           SDK_APP_ID: ${{ secrets.SDK_APP_ID }}
@@ -153,18 +154,7 @@ jobs:
           owner: ${{ env.CLIENT_REPO_OWNER }}
           repositories: ${{ env.CLIENT_REPO_NAME }}
 
-      - name: Download SDK from release asset
-        if: env.SKIP_PR != 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -sSfL \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/octet-stream" \
-            -o sdk.zip \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/releases/assets/${ASSET_ID}"
-
-      - name: Clone client repository and update SDK
+      - name: Clone client repository and update API spec
         if: env.SKIP_PR != 'true'
         env:
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -173,21 +163,19 @@ jobs:
           cd client
           DEFAULT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|origin/||')
           echo "DEFAULT_BRANCH=$DEFAULT_BRANCH" >> "$GITHUB_ENV"
-          BRANCH="update-sdk-${SDK_VERSION}"
+          BRANCH="update-api-spec-${SDK_VERSION}"
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
           git checkout -b "$BRANCH"
-          rm -rf "${CLIENT_SDK_DIR}"
-          mkdir -p "${CLIENT_SDK_DIR}"
-          unzip -q ../sdk.zip -d "${CLIENT_SDK_DIR}"
-          git add "${CLIENT_SDK_DIR}"
+          cp ../api.yaml "${CLIENT_SPEC_PATH}"
+          git add "${CLIENT_SPEC_PATH}"
           if git diff --cached --quiet; then
-            echo "::notice::SDK に変更がないため PR 作成をスキップします"
+            echo "::notice::API 仕様に変更がないため PR 作成をスキップします"
             echo "SKIP_PR=true" >> "$GITHUB_ENV"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Update KidsPOS SDK to ${SDK_VERSION}"
+          git commit -m "Update API spec to ${SDK_VERSION}"
           git push origin "$BRANCH"
 
       - name: Create pull request on client repository
@@ -196,7 +184,8 @@ jobs:
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           PR_BODY=$(cat <<EOF
-          KidsPOS-Server の api.yaml 更新に伴い、Kotlin SDK を ${SDK_VERSION} に更新します。
+          KidsPOS-Server の api.yaml 更新に伴い、クライアントの API 仕様（app/openapi/api.yaml）を ${SDK_VERSION} に更新します。
+          API クライアントはビルド時にこの仕様から自動生成されます。
 
           - 生成元: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
           - SDK Release: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/sdk-v${SDK_VERSION}
@@ -204,7 +193,7 @@ jobs:
           EOF
           )
           PR_JSON=$(jq -n \
-            --arg title "Update KidsPOS SDK to ${SDK_VERSION}" \
+            --arg title "Update API spec to ${SDK_VERSION}" \
             --arg head "$BRANCH" \
             --arg base "$DEFAULT_BRANCH" \
             --arg body "$PR_BODY" \
