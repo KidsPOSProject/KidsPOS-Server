@@ -45,6 +45,7 @@ server:
 
 # Application-specific configuration
 app:
+  api-version: ${API_VERSION:1.0.0}
   receipt:
     printer:
       host: ${RECEIPT_PRINTER_HOST:localhost}
