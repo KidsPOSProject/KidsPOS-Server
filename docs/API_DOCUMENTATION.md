@@ -64,3 +64,14 @@ OpenAPI仕様書は `/api.yaml` に定義されています。
 ## 開発ガイドライン
 
 API関連の作業（エンドポイントの追加・変更・削除）を行った際は、必ずOpenAPI仕様書（`/api.yaml`）を更新してください。
+
+## クライアントSDKの自動生成
+
+master ブランチの `api.yaml` が更新されると、GitHub Actions（`.github/workflows/generate-sdk.yml`）が Kotlin クライアントSDKを自動生成します（workflow_dispatch による手動実行も可能）。
+
+- SDKバージョン: build.gradle の version + ワークフロー実行番号（例: 1.0.0.42）
+- 生成方式: OpenAPI Generator（kotlin / jvm-okhttp4、パッケージ: info.nukoneko.kidspos.sdk）
+- 配布: GitHub Release（タグ `sdk-vX.Y.Z.N`）に zip として添付
+- クライアント連携: KidsPOSProject/KidsPOS-for-Android の `sdk/` ディレクトリを更新するPRを自動作成
+
+クライアントPRの自動作成には、リポジトリの Secrets に `SDK_PR_PAT`（KidsPOS-for-Android への書き込み権限を持つ Personal Access Token）の登録が必要です。未登録の場合、Release への添付までが実行されます。
