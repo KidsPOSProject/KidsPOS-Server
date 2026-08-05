@@ -85,6 +85,12 @@ compileTestKotlin {
     }
 }
 
+springBoot {
+    buildInfo {
+        excludes = ['time']
+    }
+}
+
 bootJar {
     manifest {
         attributes 'Start-Class': 'info.nukoneko.kidspos.server.ServerApplicationKt'

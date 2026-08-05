@@ -1,8 +1,10 @@
 package info.nukoneko.kidspos.server.controller.api
 
+import info.nukoneko.kidspos.server.controller.dto.response.StatusResponse
 import info.nukoneko.kidspos.server.domain.exception.ResourceNotFoundException
 import info.nukoneko.kidspos.server.entity.SettingEntity
 import info.nukoneko.kidspos.server.service.SettingService
+import info.nukoneko.kidspos.server.service.StatusService
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -20,8 +22,11 @@ class SettingApiController {
     @Autowired
     private lateinit var service: SettingService
 
+    @Autowired
+    private lateinit var statusService: StatusService
+
     @RequestMapping("status", method = [RequestMethod.GET])
-    fun getStatus(): StatusBean = StatusBean("OK")
+    fun getStatus(): StatusResponse = statusService.getStatus()
 
     @GetMapping
     fun getAllSettings(): ResponseEntity<List<SettingEntity>> = ResponseEntity.ok(service.findAllSetting())
@@ -153,13 +158,6 @@ class SettingApiController {
                 ),
             )
         }
-
-    /**
-     * ステータス情報を表現するデータクラス
-     */
-    class StatusBean(
-        val status: String,
-    )
 
     /**
      * プリンタ設定のリクエストDTO

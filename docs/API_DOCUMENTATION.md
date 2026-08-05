@@ -42,10 +42,13 @@ OpenAPI仕様書は `/api.yaml` に定義されています。
 - PUT `/api/stores/{id}` - 店舗更新
 - DELETE `/api/stores/{id}` - 店舗削除
 
+### Status API (/api/status)
+- GET `/api/status` - サーバーステータス・バージョン情報取得（status / version / apiVersion を返却）
+
 ### Settings API (/api/setting)
 - GET `/api/setting` - 設定一覧取得
 - POST `/api/setting` - 設定作成
-- GET `/api/setting/status` - ステータス取得
+- GET `/api/setting/status` - ステータス取得（非推奨。/api/status を使用）
 - GET `/api/setting/{key}` - 設定取得
 - PUT `/api/setting/{key}` - 設定更新
 - DELETE `/api/setting/{key}` - 設定削除
