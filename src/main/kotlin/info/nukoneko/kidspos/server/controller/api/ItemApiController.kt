@@ -1,5 +1,6 @@
 package info.nukoneko.kidspos.server.controller.api
 
+import info.nukoneko.kidspos.common.Constants
 import info.nukoneko.kidspos.server.controller.dto.request.CreateItemRequest
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
@@ -101,13 +102,12 @@ class ItemApiController {
         ],
     )
     fun findByBarcode(
-        @Parameter(description = "Item barcode (4+ digits)", required = true, example = "1234567890")
+        @Parameter(description = "Item barcode (format: A + type 2 digits + ID 6 digits + A)", required = true, example = "A01000001A")
         @PathVariable barcode: String,
     ): ResponseEntity<ItemResponse> {
         logger.info("Fetching item with barcode: {}", barcode)
 
-        // Validate barcode format
-        if (!barcode.matches(Regex("^[0-9]{4,}$"))) {
+        if (!barcode.matches(Regex(Constants.Validation.BARCODE_PATTERN))) {
             throw InvalidBarcodeException(barcode)
         }
 
