@@ -32,7 +32,7 @@ paths:
       tags:
         - Status
       summary: サーバーステータス取得
-      description: サーバーの稼働状態、アプリケーションバージョン、API互換バージョンを取得します。クライアントは apiVersion を自身の対応バージョンと比較し、不一致の場合はアップデートを促してください
+      description: サーバーの稼働状態、アプリケーションバージョン、API互換バージョン、プリンター到達性を取得します。クライアントは apiVersion を自身の対応バージョンと比較し、不一致の場合はアップデートを促してください
       operationId: getServerStatus
       responses:
         '200':
@@ -883,10 +883,38 @@ components:
           type: integer
           description: API互換バージョン。クライアント側で対応バージョンと比較する
           example: 1
+        printer:
+          $ref: '#/components/schemas/PrinterStatus'
       required:
         - status
         - version
         - apiVersion
+
+    PrinterStatus:
+      type: object
+      description: 店舗に設定されたプリンターのTCP到達性
+      properties:
+        configured:
+          type: boolean
+          description: プリンターが1台以上設定されているか
+          example: true
+        reachable:
+          type: boolean
+          description: 設定済みプリンターすべてに到達可能か
+          example: true
+        total:
+          type: integer
+          description: 設定済みプリンターの台数（重複除外後）
+          example: 2
+        reachableCount:
+          type: integer
+          description: 到達可能なプリンターの台数
+          example: 2
+      required:
+        - configured
+        - reachable
+        - total
+        - reachableCount
 
     ErrorResponse:
       type: object
