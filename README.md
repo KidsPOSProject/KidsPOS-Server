@@ -1,477 +1,50 @@
-# KidsPOS (キッズPOS)
+# KidsPOS Server
 
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-green)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.2.20-purple)
-![Java](https://img.shields.io/badge/Java-21-orange)
-![Gradle](https://img.shields.io/badge/Gradle-8.10-blue)
-![License](https://img.shields.io/badge/license-MIT-blue)
-![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
-![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-brightgreen)
+キッズビジネスタウンいちかわで使っている、子供向けPOSシステムのサーバーです。会場のレジ端末（[KidsPOS for Android](https://github.com/KidsPOSProject/KidsPOS-for-Android)）からの通信を受けて、商品・売上・スタッフ・店舗の情報をまとめて管理します。
 
-子供向け教育用POSシステム - 楽しみながら商業活動を体験できる教育ツール
+Spring Boot と Kotlin で書かれていて、データベースは SQLite。サーバーと言っても大げさなものではなく、会場に持ち込んだノートPC一台で動きます。
 
-## 概要
+## 動かすには
 
-KidsPOSは、子供たちが楽しみながら商業活動を体験できる教育用POSシステムです。学校のイベントや教育プログラムで、実際の小売業務を安全に体験できる環境を提供します。
-
-### 主要機能
-
-- **売上管理** - 商品の販売と売上記録を管理
-- **在庫管理** - 商品の登録、バーコード管理、価格設定
-- **スタッフ管理** - スタッフの登録とバーコードIDシステム
-- **店舗管理** - 複数店舗の設定と管理
-- **レシート印刷** - サーマルプリンター対応のレシート発行
-
-### 使用シナリオ
-
-- 学校の文化祭や学園祭での模擬店運営
-- 子供向けイベントでの体験型学習
-- 教育プログラムでの実践的な商業教育
-- サマーキャンプでのトークンエコノミー
-- 家族でのお店屋さんごっこ
-
-## 技術スタック
-
-### バックエンド
-
-- Spring Boot 3.2.0
-- Kotlin 2.2.20
-- Java 21
-- Gradle 8.10
-- SQLite (組み込みデータベース)
-- Hibernate JPA + Flyway (データベースマイグレーション)
-
-### フロントエンド
-
-- Thymeleaf (テンプレートエンジン)
-- Bootstrap 5.2.1 (UIフレームワーク)
-- jQuery 3.6.0
-- DataTables 1.10.18 (高度なテーブル機能)
-
-### システム要件
-
-- Java 21以上
-- メモリ: 最小512MB（推奨1GB）
-- ポート: 8080（デフォルト）
-
-## インストールとセットアップ
-
-### 1. リポジトリのクローン
-
-```bash
-git clone https://github.com/KidsPOSProject/KidsPOS-Server.git
-cd KidsPOS-Server
-```
-
-### 2. ビルド
-
-```bash
-# アプリケーションのビルド
-./gradlew build
-
-# 実行可能JARファイルの作成
-./gradlew bootJar
-```
-
-### 3. 起動
-
-開発環境での起動:
+Java 21 が入っていれば準備は終わりです。
 
 ```bash
 ./gradlew bootRun
 ```
 
-本番環境での起動:
+これで http://localhost:8080 に管理画面が立ち上がります。データベース（kidspos.db）は初回起動時に自動で作られるので、事前のセットアップは要りません。スキーマの変更は Flyway が起動時に反映します。
+
+配布用の JAR がほしいときはこちら。
 
 ```bash
-# JARファイルを作成してステージング
-./gradlew stage
-
-# アプリケーションを起動
-java -jar app.jar
-```
-
-### データベース設定
-
-SQLiteデータベース（`kidspos.db`）は初回起動時に自動生成されます。追加の設定は不要です。
-
-## Raspberry Piへのデプロイ
-
-KidsPOSはRaspberry Piで動作するため、学校や教育機関で低コストで展開できます。
-
-### 対応ハードウェア
-
-- Raspberry Pi 5
-- Raspberry Pi 4 Model B
-- Raspberry Pi 3 Model B/B+
-- Raspberry Pi Zero W/2W
-
-### システム要件
-
-- Raspberry Pi OS (Bullseye以降推奨)
-- Java 21以上
-- 最小メモリ: 512MB（推奨: 1GB以上）
-- ストレージ: 最小200MB
-
-### Java 21のインストール
-
-Raspberry PiにJava 21をインストールします:
-
-```bash
-# システムパッケージの更新
-sudo apt update && sudo apt upgrade -y
-
-# OpenJDK 21のインストール
-sudo apt install openjdk-21-jdk -y
-
-# インストール確認
-java -version
-```
-
-### デプロイ方法
-
-#### 方法1: ビルド済みバイナリの使用（推奨）
-
-GitHubのActionsページからビルド済みJARファイルをダウンロード:
-
-```bash
-# 作業ディレクトリの作成
-mkdir -p ~/kidspos
-cd ~/kidspos
-
-# GitHubからビルド済みJARファイルをダウンロード
-# (GitHub Actionsの最新成功ビルドからArtifactsをダウンロード)
-# ダウンロードしたファイルを展開
-unzip kidspos-*.zip
-
-# JARファイルの実行権限を設定
-chmod +x kidspos-*.jar
-```
-
-#### 方法2: ソースからビルド
-
-```bash
-# リポジトリのクローン
-git clone https://github.com/KidsPOSProject/KidsPOS-Server.git
-cd KidsPOS-Server
-
-# ビルド
 ./gradlew bootJar
-
-# JARファイルを作業ディレクトリにコピー
-mkdir -p ~/kidspos
-cp build/libs/kidspos-*.jar ~/kidspos/app.jar
-cd ~/kidspos
 ```
 
-### アプリケーションの起動
+## 画面
+
+運営中の管理はぜんぶブラウザからできます。
+
+| URL | できること |
+|-----|-----------|
+| /items | 商品の登録、バーコードPDFの印刷 |
+| /sales | 売上の確認 |
+| /staffs | スタッフの登録 |
+| /stores | 店舗の登録 |
+| /settings | 設定 |
+
+レジ端末とのやりとりは /api/ 以下の REST API で行います。仕様は api.yaml（OpenAPI）にまとまっているので、詳しくはそちらを見てください。Android 側のクライアントコードはこのファイルから自動生成されています。
+
+## バーコードのこと
+
+商品・スタッフ・売上にはそれぞれバーコードが振られます。形式は「A + 種別2桁 + ID6桁 + A」の10文字（例: A01000001A）。種別は 00 がスタッフ、01 が商品、02 が売上です。商品登録時にバーコードを指定しなければ、この形式で自動採番されます。
+
+レシートはサーマルプリンターで印刷できます。プリンターの疎通状態は /api/status で確認できます。
+
+## 開発
 
 ```bash
-# 手動起動
-java -jar kidspos-*.jar
-
-# メモリオプション付きで起動（512MBヒープ）
-java -Xmx512m -jar kidspos-*.jar
-
-# バックグラウンドで起動
-nohup java -jar kidspos-*.jar > kidspos.log 2>&1 &
+./gradlew build -x detekt   # ビルド
+./gradlew test              # テスト
 ```
 
-ブラウザで `http://[Raspberry PiのIPアドレス]:8080` にアクセスしてください。
-
-### 自動起動設定（Systemdサービス）
-
-システム起動時に自動的にKidsPOSを起動するようにSystemdサービスを設定します:
-
-```bash
-# サービスファイルの作成
-sudo nano /etc/systemd/system/kidspos.service
-```
-
-以下の内容を入力:
-
-```ini
-[Unit]
-Description=KidsPOS Server
-After=network.target
-
-[Service]
-Type=simple
-User=pi
-WorkingDirectory=$HOME$/kidspos
-ExecStart=/usr/bin/java -Xmx512m -jar $HOME$/kidspos/app.jar
-Restart=on-failure
-RestartSec=10
-StandardOutput=append:$HOME$/kidspos/kidspos.log
-StandardError=append:$HOME$/kidspos/kidspos-error.log
-
-[Install]
-WantedBy=multi-user.target
-```
-
-サービスを有効化して起動:
-
-```bash
-# サービスのリロード
-sudo systemctl daemon-reload
-
-# サービスの有効化（自動起動）
-sudo systemctl enable kidspos
-
-# サービスの起動
-sudo systemctl start kidspos
-
-# ステータス確認
-sudo systemctl status kidspos
-```
-
-### サービス管理コマンド
-
-```bash
-# サービスの停止
-sudo systemctl stop kidspos
-
-# サービスの再起動
-sudo systemctl restart kidspos
-
-# ログの確認
-journalctl -u kidspos -f
-
-# アプリケーションログの確認
-tail -f ~/kidspos/kidspos.log
-```
-
-### トラブルシューティング
-
-#### ポート8080が既に使用されている場合
-
-別のポートを使用する:
-
-```bash
-java -Dserver.port=8081 -jar kidspos-*.jar
-```
-
-#### メモリ不足エラーの場合
-
-ヒープサイズを調整:
-
-```bash
-# 最小メモリ: 256MB、最大メモリ: 512MB
-java -Xms256m -Xmx512m -jar kidspos-*.jar
-```
-
-#### IPアドレスの確認
-
-```bash
-hostname -I
-```
-
-#### ファイアウォール設定
-
-```bash
-# ポート8080を開放（UFWを使用している場合）
-sudo ufw allow 8080/tcp
-```
-
-### パフォーマンスチューニング
-
-Raspberry Piでの最適なパフォーマンスのための推奨設定:
-
-```bash
-# 推奨起動コマンド
-java -Xms256m -Xmx512m \
-     -XX:+UseG1GC \
-     -XX:MaxGCPauseMillis=200 \
-     -jar kidspos-*.jar
-```
-
-## 使用方法
-
-### アクセス
-
-ブラウザで以下のURLにアクセスしてください:
-
-```
-http://localhost:8080
-```
-
-### 主要画面
-
-| 機能     | URL         | 説明          |
-|--------|-------------|-------------|
-| ホーム    | `/`         | ダッシュボード画面   |
-| 商品管理   | `/items`    | 商品の登録・編集・削除 |
-| 売上管理   | `/sales`    | 売上履歴の確認と管理  |
-| スタッフ管理 | `/staffs`   | スタッフの登録と管理  |
-| 店舗管理   | `/stores`   | 店舗情報の設定     |
-| 設定     | `/settings` | システム設定の管理   |
-
-### API
-
-REST APIは `/api/` プレフィックスで利用可能です:
-
-- `/api/item` - 商品API
-- `/api/sale` - 売上API
-- `/api/staff` - スタッフAPI
-- `/api/store` - 店舗API
-- `/api/setting` - 設定API
-
-#### APIドキュメント
-
-Swagger UIが利用可能です:
-
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- OpenAPI仕様: http://localhost:8080/v3/api-docs
-
-### 基本操作フロー
-
-1. **商品を登録** - 商品管理画面から商品を追加
-2. **スタッフを登録** - スタッフ管理画面でスタッフを追加
-3. **店舗を設定** - 店舗管理画面で店舗情報を設定
-4. **売上処理を実行** - POSレジ画面から商品をスキャンして販売
-
-## 開発者向け情報
-
-### プロジェクト構造
-
-```
-src/main/kotlin/info/nukoneko/kidspos/
-├── common/          # 共通ユーティリティ
-│   ├── CharExtensions.kt
-│   ├── Commander.kt
-│   ├── IntExtensions.kt
-│   ├── PrintCommand.kt
-│   └── StringExtensions.kt
-├── receipt/         # レシート印刷機能
-│   ├── ReceiptDetail.kt
-│   └── ReceiptPrinter.kt
-└── server/
-    ├── controller/  # コントローラー層
-    │   ├── api/    # REST APIコントローラー
-    │   └── front/  # Web UIコントローラー
-    ├── entity/      # JPA エンティティ
-    ├── repository/  # データアクセス層
-    └── service/     # ビジネスロジック層
-```
-
-### 開発コマンド
-
-```bash
-# テスト実行
-./gradlew test
-
-# コードカバレッジレポート生成
-./gradlew jacocoTestReport
-
-# 静的コード分析
-./gradlew detekt
-
-# アプリケーションのビルド
-./gradlew build
-
-# デプロイ用JARファイルの準備
-./gradlew stage
-
-# ビルドのクリーンアップ
-./gradlew clean
-
-# ステージングJARのクリーンアップ
-./gradlew cleanJar
-```
-
-### コントリビューション
-
-#### 貢献方法
-
-1. **Issueを作成** - バグ報告や機能要望を[Issues](https://github.com/KidsPOSProject/KidsPOS-Server/issues)に投稿
-2. **フォーク＆ブランチ作成** - リポジトリをフォークし、機能ブランチを作成
-3. **変更をコミット** - 明確なコミットメッセージで変更を記録
-4. **プルリクエストを送信** - masterブランチへのPRを作成
-
-#### コーディング規約
-
-- Kotlin公式コーディング規約に準拠
-- Spring Bootのベストプラクティスを遵守
-- 明確で意味のある変数名・関数名を使用
-- KDocによる包括的なドキュメンテーション
-- detektによる静的コード分析の実施
-
-## ライセンス
-
-MITライセンス - 詳細は[LICENSE](LICENSE)ファイルを参照してください。
-
-## サポート
-
-### 問題報告・要望
-
-- [GitHub Issues](https://github.com/KidsPOSProject/KidsPOS-Server/issues)で問題を報告してください
-
-### 連絡先
-
-プロジェクトメンテナーへの連絡は、GitHubのIssueを通じてお願いします。
-
-## 関連リソース
-
-- [プロジェクトWiki](https://github.com/KidsPOSProject/KidsPOS-Server/wiki)（準備中）
-- [APIドキュメント](docs/api.md)（準備中）
-- [デプロイメントガイド](docs/deployment.md)（準備中）
-
-## 品質保証
-
-### テスト
-
-- JUnit 5によるユニットテスト・統合テスト
-- MockKによるモック作成
-- JaCoCo統合によるコードカバレッジ測定
-- 現在のコードカバレッジ: 85%以上
-- セキュリティテスト (OWASP準拠)
-- アーキテクチャテスト
-
-### 静的コード分析
-
-- detektによるKotlinコード品質チェック
-- カスタムルールセット適用（`config/detekt/detekt.yml`）
-
-### APIドキュメント
-
-- OpenAPI 3.0仕様準拠
-- Swagger UI統合による対話的APIテスト環境
-
-## 最近の改善
-
-### アーキテクチャ改善
-
-- サービス層の責務分離とクリーンアーキテクチャの適用
-- DTOパターンの導入によるレイヤー間の疎結合化
-- 例外処理の統一化（GlobalExceptionHandler）
-- データベースマイグレーション（Flyway）の導入
-
-### 品質向上
-
-- テストカバレッジ: 3% → 85%以上に向上
-- 40以上のテストファイル追加
-- OWASP準拠のセキュリティテスト実装
-- Detektによる静的コード分析の強化
-
-### 開発効率化
-
-- Kiro仕様駆動開発フレームワークの導入
-- Version Catalog (libs.versions.toml) によるバージョン管理
-- OpenAPI/Swagger統合
-- キャッシュ最適化
-
-## 今後の改善予定
-
-- CI/CDパイプラインの完全自動化
-- 多言語対応（i18n）
-- クラウドネイティブ対応
-- マイクロサービス化の検討
-- リアルタイムデータ同期機能
-
----
-
-<div align="center">
-
-**KidsPOS** - 子供たちに楽しい学びの体験を
-
-</div>
+技術スタックは Spring Boot 3.2 + Kotlin 2.0、ビルドは Gradle 8.10。画面は Thymeleaf + Bootstrap + DataTables という素朴な構成です。API に変更を入れたときは api.yaml の更新を忘れずに。
