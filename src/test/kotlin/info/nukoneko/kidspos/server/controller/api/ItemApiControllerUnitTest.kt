@@ -39,7 +39,7 @@ class ItemApiControllerUnitTest {
         testItem =
             ItemEntity(
                 id = 1,
-                barcode = "123456789",
+                barcode = "A01000001A",
                 name = "Test Item",
                 price = 100,
             )
@@ -47,7 +47,7 @@ class ItemApiControllerUnitTest {
         testItemResponse =
             ItemResponse(
                 id = 1,
-                barcode = "123456789",
+                barcode = "A01000001A",
                 name = "Test Item",
                 price = 100,
             )
@@ -114,7 +114,7 @@ class ItemApiControllerUnitTest {
     @Test
     fun `should get item by barcode successfully`() {
         // Given
-        val barcode = "123456789"
+        val barcode = "A01000001A"
         `when`(itemService.findItem(barcode)).thenReturn(testItem)
         `when`(itemMapper.toResponse(testItem)).thenReturn(testItemResponse)
 
@@ -124,7 +124,7 @@ class ItemApiControllerUnitTest {
         // Then
         assertEquals(HttpStatus.OK, result.statusCode)
         assertNotNull(result.body)
-        assertEquals("123456789", result.body?.barcode)
+        assertEquals("A01000001A", result.body?.barcode)
 
         verify(itemService).findItem(barcode)
         verify(itemMapper).toResponse(testItem)
@@ -152,14 +152,14 @@ class ItemApiControllerUnitTest {
         val request =
             CreateItemRequest(
                 name = "New Item",
-                barcode = "987654321",
+                barcode = "A01000002A",
                 price = 200,
             )
 
         val savedItem =
             ItemEntity(
                 id = 2,
-                barcode = "987654321",
+                barcode = "A01000002A",
                 name = "New Item",
                 price = 200,
             )
@@ -167,7 +167,7 @@ class ItemApiControllerUnitTest {
         val savedResponse =
             ItemResponse(
                 id = 2,
-                barcode = "987654321",
+                barcode = "A01000002A",
                 name = "New Item",
                 price = 200,
             )
@@ -206,14 +206,14 @@ class ItemApiControllerUnitTest {
         val request =
             CreateItemRequest(
                 name = "Updated Item",
-                barcode = "123456789",
+                barcode = "A01000001A",
                 price = 150,
             )
 
         val updatedItem =
             ItemEntity(
                 id = 1,
-                barcode = "123456789",
+                barcode = "A01000001A",
                 name = "Updated Item",
                 price = 150,
             )
@@ -221,13 +221,13 @@ class ItemApiControllerUnitTest {
         val updatedResponse =
             ItemResponse(
                 id = 1,
-                barcode = "123456789",
+                barcode = "A01000001A",
                 name = "Updated Item",
                 price = 150,
             )
 
         `when`(itemService.findItem(1)).thenReturn(testItem)
-        doNothing().`when`(validationService).validateBarcodeUnique("123456789", 1)
+        doNothing().`when`(validationService).validateBarcodeUnique("A01000001A", 1)
         doNothing().`when`(validationService).validatePriceRange(150)
 
         // Create expected ItemBean for mocking
@@ -251,7 +251,7 @@ class ItemApiControllerUnitTest {
         assertEquals(150, result.body?.price)
 
         verify(itemService).findItem(1)
-        verify(validationService).validateBarcodeUnique("123456789", 1)
+        verify(validationService).validateBarcodeUnique("A01000001A", 1)
         verify(validationService).validatePriceRange(150)
         verify(itemService).save(expectedItemBean)
         verify(itemMapper).toResponse(updatedItem)
@@ -278,7 +278,7 @@ class ItemApiControllerUnitTest {
         val request =
             CreateItemRequest(
                 name = "Updated Item",
-                barcode = "123456789",
+                barcode = "A01000001A",
                 price = 150,
             )
 

@@ -27,12 +27,8 @@ class StoreApiController {
     fun createStore(
         @Valid @RequestBody store: StoreEntity,
     ): ResponseEntity<StoreEntity> {
-        // Validate required fields
         if (store.name.isBlank()) {
             throw IllegalArgumentException("Store name is required")
-        }
-        if (store.printerUri.isBlank()) {
-            throw IllegalArgumentException("Printer URI is required")
         }
 
         val savedStore = service.save(store)
@@ -58,12 +54,8 @@ class StoreApiController {
         service.findStore(id)
             ?: throw ResourceNotFoundException("Store with ID $id not found")
 
-        // Validate required fields
         if (store.name.isBlank()) {
             throw IllegalArgumentException("Store name is required")
-        }
-        if (store.printerUri.isBlank()) {
-            throw IllegalArgumentException("Printer URI is required")
         }
 
         val updatedStore = service.save(store.copy(id = id))

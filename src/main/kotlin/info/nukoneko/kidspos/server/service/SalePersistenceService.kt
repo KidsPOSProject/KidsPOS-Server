@@ -45,6 +45,7 @@ class SalePersistenceService(
                 amount = totalAmount,
                 deposit = saleBean.deposit,
                 createdAt = Date(),
+                changeAmount = saleBean.deposit - totalAmount,
             )
 
         val savedSale = saleRepository.save(sale)

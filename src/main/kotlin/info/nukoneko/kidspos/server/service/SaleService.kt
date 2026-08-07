@@ -64,14 +64,16 @@ class SaleService(
         items.forEach {
             logger.debug("Item - ID: {}, Name: {}, Price: {}", it.id, it.name, it.price)
         }
+        val amount = items.sumOf { it.price }
         val sale =
             SaleEntity(
                 id,
                 saleBean.storeId,
                 items.size,
-                items.sumOf { it.price },
+                amount,
                 saleBean.deposit,
                 Date(),
+                saleBean.deposit - amount,
             )
 
         val savedSale = saleRepository.save(sale)

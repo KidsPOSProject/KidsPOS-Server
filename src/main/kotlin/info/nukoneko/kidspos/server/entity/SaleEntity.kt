@@ -15,6 +15,7 @@ import java.util.*
  * @property amount 売上げ金額
  * @property deposit 預かり金
  * @property createdAt 作成日時
+ * @property changeAmount お釣り
  */
 @Entity
 @Table(name = "sale")
@@ -25,4 +26,5 @@ data class SaleEntity(
     val amount: Int, // 売り上げ
     val deposit: Int,
     val createdAt: Date,
+    val changeAmount: Int = 0,
 )

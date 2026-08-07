@@ -19,6 +19,5 @@ data class StoreEntity(
     @Id var id: Int = 0,
     @field:NotBlank(message = "Store name is required")
     val name: String,
-    @field:NotBlank(message = "Printer URI is required")
-    val printerUri: String,
+    val printerUri: String = "",
 )
