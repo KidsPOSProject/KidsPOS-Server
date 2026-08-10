@@ -54,6 +54,7 @@ sudo /home/pi/kidspos/update-app.sh /path/to/app.jar
 ## 失敗時の動作
 
 起動後のヘルスチェック（/api/status）が通らない場合、スクリプトが自動で旧 jar と更新直前の DB バックアップに巻き戻して再起動します。
+Raspberry Pi Zero W などの低速な機種では起動に数分かかることがあるため、ヘルスチェックは 2 秒間隔で最大 20 分待ちます（起動を検知した時点で即終了します）。待ち時間は環境変数 KIDSPOS_HEALTH_RETRIES（回数）で調整できます。
 Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョンへ戻すことはしないでください。
 
 ## バックアップ
