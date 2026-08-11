@@ -1174,10 +1174,7 @@ components:
           description: 新しいバージョンが存在するか
           example: true
         latestVersion:
-          allOf:
-            - $ref: '#/components/schemas/ApkVersionResponse'
-          nullable: true
-          description: 新しいバージョンの情報。hasUpdate が false の場合は null
+          $ref: '#/components/schemas/ApkVersionResponse'
       required:
         - hasUpdate
 
