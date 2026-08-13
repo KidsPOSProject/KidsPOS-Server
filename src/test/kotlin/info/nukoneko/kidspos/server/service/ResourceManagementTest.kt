@@ -2,7 +2,6 @@ package info.nukoneko.kidspos.server.service
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.boot.test.context.SpringBootTest
@@ -12,7 +11,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 @SpringBootTest
-@Disabled("Spring context not configured")
 class ResourceManagementTest {
     private lateinit var resourceManager: ResourceManager
 

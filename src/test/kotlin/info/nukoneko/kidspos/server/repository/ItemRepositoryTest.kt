@@ -3,7 +3,6 @@ package info.nukoneko.kidspos.server.repository
 import info.nukoneko.kidspos.server.entity.ItemEntity
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,7 +16,6 @@ import org.springframework.test.context.ActiveProfiles
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("ItemRepository Integration Tests")
-@Disabled("Spring context not configured")
 class ItemRepositoryTest {
     @Autowired
     private lateinit var entityManager: TestEntityManager
@@ -125,6 +123,7 @@ class ItemRepositoryTest {
         assertEquals(300, savedItem.price)
 
         // Verify persistence
+        entityManager.flush()
         entityManager.clear()
         val foundItem = itemRepository.findById(savedItem.id)
         assertTrue(foundItem.isPresent)
@@ -152,6 +151,7 @@ class ItemRepositoryTest {
         assertEquals(150, savedItem.price)
 
         // Verify persistence
+        entityManager.flush()
         entityManager.clear()
         val foundItem = itemRepository.findById(savedItem.id)
         assertTrue(foundItem.isPresent)

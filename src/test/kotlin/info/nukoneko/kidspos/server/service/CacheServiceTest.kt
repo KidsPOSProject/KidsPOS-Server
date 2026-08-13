@@ -8,7 +8,6 @@ import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,7 +19,6 @@ import java.util.*
 
 @SpringBootTest
 @EnableCaching
-@Disabled("Spring context not configured")
 class CacheServiceTest {
     @Autowired
     private lateinit var itemService: ItemService

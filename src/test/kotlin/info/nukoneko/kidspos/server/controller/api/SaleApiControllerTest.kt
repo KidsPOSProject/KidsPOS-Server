@@ -8,9 +8,9 @@ import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.service.*
 import info.nukoneko.kidspos.server.service.mapper.SaleMapper
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
+import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -32,7 +32,6 @@ import java.util.*
 )
 @AutoConfigureMockMvc(addFilters = false)
 @Import(info.nukoneko.kidspos.server.TestConfiguration::class)
-@Disabled("Spring context not configured")
 class SaleApiControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -105,8 +104,12 @@ class SaleApiControllerTest {
                 post("/api/sales")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
-            ).andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
+            ).andExpect(status().isCreated)
+            .andExpect(jsonPath("$.id").value(1))
+            .andExpect(jsonPath("$.amount").value(300))
+            .andExpect(jsonPath("$.deposit").value(400))
+            .andExpect(jsonPath("$.change").value(100))
+            .andExpect(jsonPath("$.storeId").value(1))
 
         verify(itemParsingService).parseItemsFromIds("1,2")
         verify(saleProcessingService).processSaleWithValidation(any(), any())
@@ -266,10 +269,17 @@ class SaleApiControllerTest {
 
     @Test
     fun `should validate printer configuration successfully`() {
+        // Given
+        `when`(receiptService.validatePrinterConfiguration(1))
+            .thenReturn(true)
+
         // When & Then
         mockMvc
-            .perform(get("/api/sales/printer/validate"))
+            .perform(get("/api/sales/validate-printer/1"))
             .andExpect(status().isOk)
+            .andExpect(jsonPath("$.printerConfigured").value(true))
+
+        verify(receiptService).validatePrinterConfiguration(1)
     }
 
     @Test
@@ -280,8 +290,9 @@ class SaleApiControllerTest {
 
         // When & Then
         mockMvc
-            .perform(get("/api/sales/printer/validate"))
+            .perform(get("/api/sales/validate-printer/1"))
             .andExpect(status().isOk)
+            .andExpect(jsonPath("$.printerConfigured").value(false))
 
         verify(receiptService).validatePrinterConfiguration(1)
     }
