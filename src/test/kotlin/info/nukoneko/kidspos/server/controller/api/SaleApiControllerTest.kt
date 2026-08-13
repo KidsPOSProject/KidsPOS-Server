@@ -202,7 +202,7 @@ class SaleApiControllerTest {
                 totalAmount = 300,
                 deposit = 400,
                 change = 100,
-                saleTime = java.time.LocalDateTime.now(),
+                saleTime = java.time.OffsetDateTime.now(),
                 items = emptyList(),
             )
 
@@ -232,7 +232,7 @@ class SaleApiControllerTest {
                 totalAmount = 300,
                 deposit = 400,
                 change = 100,
-                saleTime = java.time.LocalDateTime.now(),
+                saleTime = java.time.OffsetDateTime.now(),
                 items = emptyList(),
             )
 
