@@ -7,7 +7,7 @@ import info.nukoneko.kidspos.server.repository.ItemRepository
 import info.nukoneko.kidspos.server.repository.SaleDetailRepository
 import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 
 /**
@@ -26,7 +26,7 @@ import java.time.ZoneId
  * *   - Item details via ItemRepository
  *   - Sale line items via SaleDetailRepository
  * - **Financial Calculations**: Computes derived values like change amounts and subtotals
- * - **Temporal Conversion**: Handles timestamp conversions from database format to LocalDateTime
+ * - **Temporal Conversion**: Handles timestamp conversions from database format to OffsetDateTime
  * - **Batch Operations**: Provides efficient list transformations with relationship resolution
  *
  * ## Data Flow Patterns:
@@ -100,7 +100,7 @@ class SaleMapper(
             totalAmount = entity.amount,
             deposit = entity.deposit,
             change = entity.deposit - entity.amount,
-            saleTime = LocalDateTime.ofInstant(entity.createdAt.toInstant(), ZoneId.systemDefault()),
+            saleTime = OffsetDateTime.ofInstant(entity.createdAt.toInstant(), ZoneId.systemDefault()),
             items = items,
         )
     }

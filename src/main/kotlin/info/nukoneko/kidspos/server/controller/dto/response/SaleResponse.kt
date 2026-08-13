@@ -1,7 +1,7 @@
 package info.nukoneko.kidspos.server.controller.dto.response
 
 import java.text.NumberFormat
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.util.*
 
 /**
@@ -16,7 +16,7 @@ data class SaleResponse(
     val totalAmount: Int,
     val deposit: Int,
     val change: Int,
-    val saleTime: LocalDateTime,
+    val saleTime: OffsetDateTime,
     val items: List<SaleItemResponse> = emptyList(),
 ) {
     val totalItems: Int
