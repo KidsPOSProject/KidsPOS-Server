@@ -3,7 +3,6 @@ package info.nukoneko.kidspos.server.config
 import info.nukoneko.kidspos.server.service.ItemService
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -18,7 +17,6 @@ import org.springframework.test.context.ActiveProfiles
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Cache Configuration Tests")
-@Disabled("Spring context not configured")
 class CacheConfigTest {
     @Autowired
     private lateinit var cacheManager: CacheManager

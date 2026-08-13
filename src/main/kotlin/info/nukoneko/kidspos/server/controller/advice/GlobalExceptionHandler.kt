@@ -7,10 +7,16 @@ import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.HttpMediaTypeNotAcceptableException
+import org.springframework.web.HttpMediaTypeNotSupportedException
+import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import org.springframework.web.servlet.NoHandlerFoundException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -303,6 +309,97 @@ class GlobalExceptionHandler {
                             "type" to parameterType,
                             "required" to true,
                         ),
+                ),
+            )
+    }
+
+    @ExceptionHandler(NoResourceFoundException::class, NoHandlerFoundException::class)
+    fun handleNotFoundEndpoint(
+        ex: Exception,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        logger.debug("No endpoint matched: ${ex.message}")
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(
+                ErrorResponse(
+                    code = "ENDPOINT_NOT_FOUND",
+                    message = "指定されたエンドポイントは存在しません",
+                    path = request.getDescription(false),
+                ),
+            )
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+    fun handleMethodArgumentTypeMismatch(
+        ex: MethodArgumentTypeMismatchException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        logger.debug("Type mismatch for parameter '${ex.name}': ${ex.message}")
+        val expectedType = ex.requiredType?.simpleName ?: "unknown"
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(
+                ErrorResponse(
+                    code = "TYPE_MISMATCH",
+                    message = "パラメータ '${ex.name}' の形式が不正です。$expectedType 型の値を指定してください",
+                    path = request.getDescription(false),
+                    details =
+                        mapOf(
+                            "parameter" to ex.name,
+                            "expectedType" to expectedType,
+                        ),
+                ),
+            )
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
+    fun handleMethodNotSupported(
+        ex: HttpRequestMethodNotSupportedException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        logger.debug("Method not supported: ${ex.message}")
+        return ResponseEntity
+            .status(HttpStatus.METHOD_NOT_ALLOWED)
+            .body(
+                ErrorResponse(
+                    code = "METHOD_NOT_ALLOWED",
+                    message = "このエンドポイントは ${ex.method} メソッドに対応していません",
+                    path = request.getDescription(false),
+                ),
+            )
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
+    fun handleMediaTypeNotSupported(
+        ex: HttpMediaTypeNotSupportedException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        logger.debug("Media type not supported: ${ex.message}")
+        return ResponseEntity
+            .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+            .body(
+                ErrorResponse(
+                    code = "UNSUPPORTED_MEDIA_TYPE",
+                    message = "対応していないコンテンツタイプです。application/json を使用してください",
+                    path = request.getDescription(false),
+                ),
+            )
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException::class)
+    fun handleMediaTypeNotAcceptable(
+        ex: HttpMediaTypeNotAcceptableException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        logger.debug("Media type not acceptable: ${ex.message}")
+        return ResponseEntity
+            .status(HttpStatus.NOT_ACCEPTABLE)
+            .body(
+                ErrorResponse(
+                    code = "NOT_ACCEPTABLE",
+                    message = "要求された表現形式には対応していません",
+                    path = request.getDescription(false),
                 ),
             )
     }

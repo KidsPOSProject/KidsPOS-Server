@@ -3,16 +3,18 @@ package info.nukoneko.kidspos.server.repository
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 import org.springframework.data.domain.PageRequest
+import org.springframework.test.context.ActiveProfiles
 import java.util.*
 
 @DataJpaTest
-@Disabled("Spring context not configured")
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class SaleRepositoryTest {
     @Autowired
     private lateinit var entityManager: TestEntityManager
@@ -29,10 +31,15 @@ class SaleRepositoryTest {
     fun setup() {
         testDate = Date()
 
-        // Create test data
+        // Clean up before each test
+        saleRepository.deleteAll()
+        entityManager.flush()
+        entityManager.clear()
+
+        // Create test data with unique IDs (SaleEntity は採番を持たないため明示的に割り当てる)
         testSale1 =
             SaleEntity(
-                id = 0,
+                id = 3001,
                 storeId = 1,
                 quantity = 2,
                 amount = 300,
@@ -41,7 +48,7 @@ class SaleRepositoryTest {
             )
         testSale2 =
             SaleEntity(
-                id = 0,
+                id = 3002,
                 storeId = 1,
                 quantity = 3,
                 amount = 500,
@@ -50,7 +57,7 @@ class SaleRepositoryTest {
             )
         testSale3 =
             SaleEntity(
-                id = 0,
+                id = 3003,
                 storeId = 2,
                 quantity = 1,
                 amount = 200,
@@ -62,6 +69,7 @@ class SaleRepositoryTest {
         testSale1 = entityManager.persistAndFlush(testSale1)
         testSale2 = entityManager.persistAndFlush(testSale2)
         testSale3 = entityManager.persistAndFlush(testSale3)
+        entityManager.clear()
     }
 
     @Test
@@ -79,7 +87,7 @@ class SaleRepositoryTest {
         // Given
         val newSale =
             SaleEntity(
-                id = 0,
+                id = 3004,
                 storeId = 3,
                 quantity = 4,
                 amount = 600,
@@ -92,11 +100,12 @@ class SaleRepositoryTest {
 
         // Then
         assertNotNull(savedSale)
-        assertTrue(savedSale.id > 0)
+        assertEquals(3004, savedSale.id)
         assertEquals(3, savedSale.storeId)
         assertEquals(600, savedSale.amount)
 
         // Verify persistence
+        entityManager.flush()
         entityManager.clear()
         val foundSale = saleRepository.findById(savedSale.id)
         assertTrue(foundSale.isPresent)
@@ -244,6 +253,7 @@ class SaleRepositoryTest {
         assertEquals(350, savedSale.amount)
 
         // Verify persistence
+        entityManager.flush()
         entityManager.clear()
         val foundSale = saleRepository.findById(savedSale.id)
         assertTrue(foundSale.isPresent)

@@ -6,7 +6,6 @@ import info.nukoneko.kidspos.server.entity.SaleDetailEntity
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.springframework.boot.test.context.SpringBootTest
@@ -14,7 +13,6 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import java.util.*
 
 @SpringBootTest
-@Disabled("Spring context not configured")
 class SaleProcessingServiceTest {
     @MockBean
     private lateinit var saleCalculationService: SaleCalculationService
@@ -65,11 +63,8 @@ class SaleProcessingServiceTest {
                 SaleDetailEntity(3, 1, 3, 200, 1),
             )
 
-        `when`(saleValidationService.validateSaleRequest(saleBean, items)).thenReturn(Unit)
-        `when`(saleCalculationService.calculateSaleAmount(items)).thenReturn(900)
-        `when`(saleCalculationService.calculateChange(900, 1000)).thenReturn(100)
-        `when`(salePersistenceService.saveSale(any(), any())).thenReturn(expectedSale)
-        `when`(salePersistenceService.saveSaleDetails(any(), any())).thenReturn(expectedDetails)
+        `when`(salePersistenceService.saveSale(saleBean, items)).thenReturn(expectedSale)
+        `when`(salePersistenceService.saveSaleDetails(1, items)).thenReturn(expectedDetails)
 
         // When
         val result = saleProcessingService.processSale(saleBean, items)
@@ -81,9 +76,8 @@ class SaleProcessingServiceTest {
         assertEquals(1000, result.deposit)
 
         verify(saleValidationService).validateSaleRequest(saleBean, items)
-        verify(saleCalculationService).calculateSaleAmount(items)
-        verify(salePersistenceService).saveSale(any(), any())
-        verify(salePersistenceService).saveSaleDetails(any(), any())
+        verify(salePersistenceService).saveSale(saleBean, items)
+        verify(salePersistenceService).saveSaleDetails(1, items)
     }
 
     @Test
@@ -97,20 +91,31 @@ class SaleProcessingServiceTest {
                 ItemBean(2, "002", "Item 2", 200),
             )
 
-        `when`(saleValidationService.validateSaleRequest(saleBean, items)).thenReturn(Unit)
-        `when`(saleCalculationService.calculateSaleAmount(items)).thenReturn(800)
-        `when`(saleCalculationService.groupItemsByType(items)).thenReturn(
-            mapOf(
-                1 to listOf(items[0], items[1]),
-                2 to listOf(items[2]),
+        val savedSale =
+            SaleEntity(
+                id = 2,
+                storeId = 1,
+                quantity = 3,
+                amount = 800,
+                deposit = 800,
+                createdAt = Date(),
+            )
+
+        `when`(salePersistenceService.saveSale(saleBean, items)).thenReturn(savedSale)
+        `when`(salePersistenceService.saveSaleDetails(2, items)).thenReturn(
+            listOf(
+                SaleDetailEntity(1, 2, 1, 300, 2),
+                SaleDetailEntity(2, 2, 2, 200, 1),
             ),
         )
 
         // When
-        saleProcessingService.processSale(saleBean, items)
+        val result = saleProcessingService.processSale(saleBean, items)
 
         // Then
-        verify(saleCalculationService).groupItemsByType(items)
+        assertEquals(2, result.id)
+        verify(salePersistenceService).saveSale(saleBean, items)
+        verify(salePersistenceService).saveSaleDetails(2, items)
     }
 
     @Test
@@ -129,7 +134,6 @@ class SaleProcessingServiceTest {
     }
 }
 
-@Disabled("Spring context not configured")
 class SaleCalculationServiceTest {
     private lateinit var saleCalculationService: SaleCalculationService
 
@@ -191,7 +195,6 @@ class SaleCalculationServiceTest {
     }
 }
 
-@Disabled("Spring context not configured")
 class SaleValidationServiceTest {
     private lateinit var saleValidationService: SaleValidationService
 

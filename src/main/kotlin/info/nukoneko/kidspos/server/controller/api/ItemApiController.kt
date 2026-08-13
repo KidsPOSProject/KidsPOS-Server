@@ -20,7 +20,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -37,19 +36,12 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/item")
 @Validated
 @Tag(name = "Items", description = "Product item management operations")
-class ItemApiController {
-    @Autowired
-    private lateinit var itemService: ItemService
-
-    @Autowired
-    private lateinit var itemMapper: ItemMapper
-
-    @Autowired
-    private lateinit var validationService: ValidationService
-
-    @Autowired
-    private lateinit var barcodeService: BarcodeService
-
+class ItemApiController(
+    private val itemService: ItemService,
+    private val itemMapper: ItemMapper,
+    private val validationService: ValidationService,
+    private val barcodeService: BarcodeService,
+) {
     private val logger = LoggerFactory.getLogger(ItemApiController::class.java)
 
     @GetMapping

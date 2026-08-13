@@ -6,7 +6,6 @@ import info.nukoneko.kidspos.server.entity.StoreEntity
 import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.springframework.boot.test.context.SpringBootTest
@@ -14,7 +13,6 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import java.util.*
 
 @SpringBootTest
-@Disabled("Spring context not configured")
 class StoreServiceTest {
     @MockBean
     private lateinit var storeRepository: StoreRepository

@@ -2,17 +2,15 @@ package info.nukoneko.kidspos.server.controller.front
 
 import info.nukoneko.kidspos.server.controller.dto.request.StoreBean
 import info.nukoneko.kidspos.server.service.StoreService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
 
 @Controller
 @RequestMapping("/stores")
-class StoresController {
-    @Autowired
-    private lateinit var storeService: StoreService
-
+class StoresController(
+    private val storeService: StoreService,
+) {
     @GetMapping
     fun index(model: Model): String {
         model.addAttribute("title", javaClass.simpleName)

@@ -1,7 +1,6 @@
 package info.nukoneko.kidspos.server.config
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -20,7 +19,6 @@ import org.springframework.test.context.TestPropertySource
         "app.network.allowed-ip-prefix=10.",
     ],
 )
-@Disabled("Spring context not configured")
 class AppPropertiesTest {
     @Autowired
     private lateinit var appProperties: AppProperties
@@ -34,8 +32,8 @@ class AppPropertiesTest {
     @Test
     fun `should load barcode configuration from properties`() {
         assertThat(appProperties.barcode.qrSize).isEqualTo(250)
-        assertThat(appProperties.barcode.pdf.margin).isEqualTo(30)
-        assertThat(appProperties.barcode.pdf.imageSize).isEqualTo(150)
+        assertThat(appProperties.barcode.pdf.margin).isEqualTo(30.0f)
+        assertThat(appProperties.barcode.pdf.imageSize).isEqualTo(150.0f)
     }
 
     @Test

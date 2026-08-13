@@ -4,6 +4,7 @@ import info.nukoneko.kidspos.server.controller.dto.request.CreateItemRequest
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
 import info.nukoneko.kidspos.server.entity.ItemEntity
+import info.nukoneko.kidspos.server.service.BarcodeService
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
 import info.nukoneko.kidspos.server.service.mapper.ItemMapper
@@ -27,6 +28,9 @@ class ItemApiControllerUnitTest {
 
     @Mock
     private lateinit var validationService: ValidationService
+
+    @Mock
+    private lateinit var barcodeService: BarcodeService
 
     @InjectMocks
     private lateinit var controller: ItemApiController

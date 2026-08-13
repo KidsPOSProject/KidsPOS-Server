@@ -1,6 +1,7 @@
 package info.nukoneko.kidspos.server.controller.api
 
 import info.nukoneko.kidspos.server.controller.dto.response.StatusResponse
+import info.nukoneko.kidspos.server.service.SettingService
 import info.nukoneko.kidspos.server.service.StatusService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -13,6 +14,9 @@ import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class)
 class SettingApiControllerUnitTest {
+    @Mock
+    private lateinit var settingService: SettingService
+
     @Mock
     private lateinit var statusService: StatusService
 

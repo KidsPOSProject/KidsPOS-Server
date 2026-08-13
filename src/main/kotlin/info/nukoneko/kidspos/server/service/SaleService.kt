@@ -8,7 +8,6 @@ import info.nukoneko.kidspos.server.entity.SaleDetailEntity
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.repository.*
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
@@ -35,9 +34,6 @@ class SaleService(
     private val idGenerationService: IdGenerationService,
 ) {
     private val logger = LoggerFactory.getLogger(SaleService::class.java)
-
-    @Autowired
-    private lateinit var storeRepository: StoreRepository
 
     fun findAllSale(): List<SaleEntity> = saleRepository.findAll()
 

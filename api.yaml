@@ -345,7 +345,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  isValid:
+                  printerConfigured:
                     type: boolean
 
   # Stores
