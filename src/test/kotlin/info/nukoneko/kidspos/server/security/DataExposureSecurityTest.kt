@@ -2,7 +2,6 @@ package info.nukoneko.kidspos.server.security
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,7 +21,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @DisplayName("Data Exposure Security Tests")
-@Disabled("Spring context not configured")
 class DataExposureSecurityTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -35,7 +33,7 @@ class DataExposureSecurityTest {
         // エラーメッセージに内部システムパスを露出しない
         val result =
             mockMvc
-                .perform(get("/api/items/invalid-id"))
+                .perform(get("/api/item/invalid-id"))
                 .andReturn()
 
         val response = result.response.contentAsString
@@ -60,7 +58,7 @@ class DataExposureSecurityTest {
         val result =
             mockMvc
                 .perform(
-                    post("/api/items")
+                    post("/api/item")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidItem)),
                 ).andReturn()
@@ -107,7 +105,7 @@ class DataExposureSecurityTest {
         // センシティブなヘッダーが含まれていないことを確認
         val result =
             mockMvc
-                .perform(get("/api/items"))
+                .perform(get("/api/item"))
                 .andReturn()
 
         val response = result.response
@@ -124,9 +122,9 @@ class DataExposureSecurityTest {
         // 適切なエラーマスキングを実装
         val testCases =
             listOf(
-                "/api/staff/999999", // 存在しないID
+                "/api/item/999999", // 存在しないID
                 "/api/stores/999999", // 存在しないID
-                "/api/items/NONEXISTENT", // 存在しないバーコード
+                "/api/item/barcode/A01999999A", // 存在しないバーコード
             )
 
         testCases.forEach { path ->
@@ -152,7 +150,7 @@ class DataExposureSecurityTest {
         // URLに内部IDを露出しない（セキュリティベストプラクティス）
         val result =
             mockMvc
-                .perform(get("/api/items"))
+                .perform(get("/api/item"))
                 .andExpect(status().isOk())
                 .andReturn()
 
@@ -178,7 +176,7 @@ class DataExposureSecurityTest {
 
         mockMvc
             .perform(
-                post("/api/items")
+                post("/api/item")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(sensitiveData)),
             ).andReturn()
@@ -194,7 +192,7 @@ class DataExposureSecurityTest {
         val result =
             mockMvc
                 .perform(
-                    get("/api/items")
+                    get("/api/item")
                         .param("jsessionid", "ABC123DEF456"),
                 ).andReturn()
 
@@ -252,13 +250,13 @@ class DataExposureSecurityTest {
         repeat(10) {
             val startValid = System.currentTimeMillis()
             mockMvc
-                .perform(get("/api/items/$validBarcode"))
+                .perform(get("/api/item/barcode/{barcode}", validBarcode))
                 .andReturn()
             validTimes.add(System.currentTimeMillis() - startValid)
 
             val startInvalid = System.currentTimeMillis()
             mockMvc
-                .perform(get("/api/items/$invalidBarcode"))
+                .perform(get("/api/item/barcode/{barcode}", invalidBarcode))
                 .andReturn()
             invalidTimes.add(System.currentTimeMillis() - startInvalid)
         }
@@ -304,28 +302,21 @@ class DataExposureSecurityTest {
         // レスポンスでセンシティブデータをマスク
         val result =
             mockMvc
-                .perform(get("/api/staff/1"))
+                .perform(get("/api/item/1"))
                 .andReturn()
 
         if (result.response.status == 200) {
             val response = result.response.contentAsString
-            val staff = objectMapper.readValue(response, Map::class.java)
+            val item = objectMapper.readValue(response, Map::class.java)
 
-            // センシティブなフィールドがマスクされているか確認
-            if (staff.containsKey("email")) {
-                val email = staff["email"] as? String
-                if (email != null && email.contains("@")) {
-                    assertTrue(
-                        email.contains("***") || email.length < email.count { it == '@' },
-                        "Email should be partially masked",
-                    )
-                }
-            }
-
-            // パスワードフィールドが含まれていないことを確認
+            // 機密フィールドが含まれていないことを確認
             assertFalse(
-                staff.containsKey("password"),
+                item.containsKey("password"),
                 "Password should never be included in response",
+            )
+            assertFalse(
+                item.containsKey("secret"),
+                "Secret should never be included in response",
             )
         }
     }

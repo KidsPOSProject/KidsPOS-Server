@@ -5,13 +5,14 @@ import info.nukoneko.kidspos.server.controller.dto.request.CreateItemRequest
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
 import info.nukoneko.kidspos.server.entity.ItemEntity
+import info.nukoneko.kidspos.server.service.BarcodeService
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
 import info.nukoneko.kidspos.server.service.mapper.ItemMapper
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
+import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -31,7 +32,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 )
 @AutoConfigureMockMvc(addFilters = false)
 @Import(info.nukoneko.kidspos.server.TestConfiguration::class)
-@Disabled("Spring context not configured")
 class ItemApiControllerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -48,6 +48,9 @@ class ItemApiControllerTest {
     @MockBean
     private lateinit var validationService: ValidationService
 
+    @MockBean
+    private lateinit var barcodeService: BarcodeService
+
     private lateinit var testItem: ItemEntity
     private lateinit var testItemResponse: ItemResponse
 
@@ -56,7 +59,7 @@ class ItemApiControllerTest {
         testItem =
             ItemEntity(
                 id = 1,
-                barcode = "123456789",
+                barcode = "A01000001A",
                 name = "Test Item",
                 price = 100,
             )
@@ -64,7 +67,7 @@ class ItemApiControllerTest {
         testItemResponse =
             ItemResponse(
                 id = 1,
-                barcode = "123456789",
+                barcode = "A01000001A",
                 name = "Test Item",
                 price = 100,
             )
@@ -81,12 +84,12 @@ class ItemApiControllerTest {
 
         // When & Then
         mockMvc
-            .perform(get("/api/items"))
+            .perform(get("/api/item"))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$").isArray)
             .andExpect(jsonPath("$[0].id").value(1))
-            .andExpect(jsonPath("$[0].barcode").value("123456789"))
+            .andExpect(jsonPath("$[0].barcode").value("A01000001A"))
             .andExpect(jsonPath("$[0].name").value("Test Item"))
             .andExpect(jsonPath("$[0].price").value(100))
 
@@ -102,7 +105,7 @@ class ItemApiControllerTest {
 
         // When & Then
         mockMvc
-            .perform(get("/api/items/1"))
+            .perform(get("/api/item/1"))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.id").value(1))
@@ -119,7 +122,7 @@ class ItemApiControllerTest {
 
         // When & Then
         mockMvc
-            .perform(get("/api/items/999"))
+            .perform(get("/api/item/999"))
             .andExpect(status().isNotFound)
 
         verify(itemService).findItem(999)
@@ -129,17 +132,17 @@ class ItemApiControllerTest {
     @Test
     fun `should get item by barcode successfully`() {
         // Given
-        `when`(itemService.findItem("123456789")).thenReturn(testItem)
+        `when`(itemService.findItem("A01000001A")).thenReturn(testItem)
         `when`(itemMapper.toResponse(testItem)).thenReturn(testItemResponse)
 
         // When & Then
         mockMvc
-            .perform(get("/api/items/barcode/123456789"))
+            .perform(get("/api/item/barcode/A01000001A"))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(jsonPath("$.barcode").value("123456789"))
+            .andExpect(jsonPath("$.barcode").value("A01000001A"))
 
-        verify(itemService).findItem("123456789")
+        verify(itemService).findItem("A01000001A")
         verify(itemMapper).toResponse(testItem)
     }
 
@@ -147,7 +150,7 @@ class ItemApiControllerTest {
     fun `should throw exception for invalid barcode format`() {
         // When & Then
         mockMvc
-            .perform(get("/api/items/barcode/abc"))
+            .perform(get("/api/item/barcode/abc"))
             .andExpect(status().isBadRequest)
 
         verify(itemService, never()).findItem(any<String>())
@@ -156,14 +159,14 @@ class ItemApiControllerTest {
     @Test
     fun `should throw exception when item not found by barcode`() {
         // Given
-        `when`(itemService.findItem("999999999")).thenReturn(null)
+        `when`(itemService.findItem("A01999999A")).thenReturn(null)
 
         // When & Then
         mockMvc
-            .perform(get("/api/items/barcode/999999999"))
+            .perform(get("/api/item/barcode/A01999999A"))
             .andExpect(status().isNotFound)
 
-        verify(itemService).findItem("999999999")
+        verify(itemService).findItem("A01999999A")
         verify(itemMapper, never()).toResponse(any())
     }
 
@@ -173,14 +176,14 @@ class ItemApiControllerTest {
         val request =
             CreateItemRequest(
                 name = "New Item",
-                barcode = "987654321",
+                barcode = "A01000002A",
                 price = 200,
             )
 
         val savedItem =
             ItemEntity(
                 id = 2,
-                barcode = "987654321",
+                barcode = "A01000002A",
                 name = "New Item",
                 price = 200,
             )
@@ -188,7 +191,7 @@ class ItemApiControllerTest {
         val savedResponse =
             ItemResponse(
                 id = 2,
-                barcode = "987654321",
+                barcode = "A01000002A",
                 name = "New Item",
                 price = 200,
             )
@@ -199,7 +202,7 @@ class ItemApiControllerTest {
         // When & Then
         mockMvc
             .perform(
-                post("/api/items")
+                post("/api/item")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isCreated)
@@ -207,7 +210,7 @@ class ItemApiControllerTest {
             .andExpect(jsonPath("$.id").value(2))
             .andExpect(jsonPath("$.name").value("New Item"))
 
-        verify(validationService).validateBarcodeUnique("987654321")
+        verify(validationService).validateBarcodeUnique("A01000002A")
         verify(validationService).validatePriceRange(200)
         verify(itemService).save(any<ItemBean>())
         verify(itemMapper).toResponse(savedItem)
@@ -226,7 +229,7 @@ class ItemApiControllerTest {
         // When & Then
         mockMvc
             .perform(
-                post("/api/items")
+                post("/api/item")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isBadRequest)
@@ -240,14 +243,14 @@ class ItemApiControllerTest {
         val request =
             CreateItemRequest(
                 name = "Updated Item",
-                barcode = "123456789",
+                barcode = "A01000001A",
                 price = 150,
             )
 
         val updatedItem =
             ItemEntity(
                 id = 1,
-                barcode = "123456789",
+                barcode = "A01000001A",
                 name = "Updated Item",
                 price = 150,
             )
@@ -255,7 +258,7 @@ class ItemApiControllerTest {
         val updatedResponse =
             ItemResponse(
                 id = 1,
-                barcode = "123456789",
+                barcode = "A01000001A",
                 name = "Updated Item",
                 price = 150,
             )
@@ -267,7 +270,7 @@ class ItemApiControllerTest {
         // When & Then
         mockMvc
             .perform(
-                put("/api/items/1")
+                put("/api/item/1")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isOk)
@@ -276,7 +279,7 @@ class ItemApiControllerTest {
             .andExpect(jsonPath("$.price").value(150))
 
         verify(itemService).findItem(1)
-        verify(validationService).validateBarcodeUnique("123456789", 1)
+        verify(validationService).validateBarcodeUnique("A01000001A", 1)
         verify(validationService).validatePriceRange(150)
         verify(itemService).save(any<ItemBean>())
         verify(itemMapper).toResponse(updatedItem)
@@ -288,7 +291,7 @@ class ItemApiControllerTest {
         val request =
             CreateItemRequest(
                 name = "Updated Item",
-                barcode = "123456789",
+                barcode = "A01000001A",
                 price = 150,
             )
 
@@ -297,7 +300,7 @@ class ItemApiControllerTest {
         // When & Then
         mockMvc
             .perform(
-                put("/api/items/999")
+                put("/api/item/999")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)),
             ).andExpect(status().isNotFound)
@@ -310,7 +313,7 @@ class ItemApiControllerTest {
     fun `should delete item successfully`() {
         // When & Then
         mockMvc
-            .perform(delete("/api/items/1"))
+            .perform(delete("/api/item/1"))
             .andExpect(status().isNoContent)
 
         verify(validationService).validateItemExists(1)
@@ -321,7 +324,7 @@ class ItemApiControllerTest {
         // When & Then
         mockMvc
             .perform(
-                post("/api/items")
+                post("/api/item")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(""),
             ).andExpect(status().isBadRequest)
@@ -332,7 +335,7 @@ class ItemApiControllerTest {
         // When & Then
         mockMvc
             .perform(
-                post("/api/items")
+                post("/api/item")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{invalid json"),
             ).andExpect(status().isBadRequest)

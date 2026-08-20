@@ -6,7 +6,6 @@ import info.nukoneko.kidspos.server.entity.SettingEntity
 import info.nukoneko.kidspos.server.service.SettingService
 import info.nukoneko.kidspos.server.service.StatusService
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -18,13 +17,10 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/api/setting")
-class SettingApiController {
-    @Autowired
-    private lateinit var service: SettingService
-
-    @Autowired
-    private lateinit var statusService: StatusService
-
+class SettingApiController(
+    private val service: SettingService,
+    private val statusService: StatusService,
+) {
     @RequestMapping("status", method = [RequestMethod.GET])
     fun getStatus(): StatusResponse = statusService.getStatus()
 

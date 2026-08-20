@@ -2,7 +2,6 @@ package info.nukoneko.kidspos.server.security
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,7 +21,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @DisplayName("Input Validation Security Tests")
-@Disabled("Spring context not configured")
 class InputValidationSecurityTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -47,7 +45,7 @@ class InputValidationSecurityTest {
         sqlInjectionPayloads.forEach { payload ->
             val result =
                 mockMvc
-                    .perform(get("/api/items/$payload"))
+                    .perform(get("/api/item/{id}", payload))
                     .andReturn()
 
             val status = result.response.status
@@ -85,7 +83,7 @@ class InputValidationSecurityTest {
             val result =
                 mockMvc
                     .perform(
-                        post("/api/items")
+                        post("/api/item")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(item)),
                     ).andReturn()
@@ -121,7 +119,7 @@ class InputValidationSecurityTest {
         pathTraversalPayloads.forEach { payload ->
             val result =
                 mockMvc
-                    .perform(get("/api/items/$payload"))
+                    .perform(get("/api/item/{id}", payload))
                     .andReturn()
 
             val status = result.response.status
@@ -157,7 +155,7 @@ class InputValidationSecurityTest {
 
             mockMvc
                 .perform(
-                    post("/api/items")
+                    post("/api/item")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(item)),
                 ).andExpect(status().isBadRequest())
@@ -179,14 +177,16 @@ class InputValidationSecurityTest {
             )
 
         ldapInjectionPayloads.forEach { payload ->
-            mockMvc
-                .perform(
-                    get("/api/staff/search")
-                        .param("name", payload),
-                ).andExpect { result ->
-                    val status = result.response.status
-                    assertTrue(status == 200 || status == 400)
-                }
+            val result =
+                mockMvc
+                    .perform(get("/api/item/barcode/{barcode}", payload))
+                    .andReturn()
+
+            val status = result.response.status
+            assertTrue(
+                status == 400 || status == 404,
+                "Should reject LDAP injection payload: $payload (got status: $status)",
+            )
         }
     }
 
@@ -204,7 +204,7 @@ class InputValidationSecurityTest {
 
         mockMvc
             .perform(
-                post("/api/items")
+                post("/api/item")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(oversizedItem)),
             ).andExpect(status().isBadRequest())
@@ -233,7 +233,7 @@ class InputValidationSecurityTest {
             val result =
                 mockMvc
                     .perform(
-                        post("/api/items")
+                        post("/api/item")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(item)),
                     ).andReturn()
@@ -262,7 +262,7 @@ class InputValidationSecurityTest {
 
         nullBytePayloads.forEach { payload ->
             mockMvc
-                .perform(get("/api/items/$payload"))
+                .perform(get("/api/item/{id}", payload))
                 .andExpect(status().is4xxClientError())
         }
     }
@@ -289,7 +289,7 @@ class InputValidationSecurityTest {
 
             mockMvc
                 .perform(
-                    post("/api/items")
+                    post("/api/item")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(item)),
                 ).andExpect { result ->
@@ -300,36 +300,33 @@ class InputValidationSecurityTest {
     }
 
     @Test
-    fun `should validate email format`() {
-        // メールフォーマットの検証
-        val invalidEmails =
+    fun `should validate barcode format`() {
+        // バーコードフォーマットの検証
+        val invalidBarcodes =
             listOf(
-                "not_an_email",
-                "@example.com",
-                "user@",
-                "user@.com",
-                "user@@example.com",
-                "user@exam ple.com",
-                "<script>@example.com",
+                "not_a_barcode",
+                "A01000001",
+                "01000001A",
+                "A03000001A",
+                "A0100000A",
+                "A01 00001A",
+                "<script>A01000001A",
             )
 
-        invalidEmails.forEach { email ->
-            val staff =
+        invalidBarcodes.forEach { barcode ->
+            val item =
                 mapOf(
-                    "staffCode" to "STAFF001",
-                    "name" to "Test Staff",
-                    "email" to email,
+                    "barcode" to barcode,
+                    "name" to "Test Item",
+                    "price" to 100,
                 )
 
             mockMvc
                 .perform(
-                    post("/api/staff")
+                    post("/api/item")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(staff)),
-                ).andExpect { result ->
-                    val status = result.response.status
-                    assertTrue(status == 201 || status == 400)
-                }
+                        .content(objectMapper.writeValueAsString(item)),
+                ).andExpect(status().isBadRequest())
         }
     }
 
@@ -348,7 +345,7 @@ class InputValidationSecurityTest {
 
         mockMvc
             .perform(
-                post("/api/items/import")
+                post("/api/item")
                     .contentType(MediaType.APPLICATION_XML)
                     .content(xxePayload),
             ).andExpect(status().is4xxClientError())
@@ -367,7 +364,7 @@ class InputValidationSecurityTest {
         jsonInjectionPayloads.forEach { payload ->
             mockMvc
                 .perform(
-                    post("/api/items")
+                    post("/api/item")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload),
                 ).andExpect { result ->
@@ -391,14 +388,19 @@ class InputValidationSecurityTest {
             )
 
         invalidDates.forEach { date ->
-            mockMvc
-                .perform(
-                    get("/api/sales/report")
-                        .param("date", date),
-                ).andExpect { result ->
-                    val status = result.response.status
-                    assertTrue(status == 200 || status == 400)
-                }
+            val result =
+                mockMvc
+                    .perform(
+                        get("/api/reports/sales/pdf")
+                            .param("startDate", date)
+                            .param("endDate", date),
+                    ).andReturn()
+
+            assertEquals(
+                400,
+                result.response.status,
+                "Should reject invalid date: $date",
+            )
         }
     }
 
@@ -409,7 +411,7 @@ class InputValidationSecurityTest {
 
         mockMvc
             .perform(
-                post("/api/items")
+                post("/api/item")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
                         """

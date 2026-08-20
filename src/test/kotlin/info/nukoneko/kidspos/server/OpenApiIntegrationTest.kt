@@ -2,7 +2,6 @@ package info.nukoneko.kidspos.server
 
 import info.nukoneko.kidspos.server.config.OpenApiTestConfiguration
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -19,7 +18,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(OpenApiTestConfiguration::class)
-@Disabled("Spring context not configured")
 class OpenApiIntegrationTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -51,7 +49,7 @@ class OpenApiIntegrationTest {
         assertTrue(content.contains("/api/item"))
         assertTrue(content.contains("/api/sale"))
         assertTrue(content.contains("/api/store"))
-        assertTrue(content.contains("/api/staff"))
+        assertTrue(content.contains("/api/setting"))
     }
 
     @Test

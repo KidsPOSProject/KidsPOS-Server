@@ -4,7 +4,6 @@ import info.nukoneko.kidspos.server.domain.exception.ResourceNotFoundException
 import info.nukoneko.kidspos.server.entity.StoreEntity
 import info.nukoneko.kidspos.server.service.StoreService
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -16,10 +15,9 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/api/stores")
-class StoreApiController {
-    @Autowired
-    private lateinit var service: StoreService
-
+class StoreApiController(
+    private val service: StoreService,
+) {
     @GetMapping
     fun getStores(): ResponseEntity<List<StoreEntity>> = ResponseEntity.ok(service.findAll())
 

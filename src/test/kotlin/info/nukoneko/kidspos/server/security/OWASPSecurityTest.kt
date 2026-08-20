@@ -3,7 +3,6 @@ package info.nukoneko.kidspos.server.security
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -24,7 +23,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-@Disabled("Spring context not configured")
 class OWASPSecurityTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -47,7 +45,7 @@ class OWASPSecurityTest {
         fun `should prevent directory traversal attacks`() {
             // ディレクトリトラバーサル攻撃を防ぐ
             mockMvc
-                .perform(get("/api/items/../../../etc/passwd"))
+                .perform(get("/api/item/../../../etc/passwd"))
                 .andExpect(status().is4xxClientError())
         }
 
@@ -68,7 +66,7 @@ class OWASPSecurityTest {
             // レスポンスに機密データが含まれていないことを確認
             val result =
                 mockMvc
-                    .perform(get("/api/staff/1"))
+                    .perform(get("/api/item/1"))
                     .andReturn()
 
             val response = result.response.contentAsString
@@ -94,18 +92,17 @@ class OWASPSecurityTest {
             // SQLインジェクション攻撃を防ぐ
             val maliciousQuery = "'; DROP TABLE item; --"
 
-            mockMvc
-                .perform(
-                    get("/api/items/search")
-                        .param("query", maliciousQuery),
-                ).andExpect { result ->
-                    val status = result.response.status
-                    assertTrue(status == 200 || status == 400)
-                }.andReturn()
+            val result =
+                mockMvc
+                    .perform(get("/api/item/barcode/{barcode}", maliciousQuery))
+                    .andReturn()
+
+            val status = result.response.status
+            assertTrue(status == 400 || status == 404, "Should reject malicious query (got status: $status)")
 
             // データベースが破壊されていないことを確認
             mockMvc
-                .perform(get("/api/items"))
+                .perform(get("/api/item"))
                 .andExpect(status().isOk())
         }
 
@@ -122,12 +119,12 @@ class OWASPSecurityTest {
 
             mockMvc
                 .perform(
-                    post("/api/items/search")
+                    post("/api/item")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(maliciousJson),
                 ).andExpect { result ->
                     val status = result.response.status
-                    assertTrue(status == 200 || status == 400)
+                    assertTrue(status == 200 || status == 201 || status == 400)
                 }
         }
 
@@ -137,7 +134,7 @@ class OWASPSecurityTest {
             val maliciousBarcode = "TEST001; rm -rf /"
 
             mockMvc
-                .perform(get("/api/items/$maliciousBarcode"))
+                .perform(get("/api/item/{id}", maliciousBarcode))
                 .andExpect(status().is4xxClientError())
         }
 
@@ -154,7 +151,7 @@ class OWASPSecurityTest {
             val result =
                 mockMvc
                     .perform(
-                        post("/api/items")
+                        post("/api/item")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(xssPayload)),
                     ).andReturn()
@@ -173,7 +170,7 @@ class OWASPSecurityTest {
             val results =
                 (1..100).map {
                     mockMvc
-                        .perform(get("/api/items"))
+                        .perform(get("/api/item"))
                         .andReturn()
                         .response.status
                 }
@@ -228,7 +225,7 @@ class OWASPSecurityTest {
         fun `should disable unnecessary HTTP methods`() {
             // 不要なHTTPメソッドが無効化されていることを確認
             mockMvc
-                .perform(options("/api/items"))
+                .perform(options("/api/item"))
                 .andExpect { result ->
                     val status = result.response.status
                     assertTrue(status == 200 || status == 405)
@@ -236,7 +233,7 @@ class OWASPSecurityTest {
 
             // TRACE method test
             mockMvc
-                .perform(request(HttpMethod.valueOf("TRACE"), "/api/items"))
+                .perform(request(HttpMethod.valueOf("TRACE"), "/api/item"))
                 .andExpect(status().isMethodNotAllowed())
         }
 
@@ -315,7 +312,7 @@ class OWASPSecurityTest {
 
             mockMvc
                 .perform(
-                    post("/api/items")
+                    post("/api/item")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(tamperedData)),
                 ).andExpect(status().isBadRequest())
@@ -334,7 +331,7 @@ class OWASPSecurityTest {
 
             mockMvc
                 .perform(
-                    post("/api/items")
+                    post("/api/item")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(maliciousPayload),
                 ).andExpect(status().isBadRequest())
@@ -348,7 +345,7 @@ class OWASPSecurityTest {
         fun `should log security events`() {
             // セキュリティイベントがログに記録されることを確認
             mockMvc
-                .perform(get("/api/items/../../etc/passwd"))
+                .perform(get("/api/item/../../etc/passwd"))
                 .andExpect(status().is4xxClientError())
 
             // ログにセキュリティイベントが記録されていることを確認
@@ -387,7 +384,7 @@ class OWASPSecurityTest {
 
             mockMvc
                 .perform(
-                    post("/api/items/import")
+                    post("/api/item/import")
                         .param("url", maliciousUrl),
                 ).andExpect(status().is4xxClientError())
         }

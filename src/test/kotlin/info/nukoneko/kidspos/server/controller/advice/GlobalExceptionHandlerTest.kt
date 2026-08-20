@@ -3,12 +3,12 @@ package info.nukoneko.kidspos.server.controller.advice
 import com.fasterxml.jackson.databind.ObjectMapper
 import info.nukoneko.kidspos.server.controller.api.ItemApiController
 import info.nukoneko.kidspos.server.controller.dto.request.CreateItemRequest
-import info.nukoneko.kidspos.server.domain.exception.InvalidBarcodeException
 import info.nukoneko.kidspos.server.domain.exception.ItemNotFoundException
+import info.nukoneko.kidspos.server.service.BarcodeService
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
 import info.nukoneko.kidspos.server.service.mapper.ItemMapper
-import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,7 +38,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 )
 @AutoConfigureMockMvc(addFilters = false)
 @Import(info.nukoneko.kidspos.server.TestConfiguration::class)
-@Disabled("Spring context not configured")
 class GlobalExceptionHandlerTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -52,6 +51,9 @@ class GlobalExceptionHandlerTest {
     @MockBean
     private lateinit var validationService: ValidationService
 
+    @MockBean
+    private lateinit var barcodeService: BarcodeService
+
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
@@ -62,7 +64,7 @@ class GlobalExceptionHandlerTest {
 
         // When & Then
         mockMvc
-            .perform(get("/api/items/999"))
+            .perform(get("/api/item/999"))
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.code").value("ITEM_NOT_FOUND"))
             .andExpect(jsonPath("$.message").value("Item with ID 999 not found"))
@@ -82,12 +84,13 @@ class GlobalExceptionHandlerTest {
         // When & Then
         mockMvc
             .perform(
-                post("/api/items")
+                post("/api/item")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(invalidRequest)),
             ).andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+            .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
             .andExpect(jsonPath("$.message").exists())
+            .andExpect(jsonPath("$.details.fieldErrors").isArray)
     }
 
     @Test
@@ -97,23 +100,24 @@ class GlobalExceptionHandlerTest {
             .thenThrow(RuntimeException("Database connection failed at 192.168.1.100"))
 
         // When & Then
-        mockMvc
-            .perform(get("/api/items/1"))
-            .andExpect(status().isInternalServerError)
-            .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
-            .andExpect(jsonPath("$.message").value("An unexpected error occurred"))
-            .andExpect(jsonPath("$.message").value("An unexpected error occurred"))
+        val result =
+            mockMvc
+                .perform(get("/api/item/1"))
+                .andExpect(status().isInternalServerError)
+                .andExpect(jsonPath("$.code").value("INTERNAL_SERVER_ERROR"))
+                .andExpect(
+                    jsonPath("$.message").value("データベース接続エラーが発生しました。しばらく待ってから再試行してください"),
+                ).andReturn()
+
+        val body = result.response.contentAsString
+        assertFalse(body.contains("192.168.1.100"), "内部の接続先情報を露出してはいけない")
     }
 
     @Test
     fun `should handle business exceptions with appropriate status codes`() {
-        // Given
-        `when`(itemService.findItem("invalid"))
-            .thenThrow(InvalidBarcodeException("invalid"))
-
         // When & Then
         mockMvc
-            .perform(get("/api/items/barcode/invalid"))
+            .perform(get("/api/item/barcode/invalid"))
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.code").value("INVALID_BARCODE"))
             .andExpect(jsonPath("$.message").value("Invalid barcode format: invalid"))

@@ -4,14 +4,12 @@ import info.nukoneko.kidspos.server.domain.exception.ItemNotFoundException
 import info.nukoneko.kidspos.server.entity.ItemEntity
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 
 @SpringBootTest
-@Disabled("Spring context not configured")
 class ItemParsingServiceTest {
     @MockBean
     private lateinit var itemService: ItemService
