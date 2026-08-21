@@ -1,0 +1,16 @@
+[Unit]
+Description=KidsPOS Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/kidspos
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -jar /home/pi/kidspos/kidspos.jar
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/home/pi/kidspos/kidspos.log
+StandardError=append:/home/pi/kidspos/kidspos-error.log
+
+[Install]
+WantedBy=multi-user.target
