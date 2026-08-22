@@ -66,6 +66,7 @@ setup() {
     mkdir -p "$STUB_DIR" "$UNIT_DIR"
 
     export CALL_LOG="${WORK}/calls.log"
+    export HEALTH_NG_FILE="${WORK}/health-ng"
     export STATE_DIR="${WORK}/state"
     mkdir -p "$STATE_DIR"
     : > "$CALL_LOG"
@@ -106,6 +107,9 @@ for arg in "$@"; do
         *api.github.com*) exit 22 ;;
     esac
 done
+if [ -f "$HEALTH_NG_FILE" ]; then
+    exit 22
+fi
 exit 0
 EOF
 
@@ -295,6 +299,53 @@ test_old_java_is_rejected() {
     teardown
 }
 
+test_health_is_awaited_before_doctor() {
+    setup "サービス起動後は応答を待ってから診断を行う"
+    mkdir -p "$APP_DIR"
+    printf 'PK\003\004existing' > "${APP_DIR}/app.jar"
+    run_install
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "サービスの応答を待っています" "待機が報告される"
+    assert_contains "${WORK}/out.log" "サービスが応答しました" "応答が報告される"
+    assert_contains "$CALL_LOG" "curl -fsS --max-time 10 -o /dev/null http://localhost:8080/api/status" "ヘルスチェックがタイムアウト付きで呼ばれる"
+
+    WAIT_LINE=$(grep -n "サービスの応答を待っています" "${WORK}/out.log" | head -n1 | cut -d: -f1)
+    DOCTOR_LINE=$(grep -n "KidsPOS 稼働診断" "${WORK}/out.log" | head -n1 | cut -d: -f1)
+    if [ -n "$WAIT_LINE" ] && [ -n "$DOCTOR_LINE" ] && [ "$WAIT_LINE" -lt "$DOCTOR_LINE" ]; then
+        pass "待機が診断より先に行われる"
+    else
+        fail_assert "待機が診断より先に行われる (wait: ${WAIT_LINE:-none}, doctor: ${DOCTOR_LINE:-none})"
+    fi
+    teardown
+}
+
+test_health_wait_gives_up_and_continues() {
+    setup "応答が無くても上限で待機を打ち切り診断へ進む"
+    mkdir -p "$APP_DIR"
+    printf 'PK\003\004existing' > "${APP_DIR}/app.jar"
+    touch "$HEALTH_NG_FILE"
+    run_install
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "待ち時間の上限に達しました" "打ち切りが報告される"
+    assert_not_contains "${WORK}/out.log" "サービスが応答しました" "応答したとは報告されない"
+    assert_contains "${WORK}/out.log" "KidsPOS 稼働診断" "診断が実行される"
+    assert_eq 3 "$(grep -c "curl -fsS --max-time 10 -o /dev/null http://localhost:8080/api/status" "$CALL_LOG")" "待機は 2 回で打ち切られ診断の 1 回だけが続く"
+    teardown
+}
+
+test_health_is_not_awaited_when_service_is_not_started() {
+    setup "サービスを起動しない場合は応答を待たない"
+    run_install --no-jar
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_not_contains "$CALL_LOG" "systemctl start" "サービスは起動されない"
+    assert_not_contains "${WORK}/out.log" "サービスの応答を待っています" "待機は行われない"
+    assert_contains "${WORK}/out.log" "KidsPOS 稼働診断" "診断は実行される"
+    teardown
+}
+
 test_install_with_local_jar
 test_unit_paths_are_rewritten
 test_service_name_is_rewritten
@@ -307,6 +358,9 @@ test_unknown_flag_is_rejected
 test_conflicting_options_are_rejected
 test_missing_jar_path_is_rejected
 test_old_java_is_rejected
+test_health_is_awaited_before_doctor
+test_health_wait_gives_up_and_continues
+test_health_is_not_awaited_when_service_is_not_started
 
 echo ""
 echo "passed: $PASS_COUNT, failed: $FAIL_COUNT"

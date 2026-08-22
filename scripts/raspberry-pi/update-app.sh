@@ -7,6 +7,7 @@ JAR_NAME="${KIDSPOS_JAR_NAME:-app.jar}"
 SERVICE="${KIDSPOS_SERVICE:-kidspos-server}"
 HEALTH_URL="${KIDSPOS_HEALTH_URL:-http://localhost:8080/api/status}"
 HEALTH_RETRIES="${KIDSPOS_HEALTH_RETRIES:-600}"
+HEALTH_TIMEOUT="${KIDSPOS_HEALTH_TIMEOUT:-10}"
 BACKUP_KEEP="${KIDSPOS_BACKUP_KEEP:-5}"
 ASSET_NAME="app.jar"
 
@@ -129,7 +130,7 @@ sudo systemctl start "$SERVICE"
 log "ヘルスチェック中: $HEALTH_URL"
 HEALTHY=false
 for _ in $(seq 1 "$HEALTH_RETRIES"); do
-    if curl -fsS -o /dev/null "$HEALTH_URL"; then
+    if curl -fsS --max-time "$HEALTH_TIMEOUT" -o /dev/null "$HEALTH_URL"; then
         HEALTHY=true
         break
     fi

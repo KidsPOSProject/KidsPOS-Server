@@ -24,8 +24,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Test update script
-        run: bash scripts/raspberry-pi/test-update-app.sh
+      - name: Test Raspberry Pi scripts
+        run: |
+          bash scripts/raspberry-pi/test-install.sh
+          bash scripts/raspberry-pi/test-update-app.sh
+          bash scripts/raspberry-pi/test-doctor.sh
 
       - name: Build with Gradle
         run: ./gradlew build -x detekt

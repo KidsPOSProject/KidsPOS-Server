@@ -197,6 +197,38 @@ test_old_backups_are_pruned() {
     teardown
 }
 
+test_health_check_uses_timeout() {
+    setup "ヘルスチェックはタイムアウト付きで呼ばれ環境変数で変更できる"
+    touch "$HEALTH_OK_FILE"
+    run_update "${WORK}/new.jar"
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "$CALL_LOG" "curl -fsS --max-time 10 -o /dev/null http://localhost:8080/api/status" "既定のタイムアウトが渡される"
+
+    : > "$CALL_LOG"
+    set +e
+    env PATH="${STUB_DIR}:${PATH}" \
+        KIDSPOS_APP_DIR="$APP_DIR" \
+        KIDSPOS_HEALTH_RETRIES=2 \
+        KIDSPOS_HEALTH_TIMEOUT=3 \
+        bash "$UPDATE_SCRIPT" "${WORK}/new.jar" > "${WORK}/out.log" 2>&1
+    RC=$?
+    set -e
+
+    assert_eq 0 "$RC" "タイムアウト指定時の終了コードが 0"
+    assert_contains "$CALL_LOG" "curl -fsS --max-time 3 -o /dev/null http://localhost:8080/api/status" "環境変数でタイムアウトを変更できる"
+    teardown
+}
+
+test_health_check_timeout_applies_while_retrying() {
+    setup "応答が無い間もタイムアウト付きで繰り返し呼ばれる"
+    run_update "${WORK}/new.jar"
+
+    assert_eq 1 "$RC" "終了コードが 1"
+    assert_eq 2 "$(grep -c "curl -fsS --max-time 10 -o /dev/null http://localhost:8080/api/status" "$CALL_LOG")" "リトライ回数の上限で打ち切られる"
+    teardown
+}
+
 test_unknown_flag_is_rejected() {
     setup "不明なオプションは usage を表示して何も変更しない"
     touch "$HEALTH_OK_FILE"
@@ -228,6 +260,8 @@ test_health_check_failure_rolls_back
 test_start_failure_rolls_back
 test_first_install_without_backups
 test_old_backups_are_pruned
+test_health_check_uses_timeout
+test_health_check_timeout_applies_while_retrying
 test_unknown_flag_is_rejected
 test_non_jar_file_is_rejected
 
