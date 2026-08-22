@@ -12,6 +12,9 @@
 
 ## デプロイ手順
 
+Raspberry Pi 上ではビルドしません。GitHub Releases に添付される実行可能 jar（app.jar）を配置して動かします。
+セットアップと更新は scripts/raspberry-pi のスクリプトが行うため、手順は下記の 4 ステップです。
+
 ### 1. Java 21のインストール
 
 ```bash
@@ -20,42 +23,56 @@ ssh pi@kidspos-server.local
 # パッケージリストを更新
 sudo apt update && sudo apt upgrade -y
 
-# OpenJDK 21のインストール
-sudo apt install -y openjdk-21-jdk
+# OpenJDK 21のランタイムをインストール
+sudo apt install -y openjdk-21-jre-headless
 
 # インストール確認
 java -version
 # 出力例: openjdk version "21.0.8" 2025-07-15
 ```
 
-### 2. アプリケーションディレクトリの作成
+### 2. 運用スクリプトの取得
+
+インターネットに接続できる場合はリポジトリから取得します:
 
 ```bash
-mkdir -p ~/kidspos
+curl -fL -o kidspos-scripts.tar.gz \
+  https://github.com/KidsPOSProject/KidsPOS-Server/archive/refs/heads/main.tar.gz
+tar xzf kidspos-scripts.tar.gz --strip-components=1 '*/scripts/raspberry-pi'
+cd scripts/raspberry-pi
 ```
 
-### 3. JARファイルの転送
-
-ローカルマシンから実行:
+接続できない場合はローカルマシンから転送します:
 
 ```bash
-# プロジェトルートでビルド
-./gradlew build -x test -x detekt
-
-# Raspberry Piに転送
-scp build/libs/server-1.0.0.jar pi@kidspos-server.local:~/kidspos/kidspos.jar
+scp -r scripts/raspberry-pi pi@kidspos-server.local:~/kidspos-scripts
 ```
 
-### 4. Systemdサービスの設定
+### 3. app.jarの用意
 
-Raspberry Pi上で実行:
+ネットに接続できる Raspberry Pi なら install.sh が GitHub Releases から自動取得するため、この手順は不要です。
+オフライン運用の場合はローカルマシンでダウンロードして持ち込みます:
 
 ```bash
-# サービスファイルを作成
-sudo nano /etc/systemd/system/kidspos.service
+curl -fL -o app.jar \
+  https://github.com/KidsPOSProject/KidsPOS-Server/releases/latest/download/app.jar
+
+scp app.jar pi@kidspos-server.local:~/app.jar
 ```
 
-以下の内容を入力:
+### 4. セットアップスクリプトの実行
+
+ディレクトリ作成、運用スクリプトの配置、systemd ユニットの配置と自動起動の有効化、jar の導入、起動確認までを一度に行います。
+
+```bash
+# ネット接続時
+sudo ./install.sh
+
+# オフライン時
+sudo ./install.sh ~/app.jar
+```
+
+配置される systemd ユニットの内容は scripts/raspberry-pi/kidspos.service です:
 
 ```ini
 [Unit]
@@ -76,25 +93,10 @@ StandardError=append:/home/pi/kidspos/kidspos-error.log
 WantedBy=multi-user.target
 ```
 
-### 5. サービスの有効化と起動
-
-```bash
-# Systemdをリロード
-sudo systemctl daemon-reload
-
-# サービスを有効化（自動起動）
-sudo systemctl enable kidspos
-
-# サービスを起動
-sudo systemctl start kidspos
-
-# ステータス確認
-sudo systemctl status kidspos
-```
-
-### 6. 起動確認
+### 5. 起動確認
 
 Raspberry Pi Zero Wは処理が遅いため、起動に約6-7分かかります。
+install.sh は起動を待ってから doctor.sh の診断結果を表示するので、NG が出ていなければ起動は成功しています。
 
 ```bash
 # ログをリアルタイムで確認
@@ -102,6 +104,9 @@ tail -f ~/kidspos/kidspos.log
 
 # 起動完了メッセージを待つ
 # "Started ServerApplicationKt in XXX seconds" が表示されれば完了
+
+# 稼働診断
+~/kidspos/doctor.sh
 ```
 
 ブラウザで以下のURLにアクセス:
@@ -168,21 +173,30 @@ journalctl -u kidspos -n 100
 
 ### アプリケーションの更新
 
+update-app.sh が「停止 → DB と旧 jar のバックアップ → 差し替え → 起動 → ヘルスチェック」を行います。
+ヘルスチェックが通らなかった場合は旧 jar と更新直前の DB に自動で巻き戻します。
+
 ```bash
-# 1. サービスを停止
-sudo systemctl stop kidspos
+# ネット接続時: 最新リリースを取得して更新（同一バージョンなら何もしない）
+sudo ~/kidspos/update-app.sh
 
-# 2. 新しいJARファイルを転送（ローカルマシンから）
-scp build/libs/server-1.0.0.jar pi@kidspos-server.local:~/kidspos/kidspos.jar
-
-# 3. サービスを再起動
-sudo systemctl start kidspos
-
-# 4. ログで起動を確認
-tail -f ~/kidspos/kidspos.log
+# オフライン時: 持ち込んだ jar で更新
+sudo ~/kidspos/update-app.sh ~/app.jar
 ```
 
+DB スキーマの変更は起動時に Flyway が自動適用するため、追加の作業は不要です。
+Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョンへ戻すことはしないでください。
+バックアップは ~/kidspos/backup/ に既定 5 世代保持されます。
+
+詳細は scripts/raspberry-pi/README.md を参照してください。
+
 ## トラブルシューティング
+
+まず doctor.sh を実行してください。Java、jar の形式、サービス、ヘルスチェック、DB、ディスク、ログ、時刻同期をまとめて確認し、OK / 注意 / NG と対処コマンドを表示します。
+
+```bash
+~/kidspos/doctor.sh
+```
 
 ### サービスが起動しない場合
 
@@ -289,5 +303,6 @@ ssh-copy-id pi@kidspos-server.local
 
 ## 関連リンク
 
-- [README.md - Raspberry Piへのデプロイ](../README.md#raspberry-piへのデプロイ)
-- [GitHub Actions - Release Build](.github/workflows/release-build.yml)
+- [運用スクリプトの説明](../scripts/raspberry-pi/README.md)
+- [セットアップガイド](RASPBERRY_PI_SETUP.md)
+- [GitHub Actions - Release Build](../.github/workflows/release-build.yml)

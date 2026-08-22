@@ -1,0 +1,258 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+INSTALL_SCRIPT="${SCRIPT_DIR}/install.sh"
+
+PASS_COUNT=0
+FAIL_COUNT=0
+
+pass() {
+    PASS_COUNT=$((PASS_COUNT + 1))
+    echo "  ok: $1"
+}
+
+fail_assert() {
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+    echo "  NG: $1" >&2
+}
+
+assert_eq() {
+    if [ "$1" = "$2" ]; then
+        pass "$3"
+    else
+        fail_assert "$3 (expected: $1, actual: $2)"
+    fi
+}
+
+assert_contains() {
+    if grep -q "$2" "$1"; then
+        pass "$3"
+    else
+        fail_assert "$3 (not found: $2)"
+    fi
+}
+
+assert_not_contains() {
+    if grep -q "$2" "$1" 2>/dev/null; then
+        fail_assert "$3 (unexpectedly found: $2)"
+    else
+        pass "$3"
+    fi
+}
+
+assert_file() {
+    if [ -f "$1" ]; then
+        pass "$2"
+    else
+        fail_assert "$2 (not a file: $1)"
+    fi
+}
+
+assert_no_path() {
+    if [ -e "$1" ]; then
+        fail_assert "$2 (unexpectedly exists: $1)"
+    else
+        pass "$2"
+    fi
+}
+
+setup() {
+    echo "test: $1"
+    WORK=$(mktemp -d)
+    APP_DIR="${WORK}/app"
+    STUB_DIR="${WORK}/bin"
+    UNIT_DIR="${WORK}/systemd"
+    mkdir -p "$STUB_DIR" "$UNIT_DIR"
+
+    export CALL_LOG="${WORK}/calls.log"
+    export STATE_DIR="${WORK}/state"
+    mkdir -p "$STATE_DIR"
+    : > "$CALL_LOG"
+    echo "21.0.8" > "${STATE_DIR}/java-version"
+
+    cat > "${STUB_DIR}/sudo" <<'EOF'
+#!/usr/bin/env bash
+exec "$@"
+EOF
+
+    cat > "${STUB_DIR}/java" <<'EOF'
+#!/usr/bin/env bash
+echo "openjdk version \"$(cat "${STATE_DIR}/java-version")\" 2025-07-15" >&2
+exit 0
+EOF
+
+    cat > "${STUB_DIR}/systemctl" <<'EOF'
+#!/usr/bin/env bash
+echo "systemctl $*" >> "$CALL_LOG"
+case "$1" in
+    is-enabled) echo "enabled" ;;
+    show)
+        case "${3:-}" in
+            NRestarts) echo "0" ;;
+            User) id -un ;;
+        esac
+        ;;
+esac
+exit 0
+EOF
+
+    cat > "${STUB_DIR}/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "curl $*" >> "$CALL_LOG"
+for arg in "$@"; do
+    case "$arg" in
+        *api.github.com*) exit 22 ;;
+    esac
+done
+exit 0
+EOF
+
+    cat > "${STUB_DIR}/sleep" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+
+    chmod +x "${STUB_DIR}"/*
+
+    printf 'PK\003\004' > "${WORK}/app.jar"
+    printf 'BOOT-INF/classes/\n' >> "${WORK}/app.jar"
+}
+
+teardown() {
+    rm -rf "$WORK"
+}
+
+run_install() {
+    set +e
+    env PATH="${STUB_DIR}:${PATH}" \
+        KIDSPOS_APP_DIR="$APP_DIR" \
+        KIDSPOS_UNIT_DIR="$UNIT_DIR" \
+        KIDSPOS_SERVICE_USER="kidspostest" \
+        KIDSPOS_HEALTH_RETRIES=2 \
+        bash "$INSTALL_SCRIPT" "$@" > "${WORK}/out.log" 2>&1
+    RC=$?
+    set -e
+}
+
+test_install_with_local_jar() {
+    setup "持ち込んだ jar でセットアップが完了する"
+    run_install "${WORK}/app.jar"
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_file "${UNIT_DIR}/kidspos.service" "systemd ユニットが配置される"
+    assert_file "${APP_DIR}/update-app.sh" "update-app.sh が配置される"
+    assert_file "${APP_DIR}/doctor.sh" "doctor.sh が配置される"
+    assert_file "${APP_DIR}/kidspos.jar" "jar が配置される"
+    assert_contains "$CALL_LOG" "systemctl daemon-reload" "daemon-reload が呼ばれる"
+    assert_contains "$CALL_LOG" "systemctl enable kidspos" "自動起動が有効化される"
+    assert_contains "$CALL_LOG" "systemctl start kidspos" "サービスが起動される"
+    teardown
+}
+
+test_unit_paths_are_rewritten() {
+    setup "ユニットの配置先とサービスユーザーが環境に合わせて書き換わる"
+    run_install "${WORK}/app.jar"
+
+    UNIT="${UNIT_DIR}/kidspos.service"
+    assert_contains "$UNIT" "WorkingDirectory=${APP_DIR}$" "WorkingDirectory が置換される"
+    assert_contains "$UNIT" "\-jar ${APP_DIR}/kidspos.jar" "jar のパスが置換される"
+    assert_contains "$UNIT" "^User=kidspostest$" "サービスユーザーが置換される"
+    assert_not_contains "$UNIT" "/home/pi/kidspos" "既定パスが残らない"
+    teardown
+}
+
+test_install_is_idempotent() {
+    setup "同じ引数で再実行しても成功し設定が壊れない"
+    run_install "${WORK}/app.jar"
+    assert_eq 0 "$RC" "1 回目の終了コードが 0"
+    FIRST_UNIT=$(cat "${UNIT_DIR}/kidspos.service")
+
+    run_install "${WORK}/app.jar"
+    assert_eq 0 "$RC" "2 回目の終了コードが 0"
+    assert_eq "$FIRST_UNIT" "$(cat "${UNIT_DIR}/kidspos.service")" "ユニットの内容が変わらない"
+    assert_contains "${WORK}/out.log" "systemd ユニットは最新です" "変更が無いことが報告される"
+    teardown
+}
+
+test_existing_jar_is_kept() {
+    setup "jar が既にある場合は入れ替えずサービスを起動する"
+    mkdir -p "$APP_DIR"
+    printf 'PK\003\004existing' > "${APP_DIR}/kidspos.jar"
+    run_install
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "既に配置済み" "スキップが報告される"
+    assert_eq "PK"$'\003\004'"existing" "$(cat "${APP_DIR}/kidspos.jar")" "jar が置き換わらない"
+    assert_not_contains "$CALL_LOG" "systemctl stop" "更新用のサービス停止は行われない"
+    assert_contains "$CALL_LOG" "systemctl start kidspos" "サービスが起動される"
+    teardown
+}
+
+test_no_jar_option() {
+    setup "--no-jar ならセットアップのみ行い jar を導入しない"
+    run_install --no-jar
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_file "${UNIT_DIR}/kidspos.service" "systemd ユニットが配置される"
+    assert_no_path "${APP_DIR}/kidspos.jar" "jar は導入されない"
+    assert_contains "$CALL_LOG" "systemctl enable kidspos" "自動起動は有効化される"
+    teardown
+}
+
+test_unknown_flag_is_rejected() {
+    setup "不明なオプションは usage を表示して何も作らない"
+    run_install --bogus
+
+    assert_eq 1 "$RC" "終了コードが 1"
+    assert_contains "${WORK}/out.log" "不明なオプション: --bogus" "不明オプションのエラーが出力される"
+    assert_contains "${WORK}/out.log" "Usage:" "usage が表示される"
+    assert_no_path "$APP_DIR" "アプリケーションディレクトリは作られない"
+    teardown
+}
+
+test_conflicting_options_are_rejected() {
+    setup "jar のパスと --no-jar の同時指定は拒否される"
+    run_install "${WORK}/app.jar" --no-jar
+
+    assert_eq 1 "$RC" "終了コードが 1"
+    assert_contains "${WORK}/out.log" "同時に指定できません" "競合が報告される"
+    assert_no_path "$APP_DIR" "アプリケーションディレクトリは作られない"
+    teardown
+}
+
+test_missing_jar_path_is_rejected() {
+    setup "存在しない jar のパスは拒否される"
+    run_install "${WORK}/missing.jar"
+
+    assert_eq 1 "$RC" "終了コードが 1"
+    assert_contains "${WORK}/out.log" "ファイルが見つかりません" "パスの誤りが報告される"
+    assert_no_path "$APP_DIR" "アプリケーションディレクトリは作られない"
+    teardown
+}
+
+test_old_java_is_rejected() {
+    setup "Java 21 未満は導入方法を示して停止する"
+    echo "17.0.9" > "${STATE_DIR}/java-version"
+    run_install "${WORK}/app.jar"
+
+    assert_eq 1 "$RC" "終了コードが 1"
+    assert_contains "${WORK}/out.log" "Java 21 以上が必要です" "バージョン不足が報告される"
+    assert_contains "${WORK}/out.log" "openjdk-21-jre-headless" "導入コマンドが示される"
+    assert_no_path "$APP_DIR" "アプリケーションディレクトリは作られない"
+    teardown
+}
+
+test_install_with_local_jar
+test_unit_paths_are_rewritten
+test_install_is_idempotent
+test_existing_jar_is_kept
+test_no_jar_option
+test_unknown_flag_is_rejected
+test_conflicting_options_are_rejected
+test_missing_jar_path_is_rejected
+test_old_java_is_rejected
+
+echo ""
+echo "passed: $PASS_COUNT, failed: $FAIL_COUNT"
+[ "$FAIL_COUNT" -eq 0 ]

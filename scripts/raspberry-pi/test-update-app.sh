@@ -151,6 +151,52 @@ test_start_failure_rolls_back() {
     teardown
 }
 
+test_first_install_without_backups() {
+    setup "jar も DB もバックアップも無い初回導入で成功する"
+    touch "$HEALTH_OK_FILE"
+    rm -f "${APP_DIR}/kidspos.jar" "${APP_DIR}/kidspos.db"
+    run_update "${WORK}/new.jar"
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "完了メッセージが出力される"
+    assert_eq "PK-new-jar" "$(cat "${APP_DIR}/kidspos.jar")" "jar が配置される"
+    if [ -f "${APP_DIR}/.installed-version" ]; then
+        pass "バージョンファイルが書かれる"
+    else
+        fail_assert "バージョンファイルが書かれる"
+    fi
+    teardown
+}
+
+test_old_backups_are_pruned() {
+    setup "バックアップは世代数を超えた分だけ削除される"
+    touch "$HEALTH_OK_FILE"
+    mkdir -p "${APP_DIR}/backup"
+    for stamp in 20260101000001 20260101000002 20260101000003; do
+        printf 'old' > "${APP_DIR}/backup/kidspos.db.${stamp}"
+        printf 'old' > "${APP_DIR}/backup/kidspos.jar.${stamp}"
+    done
+
+    set +e
+    env PATH="${STUB_DIR}:${PATH}" \
+        KIDSPOS_APP_DIR="$APP_DIR" \
+        KIDSPOS_HEALTH_RETRIES=2 \
+        KIDSPOS_BACKUP_KEEP=2 \
+        bash "$UPDATE_SCRIPT" "${WORK}/new.jar" > "${WORK}/out.log" 2>&1
+    RC=$?
+    set -e
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_eq 2 "$(ls -1 "${APP_DIR}/backup/kidspos.db."* | wc -l | tr -d ' ')" "DB のバックアップが 2 世代に保たれる"
+    assert_eq 2 "$(ls -1 "${APP_DIR}/backup/kidspos.jar."* | wc -l | tr -d ' ')" "jar のバックアップが 2 世代に保たれる"
+    if [ -e "${APP_DIR}/backup/kidspos.db.20260101000001" ]; then
+        fail_assert "最も古いバックアップが削除される"
+    else
+        pass "最も古いバックアップが削除される"
+    fi
+    teardown
+}
+
 test_unknown_flag_is_rejected() {
     setup "不明なオプションは usage を表示して何も変更しない"
     touch "$HEALTH_OK_FILE"
@@ -180,6 +226,8 @@ test_non_jar_file_is_rejected() {
 test_success_path
 test_health_check_failure_rolls_back
 test_start_failure_rolls_back
+test_first_install_without_backups
+test_old_backups_are_pruned
 test_unknown_flag_is_rejected
 test_non_jar_file_is_rejected
 
