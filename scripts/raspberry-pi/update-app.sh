@@ -2,9 +2,9 @@
 set -Eeuo pipefail
 
 REPO="${KIDSPOS_REPO:-KidsPOSProject/KidsPOS-Server}"
-APP_DIR="${KIDSPOS_APP_DIR:-/home/pi/kidspos}"
-JAR_NAME="${KIDSPOS_JAR_NAME:-kidspos.jar}"
-SERVICE="${KIDSPOS_SERVICE:-kidspos}"
+APP_DIR="${KIDSPOS_APP_DIR:-/opt/kidspos}"
+JAR_NAME="${KIDSPOS_JAR_NAME:-app.jar}"
+SERVICE="${KIDSPOS_SERVICE:-kidspos-server}"
 HEALTH_URL="${KIDSPOS_HEALTH_URL:-http://localhost:8080/api/status}"
 HEALTH_RETRIES="${KIDSPOS_HEALTH_RETRIES:-600}"
 BACKUP_KEEP="${KIDSPOS_BACKUP_KEEP:-5}"

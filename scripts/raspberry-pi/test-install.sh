@@ -87,6 +87,7 @@ EOF
 echo "systemctl $*" >> "$CALL_LOG"
 case "$1" in
     is-enabled) echo "enabled" ;;
+    is-active) [ -f "${STATE_DIR}/active" ] || exit 3 ;;
     show)
         case "${3:-}" in
             NRestarts) echo "0" ;;
@@ -140,13 +141,13 @@ test_install_with_local_jar() {
     run_install "${WORK}/app.jar"
 
     assert_eq 0 "$RC" "終了コードが 0"
-    assert_file "${UNIT_DIR}/kidspos.service" "systemd ユニットが配置される"
+    assert_file "${UNIT_DIR}/kidspos-server.service" "systemd ユニットが配置される"
     assert_file "${APP_DIR}/update-app.sh" "update-app.sh が配置される"
     assert_file "${APP_DIR}/doctor.sh" "doctor.sh が配置される"
-    assert_file "${APP_DIR}/kidspos.jar" "jar が配置される"
+    assert_file "${APP_DIR}/app.jar" "jar が配置される"
     assert_contains "$CALL_LOG" "systemctl daemon-reload" "daemon-reload が呼ばれる"
-    assert_contains "$CALL_LOG" "systemctl enable kidspos" "自動起動が有効化される"
-    assert_contains "$CALL_LOG" "systemctl start kidspos" "サービスが起動される"
+    assert_contains "$CALL_LOG" "systemctl enable kidspos-server" "自動起動が有効化される"
+    assert_contains "$CALL_LOG" "systemctl start kidspos-server" "サービスが起動される"
     teardown
 }
 
@@ -154,11 +155,31 @@ test_unit_paths_are_rewritten() {
     setup "ユニットの配置先とサービスユーザーが環境に合わせて書き換わる"
     run_install "${WORK}/app.jar"
 
-    UNIT="${UNIT_DIR}/kidspos.service"
+    UNIT="${UNIT_DIR}/kidspos-server.service"
     assert_contains "$UNIT" "WorkingDirectory=${APP_DIR}$" "WorkingDirectory が置換される"
-    assert_contains "$UNIT" "\-jar ${APP_DIR}/kidspos.jar" "jar のパスが置換される"
+    assert_contains "$UNIT" "\-jar ${APP_DIR}/app.jar" "jar のパスが置換される"
     assert_contains "$UNIT" "^User=kidspostest$" "サービスユーザーが置換される"
-    assert_not_contains "$UNIT" "/home/pi/kidspos" "既定パスが残らない"
+    assert_not_contains "$UNIT" "/opt/kidspos" "既定パスが残らない"
+    teardown
+}
+
+test_service_name_is_rewritten() {
+    setup "サービス名を変えるとユニット名とログ識別子が追随する"
+    set +e
+    env PATH="${STUB_DIR}:${PATH}" \
+        KIDSPOS_APP_DIR="$APP_DIR" \
+        KIDSPOS_UNIT_DIR="$UNIT_DIR" \
+        KIDSPOS_SERVICE="kidspos-alt" \
+        KIDSPOS_SERVICE_USER="kidspostest" \
+        KIDSPOS_HEALTH_RETRIES=2 \
+        bash "$INSTALL_SCRIPT" "${WORK}/app.jar" > "${WORK}/out.log" 2>&1
+    RC=$?
+    set -e
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_file "${UNIT_DIR}/kidspos-alt.service" "サービス名のユニットが配置される"
+    assert_contains "${UNIT_DIR}/kidspos-alt.service" "^SyslogIdentifier=kidspos-alt$" "ログ識別子が置換される"
+    assert_contains "$CALL_LOG" "systemctl enable kidspos-alt" "サービス名で自動起動が有効化される"
     teardown
 }
 
@@ -166,11 +187,11 @@ test_install_is_idempotent() {
     setup "同じ引数で再実行しても成功し設定が壊れない"
     run_install "${WORK}/app.jar"
     assert_eq 0 "$RC" "1 回目の終了コードが 0"
-    FIRST_UNIT=$(cat "${UNIT_DIR}/kidspos.service")
+    FIRST_UNIT=$(cat "${UNIT_DIR}/kidspos-server.service")
 
     run_install "${WORK}/app.jar"
     assert_eq 0 "$RC" "2 回目の終了コードが 0"
-    assert_eq "$FIRST_UNIT" "$(cat "${UNIT_DIR}/kidspos.service")" "ユニットの内容が変わらない"
+    assert_eq "$FIRST_UNIT" "$(cat "${UNIT_DIR}/kidspos-server.service")" "ユニットの内容が変わらない"
     assert_contains "${WORK}/out.log" "systemd ユニットは最新です" "変更が無いことが報告される"
     teardown
 }
@@ -178,14 +199,44 @@ test_install_is_idempotent() {
 test_existing_jar_is_kept() {
     setup "jar が既にある場合は入れ替えずサービスを起動する"
     mkdir -p "$APP_DIR"
-    printf 'PK\003\004existing' > "${APP_DIR}/kidspos.jar"
+    printf 'PK\003\004existing' > "${APP_DIR}/app.jar"
     run_install
 
     assert_eq 0 "$RC" "終了コードが 0"
     assert_contains "${WORK}/out.log" "既に配置済み" "スキップが報告される"
-    assert_eq "PK"$'\003\004'"existing" "$(cat "${APP_DIR}/kidspos.jar")" "jar が置き換わらない"
+    assert_eq "PK"$'\003\004'"existing" "$(cat "${APP_DIR}/app.jar")" "jar が置き換わらない"
     assert_not_contains "$CALL_LOG" "systemctl stop" "更新用のサービス停止は行われない"
-    assert_contains "$CALL_LOG" "systemctl start kidspos" "サービスが起動される"
+    assert_contains "$CALL_LOG" "systemctl start kidspos-server" "サービスが起動される"
+    teardown
+}
+
+test_running_service_is_restarted_when_unit_changes() {
+    setup "稼働中にユニットが書き換わったらサービスが再起動される"
+    mkdir -p "$APP_DIR"
+    printf 'PK\003\004existing' > "${APP_DIR}/app.jar"
+    touch "${STATE_DIR}/active"
+    run_install
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "ユニットの内容が変わったためサービスを再起動します" "再起動が報告される"
+    assert_contains "$CALL_LOG" "systemctl restart kidspos-server" "restart が呼ばれる"
+    teardown
+}
+
+test_running_service_is_not_restarted_when_unit_is_unchanged() {
+    setup "ユニットに変更が無ければ稼働中のサービスは再起動されない"
+    mkdir -p "$APP_DIR"
+    printf 'PK\003\004existing' > "${APP_DIR}/app.jar"
+    touch "${STATE_DIR}/active"
+    run_install
+
+    : > "$CALL_LOG"
+    run_install
+
+    assert_eq 0 "$RC" "2 回目の終了コードが 0"
+    assert_contains "${WORK}/out.log" "systemd ユニットは最新です" "変更が無いことが報告される"
+    assert_not_contains "$CALL_LOG" "systemctl restart" "restart は呼ばれない"
+    assert_contains "$CALL_LOG" "systemctl start kidspos-server" "start だけが呼ばれる"
     teardown
 }
 
@@ -194,9 +245,10 @@ test_no_jar_option() {
     run_install --no-jar
 
     assert_eq 0 "$RC" "終了コードが 0"
-    assert_file "${UNIT_DIR}/kidspos.service" "systemd ユニットが配置される"
-    assert_no_path "${APP_DIR}/kidspos.jar" "jar は導入されない"
-    assert_contains "$CALL_LOG" "systemctl enable kidspos" "自動起動は有効化される"
+    assert_file "${UNIT_DIR}/kidspos-server.service" "systemd ユニットが配置される"
+    assert_no_path "${APP_DIR}/app.jar" "jar は導入されない"
+    assert_contains "$CALL_LOG" "systemctl enable kidspos-server" "自動起動は有効化される"
+    assert_not_contains "$CALL_LOG" "systemctl start" "jar が無いので起動はしない"
     teardown
 }
 
@@ -245,8 +297,11 @@ test_old_java_is_rejected() {
 
 test_install_with_local_jar
 test_unit_paths_are_rewritten
+test_service_name_is_rewritten
 test_install_is_idempotent
 test_existing_jar_is_kept
+test_running_service_is_restarted_when_unit_changes
+test_running_service_is_not_restarted_when_unit_is_unchanged
 test_no_jar_option
 test_unknown_flag_is_rejected
 test_conflicting_options_are_rejected

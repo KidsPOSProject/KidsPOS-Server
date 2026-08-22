@@ -60,8 +60,8 @@ sudo ./install.sh
 sudo ./install.sh /path/to/app.jar
 ```
 
-配置先は /home/pi/kidspos で、jar は kidspos.jar、DB は kidspos.db として作られます。
-JVM のメモリ設定は systemd ユニット（scripts/raspberry-pi/kidspos.service）に -Xms256m -Xmx512m として含まれています。メモリの多い機種で増やす場合はユニットを編集してから daemon-reload と restart を行ってください。
+配置先は /opt/kidspos で、jar は app.jar、DB は kidspos.db として作られます。
+JVM のメモリ設定は systemd ユニット（scripts/raspberry-pi/kidspos-server.service）に -Xms256m -Xmx512m として含まれています。メモリの多い機種で増やす場合はユニットを編集してから daemon-reload と restart を行ってください。
 
 実行後、そのまま doctor.sh による診断結果が表示されます。NG が出ていなければ起動は成功しています。
 
@@ -70,7 +70,7 @@ JVM のメモリ設定は systemd ユニット（scripts/raspberry-pi/kidspos.se
 既定値のままで動作します。SSL やアクセス制限を変更したい場合のみ、systemd のドロップインで環境変数を渡します。
 
 ```bash
-sudo systemctl edit kidspos
+sudo systemctl edit kidspos-server
 ```
 
 エディタが開いたら以下を記述します:
@@ -79,13 +79,13 @@ sudo systemctl edit kidspos
 [Service]
 Environment=SSL_ENABLED=false
 Environment=ALLOWED_IP_PREFIX=192.168.
-Environment=APK_UPLOAD_DIR=/home/pi/kidspos/uploads/apk
+Environment=APK_UPLOAD_DIR=/opt/kidspos/uploads/apk
 Environment=APK_MAX_FILE_SIZE=104857600
 ```
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart kidspos
+sudo systemctl restart kidspos-server
 ```
 
 データベースファイルの場所は WorkingDirectory 直下の kidspos.db に固定されており、環境変数では変更できません。場所を変えたい場合は systemd ユニットの WorkingDirectory を変更してください。
@@ -94,10 +94,10 @@ sudo systemctl restart kidspos
 
 ```bash
 # 診断（Java、jar、サービス、ヘルスチェック、DB、ディスク、ログ、時刻）
-/home/pi/kidspos/doctor.sh
+/opt/kidspos/doctor.sh
 
 # systemd のステータス
-sudo systemctl status kidspos
+sudo systemctl status kidspos-server
 ```
 
 ### 7. ファイアウォール設定
@@ -135,10 +135,10 @@ jar の差し替えは update-app.sh が行います。停止、DB と旧 jar �
 
 ```bash
 # ネット接続時: 最新リリースを取得して更新
-sudo /home/pi/kidspos/update-app.sh
+sudo /opt/kidspos/update-app.sh
 
 # オフライン時: 持ち込んだ jar で更新
-sudo /home/pi/kidspos/update-app.sh /path/to/app.jar
+sudo /opt/kidspos/update-app.sh /path/to/app.jar
 ```
 
 DB スキーマの変更は起動時に Flyway が自動適用するため、追加の作業は不要です。
@@ -146,18 +146,18 @@ DB スキーマの変更は起動時に Flyway が自動適用するため、追
 
 ## トラブルシューティング
 
-まず /home/pi/kidspos/doctor.sh を実行してください。原因の切り分けができます。
+まず /opt/kidspos/doctor.sh を実行してください。原因の切り分けができます。
 
 ### メモリ不足エラー
 
 systemd ユニットの ExecStart に含まれるヒープ設定を調整します。
 
 ```bash
-sudo systemctl edit --full kidspos
+sudo systemctl edit --full kidspos-server
 # ExecStart の -Xms256m -Xmx512m を -Xms128m -Xmx384m などに変更
 
 sudo systemctl daemon-reload
-sudo systemctl restart kidspos
+sudo systemctl restart kidspos-server
 ```
 
 ### ポートが使用中
@@ -172,15 +172,20 @@ sudo kill -9 [PID]
 
 ### ログの確認
 
+標準出力と標準エラーは journal に送られます。あわせてアプリ自身が logback で /opt/kidspos/logs/kidspos.log に書き出します。
+
 ```bash
-# systemdサービスのログ
-journalctl -u kidspos.service -f
+# リアルタイムで追う
+journalctl -u kidspos-server -f
 
-# アプリケーションログ
-tail -f /home/pi/kidspos/kidspos.log
+# 最新100行を確認
+journalctl -u kidspos-server -n 100
 
-# エラーログ
-tail -f /home/pi/kidspos/kidspos-error.log
+# エラーだけを抜き出す
+journalctl -u kidspos-server -n 500 --no-pager | grep -E "ERROR|Exception"
+
+# logback が書き出すファイル
+tail -f /opt/kidspos/logs/kidspos.log
 ```
 
 ## セキュリティ推奨事項
@@ -196,13 +201,13 @@ tail -f /home/pi/kidspos/kidspos-error.log
 
 3. **バックアップ**
 
-   update-app.sh が更新のたびに DB と旧 jar を /home/pi/kidspos/backup/ に保存します（既定 5 世代）。
+   update-app.sh が更新のたびに DB と旧 jar を /opt/kidspos/backup/ に保存します（既定 5 世代）。
    任意のタイミングで取る場合は、書き込み中のコピーで壊れないよう必ずサービスを止めてから行います。
 
    ```bash
-   sudo systemctl stop kidspos
-   cp /home/pi/kidspos/kidspos.db /home/pi/kidspos/backup/kidspos-$(date +%Y%m%d).db
-   sudo systemctl start kidspos
+   sudo systemctl stop kidspos-server
+   cp /opt/kidspos/kidspos.db /opt/kidspos/backup/kidspos-$(date +%Y%m%d).db
+   sudo systemctl start kidspos-server
    ```
 
 4. **アクセス制限**
@@ -236,22 +241,20 @@ sudo apt install -y nginx
 sudo nano /etc/nginx/sites-available/kidspos
 ```
 
-### 2. ログローテーション
+### 2. ログの保持量の調整
+
+/opt/kidspos/logs/ のファイルは logback が日付ごとに 30 日分保持するため、logrotate の設定は不要です。
+journal 側の消費を抑えたい場合は上限を設けます。
 
 ```bash
-# logrotateの設定
-sudo cat > /etc/logrotate.d/kidspos << 'EOF'
-/home/pi/kidspos/*.log {
-    daily
-    rotate 7
-    compress
-    delaycompress
-    missingok
-    notifempty
-    create 644 pi pi
-    copytruncate
-}
+sudo mkdir -p /etc/systemd/journald.conf.d
+sudo tee /etc/systemd/journald.conf.d/kidspos.conf << 'EOF'
+[Journal]
+SystemMaxUse=200M
+MaxRetentionSec=1month
 EOF
+
+sudo systemctl restart systemd-journald
 ```
 
 ## よくある質問

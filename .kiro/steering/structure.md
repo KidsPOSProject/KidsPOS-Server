@@ -167,8 +167,8 @@ resources/
 │   ├── staffs/               # Staff management views
 │   ├── stores/               # Store management views
 │   └── index.html            # Main page template
-├── application.yaml           # Spring Boot configuration
-└── tables.schema              # Database schema definition
+├── db/migration/              # Flyway migrations (source of truth for the schema)
+└── application.yaml           # Spring Boot configuration
 ```
 
 ## Code Organization Patterns

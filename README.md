@@ -42,8 +42,8 @@ Raspberry Pi 上ではビルドしません。GitHub Releases に添付される
 
 ```bash
 sudo ./scripts/raspberry-pi/install.sh   # 初回セットアップと jar の導入
-sudo /home/pi/kidspos/update-app.sh      # 更新（失敗時は自動で巻き戻し）
-/home/pi/kidspos/doctor.sh               # 稼働診断
+sudo /opt/kidspos/update-app.sh          # 更新（失敗時は自動で巻き戻し）
+/opt/kidspos/doctor.sh                   # 稼働診断
 ```
 
 手順の詳細は [scripts/raspberry-pi/README.md](scripts/raspberry-pi/README.md)、機種ごとの実績は [docs/raspberry-pi-deployment.md](docs/raspberry-pi-deployment.md) を参照してください。

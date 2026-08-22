@@ -72,26 +72,30 @@ sudo ./install.sh
 sudo ./install.sh ~/app.jar
 ```
 
-配置される systemd ユニットの内容は scripts/raspberry-pi/kidspos.service です:
+配置される systemd ユニットの内容は scripts/raspberry-pi/kidspos-server.service です:
 
 ```ini
 [Unit]
 Description=KidsPOS Server
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/kidspos
-ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -jar /home/pi/kidspos/kidspos.jar
-Restart=on-failure
+WorkingDirectory=/opt/kidspos
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -jar /opt/kidspos/app.jar
+Restart=always
 RestartSec=10
-StandardOutput=append:/home/pi/kidspos/kidspos.log
-StandardError=append:/home/pi/kidspos/kidspos-error.log
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kidspos-server
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+標準出力と標準エラーは journal に送られます。あわせてアプリ自身が logback で /opt/kidspos/logs/kidspos.log に書き出し、日付ごとに 30 日分ローテーションします。
 
 ### 5. 起動確認
 
@@ -100,13 +104,13 @@ install.sh は起動を待ってから doctor.sh の診断結果を表示する�
 
 ```bash
 # ログをリアルタイムで確認
-tail -f ~/kidspos/kidspos.log
+journalctl -u kidspos-server -f
 
 # 起動完了メッセージを待つ
 # "Started ServerApplicationKt in XXX seconds" が表示されれば完了
 
 # 稼働診断
-~/kidspos/doctor.sh
+/opt/kidspos/doctor.sh
 ```
 
 ブラウザで以下のURLにアクセス:
@@ -137,38 +141,38 @@ tail -f ~/kidspos/kidspos.log
 
 ```bash
 # サービスの開始
-sudo systemctl start kidspos
+sudo systemctl start kidspos-server
 
 # サービスの停止
-sudo systemctl stop kidspos
+sudo systemctl stop kidspos-server
 
 # サービスの再起動
-sudo systemctl restart kidspos
+sudo systemctl restart kidspos-server
 
 # ステータス確認
-sudo systemctl status kidspos
+sudo systemctl status kidspos-server
 
 # 自動起動の有効化
-sudo systemctl enable kidspos
+sudo systemctl enable kidspos-server
 
 # 自動起動の無効化
-sudo systemctl disable kidspos
+sudo systemctl disable kidspos-server
 ```
 
 ### ログ確認
 
 ```bash
-# アプリケーションログ
-tail -f ~/kidspos/kidspos.log
-
-# エラーログ
-tail -f ~/kidspos/kidspos-error.log
-
-# Systemdログ
-journalctl -u kidspos -f
+# アプリケーションログをリアルタイムで確認
+journalctl -u kidspos-server -f
 
 # 最新100行を確認
-journalctl -u kidspos -n 100
+journalctl -u kidspos-server -n 100
+
+# エラーだけを抜き出す
+journalctl -u kidspos-server -n 500 --no-pager | grep -E "ERROR|Exception"
+
+# logback が書き出すファイル（日付ごとに 30 日分保持）
+tail -f /opt/kidspos/logs/kidspos.log
 ```
 
 ### アプリケーションの更新
@@ -178,15 +182,15 @@ update-app.sh が「停止 → DB と旧 jar のバックアップ → 差し替
 
 ```bash
 # ネット接続時: 最新リリースを取得して更新（同一バージョンなら何もしない）
-sudo ~/kidspos/update-app.sh
+sudo /opt/kidspos/update-app.sh
 
 # オフライン時: 持ち込んだ jar で更新
-sudo ~/kidspos/update-app.sh ~/app.jar
+sudo /opt/kidspos/update-app.sh ~/app.jar
 ```
 
 DB スキーマの変更は起動時に Flyway が自動適用するため、追加の作業は不要です。
 Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョンへ戻すことはしないでください。
-バックアップは ~/kidspos/backup/ に既定 5 世代保持されます。
+バックアップは /opt/kidspos/backup/ に既定 5 世代保持されます。
 
 詳細は scripts/raspberry-pi/README.md を参照してください。
 
@@ -195,20 +199,20 @@ Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョ�
 まず doctor.sh を実行してください。Java、jar の形式、サービス、ヘルスチェック、DB、ディスク、ログ、時刻同期をまとめて確認し、OK / 注意 / NG と対処コマンドを表示します。
 
 ```bash
-~/kidspos/doctor.sh
+/opt/kidspos/doctor.sh
 ```
 
 ### サービスが起動しない場合
 
 ```bash
 # サービスの詳細ステータスを確認
-sudo systemctl status kidspos
+sudo systemctl status kidspos-server
 
 # ログを確認
-journalctl -u kidspos -n 50
+journalctl -u kidspos-server -n 50
 
-# エラーログを確認
-cat ~/kidspos/kidspos-error.log
+# 前回起動時のログを確認
+journalctl -u kidspos-server -b -1 --no-pager
 ```
 
 ### 起動が遅い場合
@@ -222,12 +226,12 @@ Raspberry Pi Zero Wは性能が限られているため、以下は正常です:
 ### メモリ不足の場合
 
 ```bash
-# ヒープサイズを調整（/etc/systemd/system/kidspos.service）
-ExecStart=/usr/bin/java -Xms128m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -jar /home/pi/kidspos/kidspos.jar
+# ヒープサイズを調整（/etc/systemd/system/kidspos-server.service）
+ExecStart=/usr/bin/java -Xms128m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -jar /opt/kidspos/app.jar
 
 # 変更後はリロードと再起動
 sudo systemctl daemon-reload
-sudo systemctl restart kidspos
+sudo systemctl restart kidspos-server
 ```
 
 ### ポート8080が使用中の場合
@@ -235,12 +239,12 @@ sudo systemctl restart kidspos
 別のポートを使用:
 
 ```bash
-# /etc/systemd/system/kidspos.service の ExecStart に追加
-ExecStart=/usr/bin/java -Dserver.port=8081 -Xms256m -Xmx512m -jar /home/pi/kidspos/kidspos.jar
+# /etc/systemd/system/kidspos-server.service の ExecStart に追加
+ExecStart=/usr/bin/java -Dserver.port=8081 -Xms256m -Xmx512m -jar /opt/kidspos/app.jar
 
 # 変更後
 sudo systemctl daemon-reload
-sudo systemctl restart kidspos
+sudo systemctl restart kidspos-server
 ```
 
 ## 自動起動の検証
@@ -252,7 +256,7 @@ sudo systemctl restart kidspos
 sudo reboot
 
 # 再起動後、数分待ってから確認
-ssh pi@kidspos-server.local "sudo systemctl status kidspos"
+ssh pi@kidspos-server.local "sudo systemctl status kidspos-server"
 
 # アプリケーションにアクセス
 curl http://kidspos-server.local:8080

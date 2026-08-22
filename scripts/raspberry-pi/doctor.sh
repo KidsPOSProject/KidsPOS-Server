@@ -2,20 +2,22 @@
 set -uo pipefail
 
 REPO="${KIDSPOS_REPO:-KidsPOSProject/KidsPOS-Server}"
-APP_DIR="${KIDSPOS_APP_DIR:-/home/pi/kidspos}"
-JAR_NAME="${KIDSPOS_JAR_NAME:-kidspos.jar}"
-SERVICE="${KIDSPOS_SERVICE:-kidspos}"
+APP_DIR="${KIDSPOS_APP_DIR:-/opt/kidspos}"
+JAR_NAME="${KIDSPOS_JAR_NAME:-app.jar}"
+SERVICE="${KIDSPOS_SERVICE:-kidspos-server}"
 HEALTH_URL="${KIDSPOS_HEALTH_URL:-http://localhost:8080/api/status}"
 REQUIRED_JAVA_MAJOR="${KIDSPOS_REQUIRED_JAVA_MAJOR:-21}"
 DISK_WARN_MB="${KIDSPOS_DISK_WARN_MB:-500}"
 DISK_NG_MB="${KIDSPOS_DISK_NG_MB:-100}"
+UNIT_DIR="${KIDSPOS_UNIT_DIR:-/etc/systemd/system}"
+LOG_LINES="${KIDSPOS_LOG_LINES:-500}"
 ASSET_NAME="app.jar"
 
 JAR_PATH="${APP_DIR}/${JAR_NAME}"
 DB_PATH="${APP_DIR}/kidspos.db"
 BACKUP_DIR="${APP_DIR}/backup"
+UPLOAD_DIR="${APP_DIR}/uploads"
 VERSION_FILE="${APP_DIR}/.installed-version"
-ERROR_LOG="${APP_DIR}/kidspos-error.log"
 
 OK_COUNT=0
 WARN_COUNT=0
@@ -135,6 +137,21 @@ else
     else
         ng "サービスが停止しています" "sudo systemctl start $SERVICE してから journalctl -u $SERVICE -n 100 を確認"
     fi
+
+    # 同じ jar を起動する別名のユニットが残っていると、1 つの SQLite を 2 プロセスが掴んで破損する
+    DUPLICATE_UNITS=""
+    for unit_file in "${UNIT_DIR}"/*.service; do
+        [ -f "$unit_file" ] || continue
+        unit_name=$(basename "$unit_file" .service)
+        [ "$unit_name" != "$SERVICE" ] || continue
+        grep -q "^ExecStart=.*${JAR_PATH}" "$unit_file" || continue
+        DUPLICATE_UNITS="${DUPLICATE_UNITS} ${unit_name}"
+    done
+    if [ -n "$DUPLICATE_UNITS" ]; then
+        ng "同じ jar を起動するユニットが他にもあります:${DUPLICATE_UNITS}" "sudo systemctl disable --now${DUPLICATE_UNITS} で停止してください（DB が破損します）"
+    else
+        ok "同じ jar を起動する別のユニットはありません"
+    fi
 fi
 
 section "ヘルスチェック"
@@ -169,6 +186,12 @@ else
     fi
 fi
 
+if [ -d "$UPLOAD_DIR" ]; then
+    ok "アップロード領域があります: $UPLOAD_DIR"
+else
+    warn "アップロード領域がありません: $UPLOAD_DIR" "配信済みの APK が失われている可能性があります。再アップロードで復旧できます"
+fi
+
 section "ディスクとバックアップ"
 AVAIL_MB=$(df -Pm "$APP_DIR" 2>/dev/null | awk 'NR==2 {print $4}')
 if [ -z "$AVAIL_MB" ]; then
@@ -189,14 +212,19 @@ else
 fi
 
 section "ログ"
-if [ ! -f "$ERROR_LOG" ]; then
-    info "エラーログはまだありません: $ERROR_LOG"
+if ! command -v journalctl >/dev/null; then
+    info "journalctl が無いためログを確認できません"
 else
-    RECENT_ERRORS=$(tail -n 500 "$ERROR_LOG" 2>/dev/null | grep -cE "ERROR|Exception")
-    if [ "$RECENT_ERRORS" -eq 0 ]; then
-        ok "直近のエラーログに異常はありません"
+    JOURNAL=$(journalctl -u "$SERVICE" -n "$LOG_LINES" --no-pager 2>/dev/null)
+    if [ -z "$JOURNAL" ]; then
+        info "ログがまだありません: journalctl -u $SERVICE"
     else
-        warn "直近 500 行に ${RECENT_ERRORS} 件のエラーがあります" "tail -n 50 $ERROR_LOG"
+        RECENT_ERRORS=$(echo "$JOURNAL" | grep -cE "ERROR|Exception")
+        if [ "$RECENT_ERRORS" -eq 0 ]; then
+            ok "直近のログに異常はありません"
+        else
+            warn "直近 ${LOG_LINES} 行に ${RECENT_ERRORS} 件のエラーがあります" "journalctl -u $SERVICE -n 100"
+        fi
     fi
 fi
 

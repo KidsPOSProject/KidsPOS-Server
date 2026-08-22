@@ -48,7 +48,8 @@ src/main/kotlin/info/nukoneko/kidspos/
 ### データベース
 
 - SQLite を使用
-- スキーマは `src/main/resources/tables.schema` で管理
+- スキーマは Flyway マイグレーション（`src/main/resources/db/migration/`）で管理し、起動時に自動適用される
+- スキーマ変更は既存マイグレーションを書き換えず、新しい `V___*.sql` を追加する
 - JPA エンティティと同期を保つ
 
 ## API 設計
