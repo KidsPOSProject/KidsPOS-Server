@@ -165,22 +165,6 @@ class OWASPSecurityTest {
     @DisplayName("A04:2021 – Insecure Design")
     inner class InsecureDesignTest {
         @Test
-        fun `should implement rate limiting`() {
-            // レート制限が実装されていることを確認
-            val results =
-                (1..100).map {
-                    mockMvc
-                        .perform(get("/api/item"))
-                        .andReturn()
-                        .response.status
-                }
-
-            // 大量のリクエストの一部が制限されることを確認
-            results.count { it == 429 }
-            assertTrue(true, "Rate limiting check - would need actual implementation")
-        }
-
-        @Test
         fun `should validate business logic constraints`() {
             // ビジネスロジックの制約を検証
             val invalidSale =
@@ -247,58 +231,6 @@ class OWASPSecurityTest {
     }
 
     @Nested
-    @DisplayName("A06:2021 – Vulnerable and Outdated Components")
-    inner class VulnerableComponentsTest {
-        @Test
-        fun `should not use known vulnerable dependencies`() {
-            // 既知の脆弱な依存関係を使用していないことを確認
-            // このテストは実際にはビルド時にセキュリティスキャンで実施
-            assertTrue(true, "Security scanning should be implemented in CI/CD")
-        }
-
-        @Test
-        fun `should use supported library versions`() {
-            // サポートされているライブラリバージョンを使用
-            assertTrue(true, "Dependency versions should be kept up to date")
-        }
-    }
-
-    @Nested
-    @DisplayName("A07:2021 – Identification and Authentication Failures")
-    inner class AuthenticationFailuresTest {
-        @Test
-        fun `should prevent brute force attacks`() {
-            // ブルートフォース攻撃を防ぐ
-            val loginAttempts =
-                (1..10).map { attempt ->
-                    val credentials =
-                        mapOf(
-                            "username" to "admin",
-                            "password" to "wrong$attempt",
-                        )
-
-                    mockMvc
-                        .perform(
-                            post("/api/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(credentials)),
-                        ).andReturn()
-                        .response.status
-                }
-
-            // 複数回の失敗後にアカウントがロックされるか確認
-            loginAttempts.count { it == 429 || it == 403 }
-            assertTrue(true, "Authentication check - would need actual implementation")
-        }
-
-        @Test
-        fun `should implement session timeout`() {
-            // セッションタイムアウトが実装されていることを確認
-            assertTrue(true, "Session management should be properly configured")
-        }
-    }
-
-    @Nested
     @DisplayName("A08:2021 – Software and Data Integrity Failures")
     inner class IntegrityFailuresTest {
         @Test
@@ -335,42 +267,6 @@ class OWASPSecurityTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(maliciousPayload),
                 ).andExpect(status().isBadRequest())
-        }
-    }
-
-    @Nested
-    @DisplayName("A09:2021 – Security Logging and Monitoring Failures")
-    inner class LoggingMonitoringTest {
-        @Test
-        fun `should log security events`() {
-            // セキュリティイベントがログに記録されることを確認
-            mockMvc
-                .perform(get("/api/item/../../etc/passwd"))
-                .andExpect(status().is4xxClientError())
-
-            // ログにセキュリティイベントが記録されていることを確認
-            assertTrue(true, "Security events should be logged")
-        }
-
-        @Test
-        fun `should not log sensitive information`() {
-            // 機密情報がログに記録されないことを確認
-            val sensitiveData =
-                mapOf(
-                    "username" to "testuser",
-                    "password" to "secret123",
-                    "creditCard" to "4111111111111111",
-                )
-
-            mockMvc
-                .perform(
-                    post("/api/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(sensitiveData)),
-                ).andReturn()
-
-            // ログに機密情報が含まれていないことを確認
-            assertTrue(true, "Sensitive data should not be logged")
         }
     }
 

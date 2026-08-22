@@ -146,47 +146,6 @@ class DataExposureSecurityTest {
     }
 
     @Test
-    fun `should not expose internal IDs in URLs`() {
-        // URLに内部IDを露出しない（セキュリティベストプラクティス）
-        val result =
-            mockMvc
-                .perform(get("/api/item"))
-                .andExpect(status().isOk())
-                .andReturn()
-
-        result.response.contentAsString
-
-        // レスポンスに含まれるIDが適切にマスクされているか確認
-        // （このテストは実装に依存するため、具体的な検証は調整が必要）
-        assertTrue(true, "IDs should be properly managed")
-    }
-
-    @Test
-    fun `should sanitize log output`() {
-        // ログ出力のサニタイズ
-        val sensitiveData =
-            mapOf(
-                "barcode" to "TEST001",
-                "name" to "Test Item",
-                "price" to 100,
-                "password" to "should_not_be_logged",
-                "creditCard" to "4111111111111111",
-                "ssn" to "123-45-6789",
-            )
-
-        mockMvc
-            .perform(
-                post("/api/item")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(sensitiveData)),
-            ).andReturn()
-
-        // ログに機密情報が記録されていないことを確認
-        // （実際のログ検証はログファイルへのアクセスが必要）
-        assertTrue(true, "Sensitive data should not be logged")
-    }
-
-    @Test
     fun `should not expose session IDs in URLs`() {
         // URLにセッションIDを露出しない
         val result =
