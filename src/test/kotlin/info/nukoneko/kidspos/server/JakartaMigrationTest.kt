@@ -14,36 +14,32 @@ import java.nio.file.Paths
 @DisplayName("Jakarta EE Migration Tests")
 class JakartaMigrationTest {
     @Test
-    @DisplayName("Should document javax.* imports for future migration")
-    fun shouldDocumentJavaxImports() {
+    @DisplayName("Should not use javax.* imports replaced by Jakarta EE")
+    fun shouldNotUseJavaxImportsReplacedByJakarta() {
         val sourceDir = File("src/main/kotlin")
+        assertTrue(sourceDir.exists(), "src/main/kotlin not found")
+
         val javaxImports = mutableListOf<String>()
-        if (sourceDir.exists()) {
-            Files
-                .walk(Paths.get(sourceDir.path))
-                .filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
-                .toList()
-                .forEach { file ->
-                    Files.lines(file).forEach { line ->
-                        if (line.contains("import javax.persistence") ||
-                            line.contains("import javax.validation") ||
-                            line.contains("import javax.servlet") ||
-                            line.contains("import javax.annotation")
-                        ) {
-                            javaxImports.add("${file.fileName}: $line")
-                        }
+        Files
+            .walk(Paths.get(sourceDir.path))
+            .filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
+            .toList()
+            .forEach { file ->
+                Files.lines(file).forEach { line ->
+                    if (line.contains("import javax.persistence") ||
+                        line.contains("import javax.validation") ||
+                        line.contains("import javax.servlet") ||
+                        line.contains("import javax.annotation")
+                    ) {
+                        javaxImports.add("${file.fileName}: ${line.trim()}")
                     }
                 }
-        }
+            }
 
-        // For Spring Boot 2.7.x, javax imports are still valid
-        // Document them for future Jakarta migration
-        if (javaxImports.isNotEmpty()) {
-            println("Documented javax imports for future Jakarta migration:")
-            javaxImports.forEach { println("  $it") }
-        }
-        // This is expected for Spring Boot 2.7.x
-        assertTrue(true, "javax imports documented for future migration")
+        assertTrue(
+            javaxImports.isEmpty(),
+            "Spring Boot 3.x requires jakarta.* instead of javax.*: ${javaxImports.joinToString(", ")}",
+        )
     }
 
     @Test
@@ -66,7 +62,7 @@ class JakartaMigrationTest {
     }
 
     @Test
-    @DisplayName("Should use compatible Kotlin version for Spring Boot 2.7.x")
+    @DisplayName("Should use compatible Kotlin version for Spring Boot 3.x")
     fun shouldUseCompatibleKotlinVersion() {
         val buildFile = File("build.gradle")
         assertTrue(buildFile.exists(), "build.gradle not found")
@@ -80,10 +76,9 @@ class JakartaMigrationTest {
         val major = parts[0].toInt()
         val minor = parts[1].toInt()
 
-        // Spring Boot 2.7.x works with Kotlin 1.6.x
         assertTrue(
-            major > 1 || (major == 1 && minor >= 6),
-            "Kotlin version $version should be 1.6+ for Spring Boot 2.7.x",
+            major > 1 || (major == 1 && minor >= 7),
+            "Kotlin version $version should be 1.7+ for Spring Boot 3.x",
         )
     }
 
@@ -95,23 +90,22 @@ class JakartaMigrationTest {
         val content = buildFile.readText()
 
         // Check sourceCompatibility
-        val sourceCompatPattern = Regex("sourceCompatibility = '([^']+)'")
+        val sourceCompatPattern = Regex("""sourceCompatibility = (?:'([^']+)'|JavaVersion\.VERSION_(\S+))""")
         val sourceMatch = sourceCompatPattern.find(content)
 
-        if (sourceMatch != null) {
-            val version = sourceMatch.groupValues[1]
-            val versionNum =
-                if (version.startsWith("1.")) {
-                    version.substring(2).toIntOrNull() ?: 0
-                } else {
-                    version.toIntOrNull() ?: 0
-                }
-            assertEquals(
-                21,
-                versionNum,
-                "Source compatibility should be Java 21 for Spring Boot 3.x",
-            )
-        }
+        assertNotNull(sourceMatch, "sourceCompatibility not found in build.gradle")
+        val sourceVersion =
+            sourceMatch!!
+                .groupValues
+                .drop(1)
+                .first { it.isNotEmpty() }
+                .removePrefix("1.")
+                .removePrefix("1_")
+        assertEquals(
+            21,
+            sourceVersion.toIntOrNull(),
+            "Source compatibility should be Java 21 for Spring Boot 3.x",
+        )
 
         // Check Kotlin JVM target
         val jvmTargetPattern = Regex("jvmTarget = '([^']+)'")
