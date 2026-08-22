@@ -57,6 +57,11 @@ tests/vrt/**/*-actual.png
 tests/vrt/**/*-diff.png
 tests/vrt/**/*-expected.png
 
+## Python
+__pycache__/
+*.py[cod]
+.venv-display/
+
 ## Environment variables
 .env
 .env.local
