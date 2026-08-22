@@ -7,6 +7,9 @@ SERVICE="${KIDSPOS_SERVICE:-kidspos-server}"
 SERVICE_USER="${KIDSPOS_SERVICE_USER:-pi}"
 REQUIRED_JAVA_MAJOR="${KIDSPOS_REQUIRED_JAVA_MAJOR:-21}"
 UNIT_DIR="${KIDSPOS_UNIT_DIR:-/etc/systemd/system}"
+HEALTH_URL="${KIDSPOS_HEALTH_URL:-http://localhost:8080/api/status}"
+HEALTH_RETRIES="${KIDSPOS_HEALTH_RETRIES:-300}"
+HEALTH_TIMEOUT="${KIDSPOS_HEALTH_TIMEOUT:-10}"
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 UNIT_TEMPLATE="${SCRIPT_DIR}/kidspos-server.service"
@@ -89,14 +92,31 @@ sudo systemctl daemon-reload
 sudo systemctl enable "$SERVICE"
 log "自動起動を有効にしました: $SERVICE"
 
+SERVICE_STARTED=false
+
 # 稼働中のサービスは start では設定を読み直さないため、ユニットを書き換えたときだけ再起動する
 start_or_restart_service() {
+    SERVICE_STARTED=true
     if [ "$UNIT_CHANGED" = true ] && systemctl is-active --quiet "$SERVICE"; then
         log "ユニットの内容が変わったためサービスを再起動します: $SERVICE"
-        sudo systemctl restart "$SERVICE" || true
+        sudo systemctl restart "$SERVICE" || SERVICE_STARTED=false
     else
-        sudo systemctl start "$SERVICE" || true
+        sudo systemctl start "$SERVICE" || SERVICE_STARTED=false
     fi
+}
+
+# Raspberry Pi では起動完了まで数分かかるため、待たずに診断すると必ず応答なしと判定される
+wait_for_health() {
+    command -v curl >/dev/null || return 0
+    log "サービスの応答を待っています: $HEALTH_URL"
+    for _ in $(seq 1 "$HEALTH_RETRIES"); do
+        if curl -fsS --max-time "$HEALTH_TIMEOUT" -o /dev/null "$HEALTH_URL"; then
+            log "サービスが応答しました"
+            return 0
+        fi
+        sleep 2
+    done
+    log "応答を確認できないまま待ち時間の上限に達しました。そのまま診断に進みます"
 }
 
 if [ "$SKIP_JAR" = true ]; then
@@ -121,6 +141,9 @@ if id "$SERVICE_USER" >/dev/null 2>&1; then
 fi
 
 log "セットアップが完了しました"
+if [ "$SERVICE_STARTED" = true ]; then
+    wait_for_health
+fi
 if [ -x "${APP_DIR}/doctor.sh" ]; then
     echo ""
     "${APP_DIR}/doctor.sh" || true

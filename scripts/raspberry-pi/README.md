@@ -34,6 +34,10 @@ sudo ./install.sh --no-jar         # セットアップのみ行い jar は導�
 jar が既に配置済みの場合は入れ替えず、サービスの起動のみ行います。
 同じ引数で再実行しても設定は壊れません（systemd ユニットは内容が変わったときだけ書き換えます）。
 
+サービスを起動した場合は、最後の診断に進む前に /api/status が応答するまで待ちます。
+Raspberry Pi では起動完了まで数分かかり、待たずに診断すると必ず応答なしと判定されるためです。
+既定は 2 秒間隔で最大 10 分待ち、応答を確認できないまま上限に達した場合も失敗にはせず、そのまま診断へ進みます。
+
 Java が未導入、または Java 21 未満の場合は導入コマンドを表示して停止します。
 
 ```bash
@@ -94,7 +98,8 @@ NG が 1 件でもあれば終了コードは 1 になるため、cron や監視
 ## 失敗時の動作
 
 起動後のヘルスチェック（/api/status）が通らない場合、スクリプトが自動で旧 jar と更新直前の DB バックアップに巻き戻して再起動します。
-Raspberry Pi Zero W などの低速な機種では起動に数分かかることがあるため、ヘルスチェックは 2 秒間隔で最大 20 分待ちます（起動を検知した時点で即終了します）。待ち時間は環境変数 KIDSPOS_HEALTH_RETRIES（回数）で調整できます。
+Raspberry Pi Zero W などの低速な機種では起動に数分かかることがあるため、ヘルスチェックは 2 秒間隔で最大 20 分待ちます（起動を検知した時点で即終了します）。待ち時間は環境変数 KIDSPOS_HEALTH_RETRIES（回数）で、1 回あたりの応答待ちは KIDSPOS_HEALTH_TIMEOUT（秒、既定 10）で調整できます。
+応答しないまま接続が保たれた場合でもタイムアウトで打ち切るため、ヘルスチェックが止まったままにはなりません。
 Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョンへ戻すことはしないでください。
 
 ## バックアップ
@@ -112,10 +117,11 @@ Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョ�
 | KIDSPOS_APP_DIR | /opt/kidspos | install / update / doctor |
 | KIDSPOS_JAR_NAME | app.jar | install / update / doctor |
 | KIDSPOS_SERVICE | kidspos-server | install / update / doctor |
-| KIDSPOS_HEALTH_URL | http://localhost:8080/api/status | update / doctor |
+| KIDSPOS_HEALTH_URL | http://localhost:8080/api/status | install / update / doctor |
 | KIDSPOS_REPO | KidsPOSProject/KidsPOS-Server | update / doctor |
 | KIDSPOS_REQUIRED_JAVA_MAJOR | 21 | install / doctor |
-| KIDSPOS_HEALTH_RETRIES | 600 | update |
+| KIDSPOS_HEALTH_RETRIES | update は 600、install は 300 | install / update |
+| KIDSPOS_HEALTH_TIMEOUT | 10 | install / update |
 | KIDSPOS_BACKUP_KEEP | 5 | update |
 | KIDSPOS_SERVICE_USER | pi | install |
 | KIDSPOS_UNIT_DIR | /etc/systemd/system | install / doctor |
