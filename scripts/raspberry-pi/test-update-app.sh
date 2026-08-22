@@ -86,7 +86,7 @@ EOF
 
     chmod +x "${STUB_DIR}"/*
 
-    printf 'PK-old-jar' > "${APP_DIR}/kidspos.jar"
+    printf 'PK-old-jar' > "${APP_DIR}/app.jar"
     printf 'old-db' > "${APP_DIR}/kidspos.db"
     printf 'PK-new-jar' > "${WORK}/new.jar"
 }
@@ -111,15 +111,15 @@ test_success_path() {
     run_update "${WORK}/new.jar"
 
     assert_eq 0 "$RC" "終了コードが 0"
-    assert_eq "PK-new-jar" "$(cat "${APP_DIR}/kidspos.jar")" "jar が新しい内容に置き換わる"
-    assert_contains "$CALL_LOG" "systemctl stop kidspos" "サービス停止が呼ばれる"
-    assert_contains "$CALL_LOG" "systemctl start kidspos" "サービス起動が呼ばれる"
+    assert_eq "PK-new-jar" "$(cat "${APP_DIR}/app.jar")" "jar が新しい内容に置き換わる"
+    assert_contains "$CALL_LOG" "systemctl stop kidspos-server" "サービス停止が呼ばれる"
+    assert_contains "$CALL_LOG" "systemctl start kidspos-server" "サービス起動が呼ばれる"
     if [ -f "${APP_DIR}/.installed-version" ]; then
         pass "バージョンファイルが書かれる"
     else
         fail_assert "バージョンファイルが書かれる"
     fi
-    if ls "${APP_DIR}/backup/kidspos.jar."* >/dev/null 2>&1; then
+    if ls "${APP_DIR}/backup/app.jar."* >/dev/null 2>&1; then
         pass "jar のバックアップが作成される"
     else
         fail_assert "jar のバックアップが作成される"
@@ -132,7 +132,7 @@ test_health_check_failure_rolls_back() {
     run_update "${WORK}/new.jar"
 
     assert_eq 1 "$RC" "終了コードが 1"
-    assert_eq "PK-old-jar" "$(cat "${APP_DIR}/kidspos.jar")" "jar が旧内容に復元される"
+    assert_eq "PK-old-jar" "$(cat "${APP_DIR}/app.jar")" "jar が旧内容に復元される"
     assert_eq "old-db" "$(cat "${APP_DIR}/kidspos.db")" "DB が旧内容に復元される"
     assert_contains "${WORK}/out.log" "巻き戻しを実行します" "巻き戻しログが出力される"
     assert_contains "${WORK}/out.log" "旧バージョンに戻しました" "失敗メッセージが出力される"
@@ -146,7 +146,7 @@ test_start_failure_rolls_back() {
     run_update "${WORK}/new.jar"
 
     assert_eq 1 "$RC" "終了コードが 1"
-    assert_eq "PK-old-jar" "$(cat "${APP_DIR}/kidspos.jar")" "jar が旧内容に復元される"
+    assert_eq "PK-old-jar" "$(cat "${APP_DIR}/app.jar")" "jar が旧内容に復元される"
     assert_contains "${WORK}/out.log" "巻き戻しを実行します" "巻き戻しログが出力される"
     teardown
 }
@@ -154,12 +154,12 @@ test_start_failure_rolls_back() {
 test_first_install_without_backups() {
     setup "jar も DB もバックアップも無い初回導入で成功する"
     touch "$HEALTH_OK_FILE"
-    rm -f "${APP_DIR}/kidspos.jar" "${APP_DIR}/kidspos.db"
+    rm -f "${APP_DIR}/app.jar" "${APP_DIR}/kidspos.db"
     run_update "${WORK}/new.jar"
 
     assert_eq 0 "$RC" "終了コードが 0"
     assert_contains "${WORK}/out.log" "更新が完了しました" "完了メッセージが出力される"
-    assert_eq "PK-new-jar" "$(cat "${APP_DIR}/kidspos.jar")" "jar が配置される"
+    assert_eq "PK-new-jar" "$(cat "${APP_DIR}/app.jar")" "jar が配置される"
     if [ -f "${APP_DIR}/.installed-version" ]; then
         pass "バージョンファイルが書かれる"
     else
@@ -174,7 +174,7 @@ test_old_backups_are_pruned() {
     mkdir -p "${APP_DIR}/backup"
     for stamp in 20260101000001 20260101000002 20260101000003; do
         printf 'old' > "${APP_DIR}/backup/kidspos.db.${stamp}"
-        printf 'old' > "${APP_DIR}/backup/kidspos.jar.${stamp}"
+        printf 'old' > "${APP_DIR}/backup/app.jar.${stamp}"
     done
 
     set +e
@@ -188,7 +188,7 @@ test_old_backups_are_pruned() {
 
     assert_eq 0 "$RC" "終了コードが 0"
     assert_eq 2 "$(ls -1 "${APP_DIR}/backup/kidspos.db."* | wc -l | tr -d ' ')" "DB のバックアップが 2 世代に保たれる"
-    assert_eq 2 "$(ls -1 "${APP_DIR}/backup/kidspos.jar."* | wc -l | tr -d ' ')" "jar のバックアップが 2 世代に保たれる"
+    assert_eq 2 "$(ls -1 "${APP_DIR}/backup/app.jar."* | wc -l | tr -d ' ')" "jar のバックアップが 2 世代に保たれる"
     if [ -e "${APP_DIR}/backup/kidspos.db.20260101000001" ]; then
         fail_assert "最も古いバックアップが削除される"
     else
@@ -206,7 +206,7 @@ test_unknown_flag_is_rejected() {
     assert_contains "${WORK}/out.log" "不明なオプション: --bogus" "不明オプションのエラーが出力される"
     assert_contains "${WORK}/out.log" "Usage:" "usage が表示される"
     assert_not_contains "$CALL_LOG" "systemctl" "サービスは操作されない"
-    assert_eq "PK-old-jar" "$(cat "${APP_DIR}/kidspos.jar")" "jar は変更されない"
+    assert_eq "PK-old-jar" "$(cat "${APP_DIR}/app.jar")" "jar は変更されない"
     teardown
 }
 
@@ -219,7 +219,7 @@ test_non_jar_file_is_rejected() {
     assert_eq 1 "$RC" "終了コードが 1"
     assert_contains "${WORK}/out.log" "jar 形式ではありません" "形式エラーが出力される"
     assert_not_contains "$CALL_LOG" "systemctl" "サービスは操作されない"
-    assert_eq "PK-old-jar" "$(cat "${APP_DIR}/kidspos.jar")" "jar は変更されない"
+    assert_eq "PK-old-jar" "$(cat "${APP_DIR}/app.jar")" "jar は変更されない"
     teardown
 }
 

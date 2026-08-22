@@ -5,8 +5,8 @@ Raspberry Pi 上で KidsPOS Server を運用するためのファイル一式で
 
 ## 前提
 
-- 配置先: /home/pi/kidspos（jar は kidspos.jar、DB は kidspos.db）
-- サービス名: kidspos（systemd）
+- 配置先: /opt/kidspos（jar は app.jar、DB は kidspos.db）
+- サービス名: kidspos-server（systemd）
 - サーバーは常時イントラネット内にあり、インターネットへはメンテナが明示的に接続したときのみ出られる運用を想定
 - Raspberry Pi 上ではビルドしません。GitHub Releases に添付される app.jar を差し替えるだけなので、必要なのは Java ランタイムのみです
 
@@ -17,7 +17,7 @@ Raspberry Pi 上で KidsPOS Server を運用するためのファイル一式で
 | install.sh | 初回セットアップ（ディレクトリ作成、systemd ユニット配置、自動起動有効化、jar 導入） |
 | update-app.sh | jar の更新（バックアップ、差し替え、ヘルスチェック、失敗時の巻き戻し） |
 | doctor.sh | 稼働診断（Java、jar、サービス、ヘルスチェック、DB、ディスク、ログ、時刻） |
-| kidspos.service | systemd ユニットのテンプレート |
+| kidspos-server.service | systemd ユニットのテンプレート |
 | test-install.sh / test-update-app.sh / test-doctor.sh | 上記スクリプトの自動テスト |
 
 ## 初回セットアップ
@@ -48,7 +48,7 @@ DB スキーマの変更は jar 内の Flyway マイグレーションが起動�
 ### ネット接続時（年1メンテナンスなど）
 
 ```bash
-sudo /home/pi/kidspos/update-app.sh
+sudo /opt/kidspos/update-app.sh
 ```
 
 最新リリースを確認し、未適用なら「停止 → DB と旧 jar のバックアップ → 差し替え → 起動 → ヘルスチェック」を自動で行います。
@@ -65,7 +65,7 @@ curl -fL -o app.jar https://github.com/KidsPOSProject/KidsPOS-Server/releases/la
 USB メモリやイントラネット経由（scp など）で Raspberry Pi にコピーし、パスを渡して実行します:
 
 ```bash
-sudo /home/pi/kidspos/update-app.sh /path/to/app.jar
+sudo /opt/kidspos/update-app.sh /path/to/app.jar
 ```
 
 ## 状況の診断
@@ -74,7 +74,7 @@ sudo /home/pi/kidspos/update-app.sh /path/to/app.jar
 NG が 1 件でもあれば終了コードは 1 になるため、cron や監視から呼び出すこともできます。
 
 ```bash
-/home/pi/kidspos/doctor.sh
+/opt/kidspos/doctor.sh
 ```
 
 診断する項目:
@@ -83,10 +83,12 @@ NG が 1 件でもあれば終了コードは 1 になるため、cron や監視
 - jar の有無と形式（zip として壊れていないか、plain jar が誤って置かれていないか）
 - 導入バージョンと、GitHub Releases の最新版との差（オフライン時はスキップ）
 - サービスの自動起動設定、起動状態、再起動の繰り返し
+- 同じ jar を起動する別名の systemd ユニットが残っていないか（1 つの DB を 2 プロセスが掴むと破損します）
 - ヘルスチェック（/api/status）とポートの待ち受け
 - DB の有無、ディレクトリ所有者とサービス実行ユーザーの一致
+- APK のアップロード領域（uploads）の有無
 - ディスクの空き容量と DB バックアップの世代数
-- エラーログの直近 500 行の例外件数
+- journal の直近 500 行のエラー件数
 - 時刻同期（売上の記録時刻がずれないか）
 
 ## 失敗時の動作
@@ -97,7 +99,7 @@ Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョ�
 
 ## バックアップ
 
-- 保存先: /home/pi/kidspos/backup/
+- 保存先: /opt/kidspos/backup/
 - 更新のたびに kidspos.db と旧 jar をタイムスタンプ付きで保存し、既定で 5 世代保持します
 - 世代数は環境変数 KIDSPOS_BACKUP_KEEP で変更できます
 
@@ -107,16 +109,17 @@ Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョ�
 
 | 環境変数 | 既定値 | 対象 |
 |---|---|---|
-| KIDSPOS_APP_DIR | /home/pi/kidspos | install / update / doctor |
-| KIDSPOS_JAR_NAME | kidspos.jar | install / update / doctor |
-| KIDSPOS_SERVICE | kidspos | install / update / doctor |
+| KIDSPOS_APP_DIR | /opt/kidspos | install / update / doctor |
+| KIDSPOS_JAR_NAME | app.jar | install / update / doctor |
+| KIDSPOS_SERVICE | kidspos-server | install / update / doctor |
 | KIDSPOS_HEALTH_URL | http://localhost:8080/api/status | update / doctor |
 | KIDSPOS_REPO | KidsPOSProject/KidsPOS-Server | update / doctor |
 | KIDSPOS_REQUIRED_JAVA_MAJOR | 21 | install / doctor |
 | KIDSPOS_HEALTH_RETRIES | 600 | update |
 | KIDSPOS_BACKUP_KEEP | 5 | update |
 | KIDSPOS_SERVICE_USER | pi | install |
-| KIDSPOS_UNIT_DIR | /etc/systemd/system | install |
+| KIDSPOS_UNIT_DIR | /etc/systemd/system | install / doctor |
+| KIDSPOS_LOG_LINES | 500 | doctor |
 | KIDSPOS_DISK_WARN_MB | 500 | doctor |
 | KIDSPOS_DISK_NG_MB | 100 | doctor |
 

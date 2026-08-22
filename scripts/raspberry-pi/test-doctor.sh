@@ -46,7 +46,8 @@ setup() {
     WORK=$(mktemp -d)
     APP_DIR="${WORK}/app"
     STUB_DIR="${WORK}/bin"
-    mkdir -p "${APP_DIR}/backup" "$STUB_DIR"
+    UNIT_DIR="${WORK}/systemd"
+    mkdir -p "${APP_DIR}/backup" "${APP_DIR}/uploads" "$STUB_DIR" "$UNIT_DIR"
 
     export STATE_DIR="${WORK}/state"
     mkdir -p "$STATE_DIR"
@@ -112,12 +113,26 @@ cat "${STATE_DIR}/ntp"
 exit 0
 EOF
 
+    cat > "${STUB_DIR}/journalctl" <<'EOF'
+#!/usr/bin/env bash
+[ -f "${STATE_DIR}/journal" ] && cat "${STATE_DIR}/journal"
+exit 0
+EOF
+
     chmod +x "${STUB_DIR}"/*
 
-    write_boot_jar "${APP_DIR}/kidspos.jar"
+    write_boot_jar "${APP_DIR}/app.jar"
     printf 'db-content' > "${APP_DIR}/kidspos.db"
     printf 'v1.0.0' > "${APP_DIR}/.installed-version"
     printf 'PK-old' > "${APP_DIR}/backup/kidspos.db.20260101000000"
+    write_unit "${UNIT_DIR}/kidspos-server.service"
+}
+
+write_unit() {
+    cat > "$1" <<EOF
+[Service]
+ExecStart=/usr/bin/java -jar ${APP_DIR}/app.jar
+EOF
 }
 
 write_boot_jar() {
@@ -138,6 +153,7 @@ run_doctor() {
     set +e
     env PATH="${STUB_DIR}:${PATH}" \
         KIDSPOS_APP_DIR="$APP_DIR" \
+        KIDSPOS_UNIT_DIR="$UNIT_DIR" \
         bash "$DOCTOR_SCRIPT" > "${WORK}/out.log" 2>&1
     RC=$?
     set -e
@@ -154,12 +170,14 @@ test_healthy_environment() {
     assert_contains "${WORK}/out.log" "サービスは起動しています" "サービス起動が検出される"
     assert_contains "${WORK}/out.log" "ポート 8080 が待ち受け中です" "待ち受けポートが検出される"
     assert_contains "${WORK}/out.log" "時刻が同期されています" "時刻同期が検出される"
+    assert_contains "${WORK}/out.log" "同じ jar を起動する別のユニットはありません" "多重起動が無いことが報告される"
+    assert_contains "${WORK}/out.log" "アップロード領域があります" "アップロード領域が検出される"
     teardown
 }
 
 test_missing_jar_is_ng() {
     setup "jar が無い場合は NG になる"
-    rm "${APP_DIR}/kidspos.jar"
+    rm "${APP_DIR}/app.jar"
     run_doctor
 
     assert_eq 1 "$RC" "終了コードが 1"
@@ -170,7 +188,7 @@ test_missing_jar_is_ng() {
 
 test_plain_jar_is_ng() {
     setup "plain jar が置かれている場合は NG になる"
-    write_plain_jar "${APP_DIR}/kidspos.jar"
+    write_plain_jar "${APP_DIR}/app.jar"
     run_doctor
 
     assert_eq 1 "$RC" "終了コードが 1"
@@ -180,7 +198,7 @@ test_plain_jar_is_ng() {
 
 test_broken_jar_is_ng() {
     setup "zip 形式でないファイルが置かれている場合は NG になる"
-    printf 'not-a-jar' > "${APP_DIR}/kidspos.jar"
+    printf 'not-a-jar' > "${APP_DIR}/app.jar"
     run_doctor
 
     assert_eq 1 "$RC" "終了コードが 1"
@@ -286,13 +304,58 @@ test_missing_app_dir_is_ng() {
     teardown
 }
 
-test_error_log_is_warning() {
-    setup "エラーログに例外があれば注意になる"
-    printf 'java.lang.IllegalStateException: boom\n' > "${APP_DIR}/kidspos-error.log"
+test_journal_error_is_warning() {
+    setup "journal に例外があれば注意になる"
+    printf 'java.lang.IllegalStateException: boom\n' > "${STATE_DIR}/journal"
     run_doctor
 
     assert_eq 0 "$RC" "終了コードが 0"
-    assert_contains "${WORK}/out.log" "件のエラーがあります" "エラーログが報告される"
+    assert_contains "${WORK}/out.log" "件のエラーがあります" "journal のエラーが報告される"
+    teardown
+}
+
+test_clean_journal_is_ok() {
+    setup "journal にエラーが無ければ OK になる"
+    printf 'Started KidsPOS Server.\n' > "${STATE_DIR}/journal"
+    run_doctor
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "直近のログに異常はありません" "ログが正常と報告される"
+    assert_not_contains "${WORK}/out.log" "件のエラーがあります" "エラーの注意は出ない"
+    teardown
+}
+
+test_duplicate_unit_is_ng() {
+    setup "同じ jar を起動する別ユニットがあれば NG になる"
+    write_unit "${UNIT_DIR}/kidspos.service"
+    run_doctor
+
+    assert_eq 1 "$RC" "終了コードが 1"
+    assert_contains "${WORK}/out.log" "同じ jar を起動するユニットが他にもあります: kidspos" "多重起動が報告される"
+    assert_contains "${WORK}/out.log" "systemctl disable --now kidspos" "停止コマンドが示される"
+    teardown
+}
+
+test_unrelated_unit_is_not_reported() {
+    setup "別の jar を起動するユニットは多重起動として扱わない"
+    cat > "${UNIT_DIR}/kidspos-monitor.service" <<EOF
+[Service]
+ExecStart=/usr/bin/python3 ${APP_DIR}/monitor.py
+EOF
+    run_doctor
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "同じ jar を起動する別のユニットはありません" "誤検知しない"
+    teardown
+}
+
+test_missing_uploads_is_warning() {
+    setup "アップロード領域が無ければ注意になる"
+    rm -rf "${APP_DIR}/uploads"
+    run_doctor
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "アップロード領域がありません" "アップロード領域の欠落が報告される"
     teardown
 }
 
@@ -309,7 +372,11 @@ test_newer_release_is_warning
 test_same_release_is_ok
 test_offline_release_check_is_not_a_failure
 test_missing_app_dir_is_ng
-test_error_log_is_warning
+test_journal_error_is_warning
+test_clean_journal_is_ok
+test_duplicate_unit_is_ng
+test_unrelated_unit_is_not_reported
+test_missing_uploads_is_warning
 
 echo ""
 echo "passed: $PASS_COUNT, failed: $FAIL_COUNT"

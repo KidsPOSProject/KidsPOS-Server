@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-APP_DIR="${KIDSPOS_APP_DIR:-/home/pi/kidspos}"
-JAR_NAME="${KIDSPOS_JAR_NAME:-kidspos.jar}"
-SERVICE="${KIDSPOS_SERVICE:-kidspos}"
+APP_DIR="${KIDSPOS_APP_DIR:-/opt/kidspos}"
+JAR_NAME="${KIDSPOS_JAR_NAME:-app.jar}"
+SERVICE="${KIDSPOS_SERVICE:-kidspos-server}"
 SERVICE_USER="${KIDSPOS_SERVICE_USER:-pi}"
 REQUIRED_JAVA_MAJOR="${KIDSPOS_REQUIRED_JAVA_MAJOR:-21}"
 UNIT_DIR="${KIDSPOS_UNIT_DIR:-/etc/systemd/system}"
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-UNIT_TEMPLATE="${SCRIPT_DIR}/kidspos.service"
+UNIT_TEMPLATE="${SCRIPT_DIR}/kidspos-server.service"
 UNIT_PATH="${UNIT_DIR}/${SERVICE}.service"
 JAR_PATH="${APP_DIR}/${JAR_NAME}"
 
@@ -69,16 +69,19 @@ done
 
 TMP_UNIT=$(mktemp /var/tmp/kidspos-unit.XXXXXXXX)
 trap 'rm -f "$TMP_UNIT"' EXIT
-sed -e "s#/home/pi/kidspos/kidspos\.jar#${JAR_PATH}#g" \
-    -e "s#/home/pi/kidspos#${APP_DIR}#g" \
+sed -e "s#/opt/kidspos/app\.jar#${JAR_PATH}#g" \
+    -e "s#/opt/kidspos#${APP_DIR}#g" \
     -e "s#^User=pi\$#User=${SERVICE_USER}#" \
+    -e "s#^SyslogIdentifier=kidspos-server\$#SyslogIdentifier=${SERVICE}#" \
     "$UNIT_TEMPLATE" > "$TMP_UNIT"
 
+UNIT_CHANGED=false
 if cmp -s "$TMP_UNIT" "$UNIT_PATH" 2>/dev/null; then
     log "systemd ユニットは最新です: $UNIT_PATH"
 else
     mkdir -p "$UNIT_DIR"
     cp "$TMP_UNIT" "$UNIT_PATH"
+    UNIT_CHANGED=true
     log "systemd ユニットを配置しました: $UNIT_PATH"
 fi
 
@@ -86,15 +89,28 @@ sudo systemctl daemon-reload
 sudo systemctl enable "$SERVICE"
 log "自動起動を有効にしました: $SERVICE"
 
+# 稼働中のサービスは start では設定を読み直さないため、ユニットを書き換えたときだけ再起動する
+start_or_restart_service() {
+    if [ "$UNIT_CHANGED" = true ] && systemctl is-active --quiet "$SERVICE"; then
+        log "ユニットの内容が変わったためサービスを再起動します: $SERVICE"
+        sudo systemctl restart "$SERVICE" || true
+    else
+        sudo systemctl start "$SERVICE" || true
+    fi
+}
+
 if [ "$SKIP_JAR" = true ]; then
     log "--no-jar が指定されたため jar の導入は行いません"
+    if [ -f "$JAR_PATH" ]; then
+        start_or_restart_service
+    fi
 elif [ -n "$LOCAL_JAR" ]; then
     log "持ち込んだ jar を導入します: $LOCAL_JAR"
     "${APP_DIR}/update-app.sh" "$LOCAL_JAR"
 elif [ -f "$JAR_PATH" ]; then
     log "jar は既に配置済みのため導入をスキップします: $JAR_PATH"
     log "更新する場合: sudo ${APP_DIR}/update-app.sh"
-    sudo systemctl start "$SERVICE" || true
+    start_or_restart_service
 else
     log "GitHub Releases から最新の app.jar を導入します"
     "${APP_DIR}/update-app.sh"
