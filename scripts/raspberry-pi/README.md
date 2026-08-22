@@ -8,20 +8,37 @@ Raspberry Pi 上で KidsPOS Server を運用するためのファイル一式で
 - 配置先: /home/pi/kidspos（jar は kidspos.jar、DB は kidspos.db）
 - サービス名: kidspos（systemd）
 - サーバーは常時イントラネット内にあり、インターネットへはメンテナが明示的に接続したときのみ出られる運用を想定
+- Raspberry Pi 上ではビルドしません。GitHub Releases に添付される app.jar を差し替えるだけなので、必要なのは Java ランタイムのみです
+
+## ファイル
+
+| ファイル | 用途 |
+|---|---|
+| install.sh | 初回セットアップ（ディレクトリ作成、systemd ユニット配置、自動起動有効化、jar 導入） |
+| update-app.sh | jar の更新（バックアップ、差し替え、ヘルスチェック、失敗時の巻き戻し） |
+| doctor.sh | 稼働診断（Java、jar、サービス、ヘルスチェック、DB、ディスク、ログ、時刻） |
+| kidspos.service | systemd ユニットのテンプレート |
+| test-install.sh / test-update-app.sh / test-doctor.sh | 上記スクリプトの自動テスト |
 
 ## 初回セットアップ
 
-```bash
-mkdir -p /home/pi/kidspos
-sudo cp kidspos.service /etc/systemd/system/kidspos.service
-sudo systemctl daemon-reload
-sudo systemctl enable kidspos.service
+このディレクトリを Raspberry Pi にコピーし、install.sh を実行します。
+必要なコマンドの確認、ディレクトリ作成、update-app.sh と doctor.sh の配置、systemd ユニットの配置と自動起動の有効化、jar の導入、最後に診断まで一度に行います。
 
-cp update-app.sh /home/pi/kidspos/
-chmod +x /home/pi/kidspos/update-app.sh
+```bash
+sudo ./install.sh                  # GitHub Releases から最新の app.jar を導入（要インターネット接続）
+sudo ./install.sh /path/to/app.jar # 持ち込んだ jar を導入（オフライン運用）
+sudo ./install.sh --no-jar         # セットアップのみ行い jar は導入しない
 ```
 
-初回の jar 配置も更新スクリプトで行えます（下記）。
+jar が既に配置済みの場合は入れ替えず、サービスの起動のみ行います。
+同じ引数で再実行しても設定は壊れません（systemd ユニットは内容が変わったときだけ書き換えます）。
+
+Java が未導入、または Java 21 未満の場合は導入コマンドを表示して停止します。
+
+```bash
+sudo apt install -y openjdk-21-jre-headless
+```
 
 ## 更新方法
 
@@ -51,6 +68,27 @@ USB メモリやイントラネット経由（scp など）で Raspberry Pi に�
 sudo /home/pi/kidspos/update-app.sh /path/to/app.jar
 ```
 
+## 状況の診断
+
+不調のときや更新の前後に実行すると、どこが原因かを OK / 注意 / NG で切り分けられます。
+NG が 1 件でもあれば終了コードは 1 になるため、cron や監視から呼び出すこともできます。
+
+```bash
+/home/pi/kidspos/doctor.sh
+```
+
+診断する項目:
+
+- Java のバージョン（21 以上か）
+- jar の有無と形式（zip として壊れていないか、plain jar が誤って置かれていないか）
+- 導入バージョンと、GitHub Releases の最新版との差（オフライン時はスキップ）
+- サービスの自動起動設定、起動状態、再起動の繰り返し
+- ヘルスチェック（/api/status）とポートの待ち受け
+- DB の有無、ディレクトリ所有者とサービス実行ユーザーの一致
+- ディスクの空き容量と DB バックアップの世代数
+- エラーログの直近 500 行の例外件数
+- 時刻同期（売上の記録時刻がずれないか）
+
 ## 失敗時の動作
 
 起動後のヘルスチェック（/api/status）が通らない場合、スクリプトが自動で旧 jar と更新直前の DB バックアップに巻き戻して再起動します。
@@ -67,11 +105,27 @@ Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョ�
 
 配置先やサービス名が異なる場合は環境変数で上書きできます:
 
-| 環境変数 | 既定値 |
-|---|---|
-| KIDSPOS_APP_DIR | /home/pi/kidspos |
-| KIDSPOS_JAR_NAME | kidspos.jar |
-| KIDSPOS_SERVICE | kidspos |
-| KIDSPOS_HEALTH_URL | http://localhost:8080/api/status |
-| KIDSPOS_BACKUP_KEEP | 5 |
-| KIDSPOS_REPO | KidsPOSProject/KidsPOS-Server |
+| 環境変数 | 既定値 | 対象 |
+|---|---|---|
+| KIDSPOS_APP_DIR | /home/pi/kidspos | install / update / doctor |
+| KIDSPOS_JAR_NAME | kidspos.jar | install / update / doctor |
+| KIDSPOS_SERVICE | kidspos | install / update / doctor |
+| KIDSPOS_HEALTH_URL | http://localhost:8080/api/status | update / doctor |
+| KIDSPOS_REPO | KidsPOSProject/KidsPOS-Server | update / doctor |
+| KIDSPOS_REQUIRED_JAVA_MAJOR | 21 | install / doctor |
+| KIDSPOS_HEALTH_RETRIES | 600 | update |
+| KIDSPOS_BACKUP_KEEP | 5 | update |
+| KIDSPOS_SERVICE_USER | pi | install |
+| KIDSPOS_UNIT_DIR | /etc/systemd/system | install |
+| KIDSPOS_DISK_WARN_MB | 500 | doctor |
+| KIDSPOS_DISK_NG_MB | 100 | doctor |
+
+## テスト
+
+スクリプトの挙動は bash のテストで検証しています。systemctl・curl・java などは実行せずスタブに差し替えるため、開発機でそのまま実行できます。
+
+```bash
+bash scripts/raspberry-pi/test-install.sh
+bash scripts/raspberry-pi/test-update-app.sh
+bash scripts/raspberry-pi/test-doctor.sh
+```

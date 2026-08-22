@@ -10,8 +10,9 @@
 
 ### ソフトウェア要件
 - Raspberry Pi OS (64-bit推奨)
-- Java 21 (OpenJDK)
-- Git
+- Java 21 のランタイム（OpenJDK）
+
+Raspberry Pi 上でソースをビルドすることはありません。GitHub Releases に添付される実行可能 jar（app.jar）を配置して動かすため、JDK も Git も Gradle も不要です。
 
 ## セットアップ手順
 
@@ -22,119 +23,81 @@
 sudo apt update && sudo apt upgrade -y
 
 # 必要なパッケージをインストール
-sudo apt install -y git curl wget unzip
+sudo apt install -y curl
 ```
 
 ### 2. Java 21のインストール
 
 ```bash
-# OpenJDK 21をインストール（ARM64用）
-sudo apt install -y openjdk-21-jdk
+# OpenJDK 21のランタイムをインストール
+sudo apt install -y openjdk-21-jre-headless
 
 # Javaバージョンを確認
 java -version
-javac -version
-
-# JAVA_HOMEを設定
-echo 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-arm64' >> ~/.bashrc
-echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc
-source ~/.bashrc
 ```
 
-### 3. プロジェクトのクローンとビルド
+### 3. 運用スクリプトの取得
+
+scripts/raspberry-pi ディレクトリ一式を Raspberry Pi にコピーします。
+インターネットに接続できる場合はリポジトリからダウンロードし、できない場合は別の PC でダウンロードして USB メモリや scp で持ち込みます。
 
 ```bash
-# プロジェクトをクローン
-git clone https://github.com/KidsPOSProject/KidsPOS-Server.git
-cd KidsPOS-Server
-
-# ビルド（初回は時間がかかります）
-./gradlew build -x detekt
-
-# JARファイルを作成
-./gradlew bootJar
+curl -fL -o kidspos-scripts.tar.gz \
+  https://github.com/KidsPOSProject/KidsPOS-Server/archive/refs/heads/main.tar.gz
+tar xzf kidspos-scripts.tar.gz --strip-components=1 '*/scripts/raspberry-pi'
+cd scripts/raspberry-pi
 ```
 
-### 4. メモリ最適化設定
+### 4. セットアップスクリプトの実行
 
-Raspberry Piのメモリ制限に合わせてJVMパラメータを調整します。
+install.sh がディレクトリ作成、運用スクリプトの配置、systemd ユニットの配置と自動起動の有効化、jar の導入、起動確認までを行います。
 
 ```bash
-# 起動スクリプトを作成
-cat > run-kidspos.sh << 'EOF'
-#!/bin/bash
+# GitHub Releases から最新の app.jar を導入（要インターネット接続）
+sudo ./install.sh
 
-# Raspberry Pi用のJVMメモリ設定
-export JAVA_OPTS="-Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m"
-
-# Raspberry Pi 4B (4GB RAM)の場合
-# export JAVA_OPTS="-Xms512m -Xmx1024m -XX:MaxMetaspaceSize=256m"
-
-# アプリケーション起動
-java $JAVA_OPTS -jar build/libs/kidspos-server-1.0.0.jar
-EOF
-
-chmod +x run-kidspos.sh
+# 持ち込んだ jar を導入（オフライン運用）
+sudo ./install.sh /path/to/app.jar
 ```
 
-### 5. 環境変数の設定
+配置先は /home/pi/kidspos で、jar は kidspos.jar、DB は kidspos.db として作られます。
+JVM のメモリ設定は systemd ユニット（scripts/raspberry-pi/kidspos.service）に -Xms256m -Xmx512m として含まれています。メモリの多い機種で増やす場合はユニットを編集してから daemon-reload と restart を行ってください。
+
+実行後、そのまま doctor.sh による診断結果が表示されます。NG が出ていなければ起動は成功しています。
+
+### 5. 環境変数の設定（必要な場合）
+
+既定値のままで動作します。SSL やアクセス制限を変更したい場合のみ、systemd のドロップインで環境変数を渡します。
 
 ```bash
-# 環境変数ファイルを作成
-cat > .env << 'EOF'
-# SSL設定（HTTPSを使用する場合）
-SSL_ENABLED=false
-# SSL_KEY_STORE=/home/pi/kidspos/keystore/kidspos.p12
-# SSL_KEY_STORE_PASSWORD=your_password
-
-# APKアップロードディレクトリ
-APK_UPLOAD_DIR=/home/pi/kidspos/uploads/apk
-APK_MAX_FILE_SIZE=104857600
-
-# データベースファイル
-DB_PATH=/home/pi/kidspos/kidspos.db
-
-# ネットワーク設定
-ALLOWED_IP_PREFIX=192.168.
-EOF
-
-# 環境変数を読み込む
-source .env
+sudo systemctl edit kidspos
 ```
 
-### 6. systemdサービスとして設定（自動起動）
+エディタが開いたら以下を記述します:
 
-```bash
-# サービスファイルを作成
-sudo cat > /etc/systemd/system/kidspos.service << 'EOF'
-[Unit]
-Description=KidsPOS Server
-After=network.target
-
+```ini
 [Service]
-Type=simple
-User=pi
-WorkingDirectory=/home/pi/KidsPOS-Server
-EnvironmentFile=/home/pi/KidsPOS-Server/.env
-ExecStart=/home/pi/KidsPOS-Server/run-kidspos.sh
-Restart=on-failure
-RestartSec=10
+Environment=SSL_ENABLED=false
+Environment=ALLOWED_IP_PREFIX=192.168.
+Environment=APK_UPLOAD_DIR=/home/pi/kidspos/uploads/apk
+Environment=APK_MAX_FILE_SIZE=104857600
+```
 
-# メモリ制限
-MemoryMax=1G
-MemoryHigh=768M
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# サービスを有効化
+```bash
 sudo systemctl daemon-reload
-sudo systemctl enable kidspos.service
-sudo systemctl start kidspos.service
+sudo systemctl restart kidspos
+```
 
-# ステータスを確認
-sudo systemctl status kidspos.service
+データベースファイルの場所は WorkingDirectory 直下の kidspos.db に固定されており、環境変数では変更できません。場所を変えたい場合は systemd ユニットの WorkingDirectory を変更してください。
+
+### 6. 状態の確認
+
+```bash
+# 診断（Java、jar、サービス、ヘルスチェック、DB、ディスク、ログ、時刻）
+/home/pi/kidspos/doctor.sh
+
+# systemd のステータス
+sudo systemctl status kidspos
 ```
 
 ### 7. ファイアウォール設定
@@ -166,13 +129,35 @@ sudo dphys-swapfile swapon
 echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 ```
 
+## アプリケーションの更新
+
+jar の差し替えは update-app.sh が行います。停止、DB と旧 jar のバックアップ、差し替え、起動、ヘルスチェックまで自動で、失敗した場合は旧バージョンに巻き戻します。
+
+```bash
+# ネット接続時: 最新リリースを取得して更新
+sudo /home/pi/kidspos/update-app.sh
+
+# オフライン時: 持ち込んだ jar で更新
+sudo /home/pi/kidspos/update-app.sh /path/to/app.jar
+```
+
+DB スキーマの変更は起動時に Flyway が自動適用するため、追加の作業は不要です。
+詳細は scripts/raspberry-pi/README.md を参照してください。
+
 ## トラブルシューティング
+
+まず /home/pi/kidspos/doctor.sh を実行してください。原因の切り分けができます。
 
 ### メモリ不足エラー
 
+systemd ユニットの ExecStart に含まれるヒープ設定を調整します。
+
 ```bash
-# JVMメモリ設定を調整
-export JAVA_OPTS="-Xms128m -Xmx256m -XX:MaxMetaspaceSize=64m"
+sudo systemctl edit --full kidspos
+# ExecStart の -Xms256m -Xmx512m を -Xms128m -Xmx384m などに変更
+
+sudo systemctl daemon-reload
+sudo systemctl restart kidspos
 ```
 
 ### ポートが使用中
@@ -192,7 +177,10 @@ sudo kill -9 [PID]
 journalctl -u kidspos.service -f
 
 # アプリケーションログ
-tail -f /home/pi/KidsPOS-Server/logs/kidspos.log
+tail -f /home/pi/kidspos/kidspos.log
+
+# エラーログ
+tail -f /home/pi/kidspos/kidspos-error.log
 ```
 
 ## セキュリティ推奨事項
@@ -207,9 +195,14 @@ tail -f /home/pi/KidsPOS-Server/logs/kidspos.log
    ```
 
 3. **バックアップ**
+
+   update-app.sh が更新のたびに DB と旧 jar を /home/pi/kidspos/backup/ に保存します（既定 5 世代）。
+   任意のタイミングで取る場合は、書き込み中のコピーで壊れないよう必ずサービスを止めてから行います。
+
    ```bash
-   # データベースのバックアップ
+   sudo systemctl stop kidspos
    cp /home/pi/kidspos/kidspos.db /home/pi/kidspos/backup/kidspos-$(date +%Y%m%d).db
+   sudo systemctl start kidspos
    ```
 
 4. **アクセス制限**
@@ -248,7 +241,7 @@ sudo nano /etc/nginx/sites-available/kidspos
 ```bash
 # logrotateの設定
 sudo cat > /etc/logrotate.d/kidspos << 'EOF'
-/home/pi/KidsPOS-Server/logs/*.log {
+/home/pi/kidspos/*.log {
     daily
     rotate 7
     compress
@@ -256,6 +249,7 @@ sudo cat > /etc/logrotate.d/kidspos << 'EOF'
     missingok
     notifempty
     create 644 pi pi
+    copytruncate
 }
 EOF
 ```

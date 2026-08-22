@@ -141,9 +141,10 @@ trap - ERR
 
 echo "$NEW_VERSION" > "$VERSION_FILE"
 
-# 古いバックアップを世代数で削減
+# 古いバックアップを世代数で削減する。ファイル名末尾のタイムスタンプで並べるため、
+# コピー等で mtime が変わっていても新しい世代を取り違えない。該当が無い場合も成功扱いにする
 for prefix in "kidspos.db." "${JAR_NAME}."; do
-    ls -1t "${BACKUP_DIR}/${prefix}"* 2>/dev/null | tail -n +$((BACKUP_KEEP + 1)) | xargs -r rm -f
+    ls -1 "${BACKUP_DIR}/${prefix}"* 2>/dev/null | sort -r | tail -n +$((BACKUP_KEEP + 1)) | xargs -r rm -f || true
 done
 
 log "更新が完了しました: $NEW_VERSION"
