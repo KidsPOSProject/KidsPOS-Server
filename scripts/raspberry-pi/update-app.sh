@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
 REPO="${KIDSPOS_REPO:-KidsPOSProject/KidsPOS-Server}"
 APP_DIR="${KIDSPOS_APP_DIR:-/home/pi/kidspos}"
@@ -32,6 +32,10 @@ for arg in "$@"; do
     case "$arg" in
         --force) FORCE=true ;;
         -h|--help) usage ;;
+        -*)
+            echo "[update-app] 不明なオプション: $arg" >&2
+            usage
+            ;;
         *) LOCAL_JAR="$arg" ;;
     esac
 done
@@ -39,7 +43,8 @@ done
 [ -d "$APP_DIR" ] || fail "アプリケーションディレクトリがありません: $APP_DIR"
 command -v curl >/dev/null || fail "curl が必要です"
 
-TMP_DIR=$(mktemp -d)
+# /tmp は tmpfs で容量が小さいため、ディスク上の /var/tmp を使う
+TMP_DIR=$(mktemp -d /var/tmp/kidspos-update.XXXXXXXX)
 trap 'rm -rf "$TMP_DIR"' EXIT
 NEW_JAR="${TMP_DIR}/new.jar"
 NEW_VERSION=""
@@ -82,30 +87,39 @@ head -c 2 "$NEW_JAR" | grep -q "PK" || fail "取得したファイルが jar 形
 STAMP="$(date +%Y%m%d%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 
+DB_BACKUP=""
+JAR_BACKUP=""
+
+rollback() {
+    trap - ERR
+    log "巻き戻しを実行します..."
+    sudo systemctl stop "$SERVICE" || true
+    if [ -n "$JAR_BACKUP" ]; then
+        cp "$JAR_BACKUP" "$JAR_PATH"
+    fi
+    if [ -n "$DB_BACKUP" ]; then
+        cp "$DB_BACKUP" "$DB_PATH"
+    fi
+    sudo systemctl start "$SERVICE" || true
+    fail "更新に失敗したため旧バージョンに戻しました。ログを確認してください: journalctl -u $SERVICE -n 100"
+}
+
 log "サービスを停止します: $SERVICE"
 sudo systemctl stop "$SERVICE"
 
+# ここから先の失敗はすべて巻き戻しに誘導する
+trap 'rollback' ERR
+
 # DB バックアップは必ずサービス停止後に行う（起動中のコピーは破損の恐れ）
-DB_BACKUP=""
 if [ -f "$DB_PATH" ]; then
     DB_BACKUP="${BACKUP_DIR}/kidspos.db.${STAMP}"
     cp "$DB_PATH" "$DB_BACKUP"
     log "DB をバックアップしました: $DB_BACKUP"
 fi
-JAR_BACKUP=""
 if [ -f "$JAR_PATH" ]; then
     JAR_BACKUP="${BACKUP_DIR}/${JAR_NAME}.${STAMP}"
     cp "$JAR_PATH" "$JAR_BACKUP"
 fi
-
-rollback() {
-    log "巻き戻しを実行します..."
-    sudo systemctl stop "$SERVICE" || true
-    [ -n "$JAR_BACKUP" ] && cp "$JAR_BACKUP" "$JAR_PATH"
-    [ -n "$DB_BACKUP" ] && cp "$DB_BACKUP" "$DB_PATH"
-    sudo systemctl start "$SERVICE" || true
-    fail "更新に失敗したため旧バージョンに戻しました。ログを確認してください: journalctl -u $SERVICE -n 100"
-}
 
 cp "$NEW_JAR" "$JAR_PATH"
 
@@ -122,6 +136,8 @@ for _ in $(seq 1 "$HEALTH_RETRIES"); do
     sleep 2
 done
 [ "$HEALTHY" = true ] || rollback
+
+trap - ERR
 
 echo "$NEW_VERSION" > "$VERSION_FILE"
 
