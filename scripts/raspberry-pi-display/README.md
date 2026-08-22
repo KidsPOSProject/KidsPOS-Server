@@ -74,6 +74,41 @@ sudo ./install-display.sh --skip-deps  # 依存の確認を省略する
 再実行しても設定は壊れません。systemd ユニットは内容が変わったときだけ書き換え、サービスが稼働中なら配置し直したコードを読ませるために再起動します。
 実行ユーザーが spi / gpio グループに入っていなければ追加します。グループ追加を反映するには一度ログインし直してください。
 
+## 起動と自動復旧
+
+install-display.sh を実行すると、配置・自動起動の有効化・起動までを一度に行います。
+起動後の操作は systemd から行います。
+
+```bash
+sudo systemctl start kidspos-display
+sudo systemctl stop kidspos-display
+sudo systemctl restart kidspos-display
+```
+
+自動起動は install-display.sh が systemctl enable を実行して有効にします。手動で切り替える場合:
+
+```bash
+sudo systemctl enable kidspos-display
+sudo systemctl disable kidspos-display
+systemctl is-enabled kidspos-display
+```
+
+ユニットは WantedBy=multi-user.target で通常の起動シーケンスに乗り、After / Wants=network-online.target でネットワークが上がってから起動します。
+ネットワークが未確立のまま起動しても失敗しません。IPv4 を取得できるまで NO NETWORK を表示し、取得できた時点で QR 付きの表示に切り替わります。
+
+異常終了したときは Restart=always と RestartSec=10 により 10 秒後に再起動します。
+ただし通常の障害でプロセスは終了しません。
+
+- サーバーが停止していても終了しません。状態取得の失敗は API × として扱い、監視を続けます
+- パネルへの書き込みに失敗しても終了しません。例外をログに残して次の周期へ進みます
+- プリンターが未設定・到達不能でも PRINTER の表示が - や × になるだけです
+- SIGTERM / SIGINT を受け取ると監視を止め、パネルを閉じてから終了します。systemctl stop と restart はこの経路を通ります
+
+Restart=always は Python 自体の異常終了に対する保険です。
+
+サーバー本体のユニット（scripts/raspberry-pi）も同じ設定で、両者は独立して動きます。
+表示側はサーバーの状態を一定間隔で取得するだけなので、起動順の依存関係はありません。
+
 ## 動作確認
 
 パネルに出さずに画像を確認できます。実機以外でも実行できるため、レイアウトの確認はこの方法が確実です。
