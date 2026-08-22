@@ -8,15 +8,16 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.slf4j.LoggerFactory
 import org.springframework.core.io.FileSystemResource
 import org.springframework.core.io.Resource
+import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
+import java.nio.charset.StandardCharsets
 
 @RestController
 @RequestMapping("/api/apk")
@@ -24,8 +25,6 @@ import org.springframework.web.multipart.MultipartFile
 class ApkApiController(
     private val apkVersionService: ApkVersionService,
 ) {
-    private val logger = LoggerFactory.getLogger(javaClass)
-
     @GetMapping("/version/latest")
     @Operation(summary = "最新バージョン情報の取得", description = "最新のAPKバージョン情報を取得します")
     @ApiResponses(
@@ -90,22 +89,24 @@ class ApkApiController(
     fun downloadApk(
         @Parameter(description = "APKバージョンID", required = true)
         @PathVariable id: Long,
-    ): ResponseEntity<Resource> =
-        try {
-            val apkFile = apkVersionService.getApkFile(id)
-            val apkVersion = apkVersionService.getVersionById(id)
-            val resource = FileSystemResource(apkFile)
+    ): ResponseEntity<Resource> {
+        val apkFile = apkVersionService.getApkFile(id)
+        val apkVersion = apkVersionService.getVersionById(id)
+        val resource = FileSystemResource(apkFile)
 
-            ResponseEntity
-                .ok()
-                .contentType(MediaType.parseMediaType("application/vnd.android.package-archive"))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${apkVersion.fileName}\"")
-                .header(HttpHeaders.CONTENT_LENGTH, apkFile.length().toString())
-                .body(resource)
-        } catch (e: Exception) {
-            logger.error("APKダウンロードエラー: ${e.message}", e)
-            ResponseEntity.notFound().build()
-        }
+        val contentDisposition =
+            ContentDisposition
+                .attachment()
+                .filename(apkVersion.fileName, StandardCharsets.UTF_8)
+                .build()
+
+        return ResponseEntity
+            .ok()
+            .contentType(MediaType.parseMediaType("application/vnd.android.package-archive"))
+            .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+            .header(HttpHeaders.CONTENT_LENGTH, apkFile.length().toString())
+            .body(resource)
+    }
 
     @GetMapping("/download/latest")
     @Operation(summary = "最新APKファイルのダウンロード", description = "最新バージョンのAPKファイルをダウンロードします")
@@ -137,14 +138,10 @@ class ApkApiController(
         @RequestParam versionCode: Int,
         @Parameter(description = "リリースノート")
         @RequestParam(required = false) releaseNotes: String?,
-    ): ResponseEntity<ApkVersionResponse> =
-        try {
-            val apkVersion = apkVersionService.uploadApk(file, version, versionCode, releaseNotes)
-            ResponseEntity.status(HttpStatus.CREATED).body(ApkVersionResponse.from(apkVersion))
-        } catch (e: Exception) {
-            logger.error("APKアップロードエラー: ${e.message}", e)
-            ResponseEntity.badRequest().build()
-        }
+    ): ResponseEntity<ApkVersionResponse> {
+        val apkVersion = apkVersionService.uploadApk(file, version, versionCode, releaseNotes)
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApkVersionResponse.from(apkVersion))
+    }
 
     @DeleteMapping("/version/{id}")
     @Operation(summary = "APKバージョンの削除", description = "指定されたAPKバージョンを削除します")
@@ -155,14 +152,10 @@ class ApkApiController(
     fun deleteVersion(
         @Parameter(description = "APKバージョンID", required = true)
         @PathVariable id: Long,
-    ): ResponseEntity<Void> =
-        try {
-            apkVersionService.deleteVersion(id)
-            ResponseEntity.noContent().build()
-        } catch (e: Exception) {
-            logger.error("APK削除エラー: ${e.message}", e)
-            ResponseEntity.notFound().build()
-        }
+    ): ResponseEntity<Void> {
+        apkVersionService.deleteVersion(id)
+        return ResponseEntity.noContent().build()
+    }
 
     @PutMapping("/version/{id}/deactivate")
     @Operation(summary = "APKバージョンの無効化", description = "指定されたAPKバージョンを無効化します")
@@ -173,12 +166,8 @@ class ApkApiController(
     fun deactivateVersion(
         @Parameter(description = "APKバージョンID", required = true)
         @PathVariable id: Long,
-    ): ResponseEntity<ApkVersionResponse> =
-        try {
-            val deactivated = apkVersionService.deactivateVersion(id)
-            ResponseEntity.ok(ApkVersionResponse.from(deactivated))
-        } catch (e: Exception) {
-            logger.error("APK無効化エラー: ${e.message}", e)
-            ResponseEntity.notFound().build()
-        }
+    ): ResponseEntity<ApkVersionResponse> {
+        val deactivated = apkVersionService.deactivateVersion(id)
+        return ResponseEntity.ok(ApkVersionResponse.from(deactivated))
+    }
 }

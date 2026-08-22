@@ -1,5 +1,8 @@
 package info.nukoneko.kidspos.server.controller.api
 
+import info.nukoneko.kidspos.server.domain.exception.DuplicateResourceException
+import info.nukoneko.kidspos.server.domain.exception.InvalidFileException
+import info.nukoneko.kidspos.server.domain.exception.ResourceNotFoundException
 import info.nukoneko.kidspos.server.entity.ApkVersionEntity
 import info.nukoneko.kidspos.server.service.ApkVersionService
 import org.junit.jupiter.api.Test
@@ -11,11 +14,16 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.http.ContentDisposition
+import org.springframework.http.HttpHeaders
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import java.io.File
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.time.LocalDateTime
 
 @ExtendWith(SpringExtension::class)
@@ -223,5 +231,141 @@ class ApkApiControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.version").value("1.0.0"))
             .andExpect(jsonPath("$.isActive").value(false))
+    }
+
+    @Test
+    fun `GET download should return APK with safely encoded filename`() {
+        // Given
+        val apkFile = File.createTempFile("kidspos-test", ".apk").apply { deleteOnExit() }
+        Files.write(apkFile.toPath(), byteArrayOf(0x50, 0x4B, 0x03, 0x04))
+        val trickyFileName = "kidspos-v1.0\"; evil=攻撃.apk"
+        val apkVersion =
+            ApkVersionEntity(
+                id = 1L,
+                version = "1.0.0",
+                versionCode = 100,
+                fileName = trickyFileName,
+                fileSize = apkFile.length(),
+                filePath = apkFile.absolutePath,
+                releaseNotes = null,
+                isActive = true,
+                uploadedAt = LocalDateTime.now(),
+            )
+        whenever(apkVersionService.getApkFile(1L)).thenReturn(apkFile)
+        whenever(apkVersionService.getVersionById(1L)).thenReturn(apkVersion)
+
+        val expectedDisposition =
+            ContentDisposition
+                .attachment()
+                .filename(trickyFileName, StandardCharsets.UTF_8)
+                .build()
+                .toString()
+
+        // When & Then
+        mockMvc
+            .perform(get("/api/apk/download/1"))
+            .andExpect(status().isOk)
+            .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, expectedDisposition))
+            .andExpect(header().string(HttpHeaders.CONTENT_LENGTH, apkFile.length().toString()))
+    }
+
+    @Test
+    fun `GET download should return 404 when version does not exist`() {
+        // Given
+        whenever(apkVersionService.getApkFile(99L))
+            .thenThrow(ResourceNotFoundException("APKバージョンが見つかりません: ID=99"))
+
+        // When & Then
+        mockMvc
+            .perform(get("/api/apk/download/99"))
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
+    }
+
+    @Test
+    fun `GET download should return 500 when file read fails unexpectedly`() {
+        // Given
+        whenever(apkVersionService.getApkFile(1L))
+            .thenThrow(RuntimeException("disk read error"))
+
+        // When & Then
+        mockMvc
+            .perform(get("/api/apk/download/1"))
+            .andExpect(status().isInternalServerError)
+            .andExpect(jsonPath("$.code").value("INTERNAL_SERVER_ERROR"))
+    }
+
+    @Test
+    fun `POST upload should return 409 when version already exists`() {
+        // Given
+        val mockFile =
+            MockMultipartFile(
+                "file",
+                "test.apk",
+                "application/vnd.android.package-archive",
+                ByteArray(1000),
+            )
+        whenever(apkVersionService.uploadApk(any(), eq("1.0.0"), eq(100), eq(null)))
+            .thenThrow(DuplicateResourceException("バージョン 1.0.0 は既に存在します"))
+
+        // When & Then
+        mockMvc
+            .perform(
+                multipart("/api/apk/upload")
+                    .file(mockFile)
+                    .param("version", "1.0.0")
+                    .param("versionCode", "100"),
+            ).andExpect(status().isConflict)
+            .andExpect(jsonPath("$.code").value("DUPLICATE_RESOURCE"))
+    }
+
+    @Test
+    fun `POST upload should return 400 when file is invalid`() {
+        // Given
+        val mockFile =
+            MockMultipartFile(
+                "file",
+                "test.txt",
+                "text/plain",
+                ByteArray(10),
+            )
+        whenever(apkVersionService.uploadApk(any(), eq("1.0.0"), eq(100), eq(null)))
+            .thenThrow(InvalidFileException("APKファイルのみアップロード可能です"))
+
+        // When & Then
+        mockMvc
+            .perform(
+                multipart("/api/apk/upload")
+                    .file(mockFile)
+                    .param("version", "1.0.0")
+                    .param("versionCode", "100"),
+            ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("INVALID_FILE"))
+    }
+
+    @Test
+    fun `DELETE version should return 404 when version does not exist`() {
+        // Given
+        whenever(apkVersionService.deleteVersion(99L))
+            .thenThrow(ResourceNotFoundException("APKバージョンが見つかりません: ID=99"))
+
+        // When & Then
+        mockMvc
+            .perform(delete("/api/apk/version/99"))
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
+    }
+
+    @Test
+    fun `PUT version deactivate should return 404 when version does not exist`() {
+        // Given
+        whenever(apkVersionService.deactivateVersion(99L))
+            .thenThrow(ResourceNotFoundException("APKバージョンが見つかりません: ID=99"))
+
+        // When & Then
+        mockMvc
+            .perform(put("/api/apk/version/99/deactivate"))
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
     }
 }

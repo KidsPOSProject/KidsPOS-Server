@@ -158,6 +158,23 @@ class GlobalExceptionHandler {
             )
     }
 
+    @ExceptionHandler(InvalidFileException::class)
+    fun handleInvalidFile(
+        ex: InvalidFileException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        logger.warn("Invalid file: ${ex.message}")
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(
+                ErrorResponse(
+                    code = "INVALID_FILE",
+                    message = ex.message ?: "Invalid file",
+                    path = request.getDescription(false),
+                ),
+            )
+    }
+
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleIllegalArgument(
         ex: IllegalArgumentException,
