@@ -23,6 +23,11 @@ requires_pillow = unittest.skipUnless(
     DEPENDENCIES_AVAILABLE, "Pillow と qrcode が導入されていないためスキップします"
 )
 
+requires_font = unittest.skipUnless(
+    DEPENDENCIES_AVAILABLE and os.path.exists(config_module.Config().font_path),
+    "既定のフォントが無い環境では文字サイズを検証できないためスキップします",
+)
+
 URL = "http://192.168.11.20:8080/"
 
 
@@ -123,6 +128,49 @@ class BuildQrTest(unittest.TestCase):
         return code.get_matrix()
 
 
+@requires_font
+class FitTextTest(unittest.TestCase):
+    def setUp(self):
+        from PIL import ImageDraw
+
+        self.config = config_module.Config()
+        self.draw = ImageDraw.Draw(Image.new("1", (250, 122), renderer.WHITE))
+
+    def _fit(self, text, max_width, sizes=None):
+        sizes = renderer.VALUE_FONT_SIZES if sizes is None else sizes
+        return renderer.fit_text(self.draw, text, self.config.font_path, max_width, sizes)
+
+    def test_a_short_text_keeps_the_largest_size(self):
+        text, font = self._fit("1.0.0", 200)
+
+        self.assertEqual("1.0.0", text)
+        self.assertEqual(renderer.VALUE_FONT_SIZES[0], font.size)
+
+    def test_the_size_drops_until_the_text_fits(self):
+        _, large = self._fit("1.0.0", 200)
+        _, small = self._fit("1.0.0-SNAPSHOT-20260101", 90)
+
+        self.assertLess(small.size, large.size)
+
+    def test_a_text_that_never_fits_is_shortened_with_an_ellipsis(self):
+        text, font = self._fit("1.2.3-SNAPSHOT-" + "0" * 60, 60)
+
+        self.assertTrue(text.endswith(renderer.ELLIPSIS))
+        self.assertEqual(renderer.VALUE_FONT_SIZES[-1], font.size)
+
+    def test_the_result_always_fits_in_the_given_width(self):
+        for max_width in (200, 90, 60, 30, 12):
+            with self.subTest(max_width=max_width):
+                text, font = self._fit("1.2.3-SNAPSHOT-" + "0" * 60, max_width)
+
+                self.assertLessEqual(renderer.ink_right(self.draw, text, font), max_width)
+
+    def test_nothing_is_returned_when_even_the_ellipsis_does_not_fit(self):
+        text, _ = self._fit("1.0.0", 1)
+
+        self.assertEqual("", text)
+
+
 @requires_pillow
 class DrawMarkTest(unittest.TestCase):
     def _draw(self, value):
@@ -146,6 +194,18 @@ class DrawMarkTest(unittest.TestCase):
         counts = {value: black_pixels(self._draw(value)) for value in (True, False, None)}
 
         self.assertEqual(None, min(counts, key=counts.get))
+
+    def test_no_mark_draws_outside_the_requested_box(self):
+        last = 2 + renderer.MARK_SIZE - 1
+
+        for value in (True, False, None):
+            with self.subTest(value=value):
+                image = self._draw(value)
+
+                self.assertEqual(0, black_pixels(image, (last + 1, 0, 20, 20)))
+                self.assertEqual(0, black_pixels(image, (0, last + 1, 20, 20)))
+                self.assertEqual(0, black_pixels(image, (0, 0, 2, 20)))
+                self.assertEqual(0, black_pixels(image, (0, 0, 20, 2)))
 
 
 @requires_pillow
@@ -220,6 +280,30 @@ class RenderTest(unittest.TestCase):
         image = renderer.render(self._state(ip="192.168.100.200"), self.config)
 
         self.assertEqual(0, black_pixels(image, (250 - layout.MARGIN, 0, 250, 122)))
+
+    def test_failing_marks_stay_inside_the_panel(self):
+        image = renderer.render(self._state(api_ok=False, printer_ok=None), self.config)
+
+        self.assertEqual(0, black_pixels(image, (250 - layout.MARGIN, 0, 250, 122)))
+
+    def test_a_long_version_reaches_the_right_margin(self):
+        image = renderer.render(self._state(version="1.2.3-SNAPSHOT-20260101"), self.config)
+        last_column = 250 - layout.MARGIN - 1
+
+        self.assertGreater(black_pixels(image, (last_column - 1, 0, last_column + 1, 122)), 0)
+
+    def test_a_value_too_long_for_the_smallest_font_stays_off_the_qr(self):
+        long_version = "1.2.3-SNAPSHOT-" + "0" * 60
+
+        image = renderer.render(self._state(version=long_version), self.config)
+        short = renderer.render(self._state(version="1.0.0"), self.config)
+        boundary = layout.text_area_left(self.config.height - layout.MARGIN * 2)
+
+        self.assertEqual(0, black_pixels(image, (250 - layout.MARGIN, 0, 250, 122)))
+        self.assertEqual(
+            black_pixels(short, (0, 0, boundary, 122)), black_pixels(image, (0, 0, boundary, 122))
+        )
+
 
     def test_extra_rows_are_drawn(self):
         extra = (layout.Row("DEVICE-A", mark=True),)

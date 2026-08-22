@@ -21,6 +21,7 @@ PORT_FONT_SIZE = 12
 ROW_FONT_SIZE = 12
 MARK_SIZE = 11
 LABEL_VALUE_GAP = 4
+ELLIPSIS = "…"
 
 
 def load_font(path: str, size: int):
@@ -36,20 +37,29 @@ def text_width(draw: ImageDraw.ImageDraw, text: str, font) -> int:
     return right - left
 
 
-def fit_font(
+def ink_right(draw: ImageDraw.ImageDraw, text: str, font) -> int:
+    """左サイドベアリングを含めた右端. 右寄せの基準に使う."""
+    return draw.textbbox((0, 0), text, font=font)[2]
+
+
+def fit_text(
     draw: ImageDraw.ImageDraw,
     text: str,
     path: str,
     max_width: int,
     sizes: Sequence[int] = IP_FONT_SIZES,
 ):
-    """収まる範囲で最大の文字サイズを選ぶ. どれも収まらなければ最小サイズを返す."""
+    """収まる範囲で最大の文字サイズを選び、最小サイズでも収まらなければ末尾を省く."""
     font = None
     for size in sizes:
         font = load_font(path, size)
-        if text_width(draw, text, font) <= max_width:
-            return font
-    return font
+        if ink_right(draw, text, font) <= max_width:
+            return text, font
+
+    shortened = text
+    while shortened and ink_right(draw, shortened + ELLIPSIS, font) > max_width:
+        shortened = shortened[:-1]
+    return (shortened + ELLIPSIS if shortened else ""), font
 
 
 def build_qr(url: str, config, max_pixels: int) -> Optional[Image.Image]:
@@ -81,15 +91,18 @@ def build_qr(url: str, config, max_pixels: int) -> Optional[Image.Image]:
 
 def draw_mark(draw: ImageDraw.ImageDraw, x: int, y: int, size: int, value: Optional[bool]) -> None:
     """フォントの字形に依存すると環境で化けるため図形で描く."""
+    right = x + size - 1
+    bottom = y + size - 1
     if value is None:
         middle = y + size // 2
-        draw.line((x, middle, x + size, middle), fill=BLACK, width=2)
+        draw.line((x, middle, right, middle), fill=BLACK, width=2)
         return
     if value:
-        draw.ellipse((x, y, x + size, y + size), outline=BLACK, width=2)
+        draw.ellipse((x, y, right, bottom), outline=BLACK, width=2)
         return
-    draw.line((x, y, x + size, y + size), fill=BLACK, width=2)
-    draw.line((x, y + size, x + size, y), fill=BLACK, width=2)
+    # 線幅 2 の斜線は端点の外側にはみ出すため、1 px 内側から描く
+    draw.line((x + 1, y + 1, right - 1, bottom - 1), fill=BLACK, width=2)
+    draw.line((x + 1, bottom - 1, right - 1, y + 1), fill=BLACK, width=2)
 
 
 def render(state: layout.DisplayState, config) -> Image.Image:
@@ -103,12 +116,12 @@ def render(state: layout.DisplayState, config) -> Image.Image:
         image.paste(qr_image, layout.qr_position(qr_pixels, config.height))
 
     left = layout.text_area_left(qr_pixels)
-    available = config.width - left - layout.MARGIN
-    right = config.width - layout.MARGIN
+    last_column = config.width - layout.MARGIN - 1
+    available = last_column - left + 1
 
     top = layout.MARGIN
-    ip_text = state.ip or layout.NO_NETWORK_TEXT
-    draw.text((left, top), ip_text, font=fit_font(draw, ip_text, config.font_bold_path, available), fill=BLACK)
+    ip_text, ip_font = fit_text(draw, state.ip or layout.NO_NETWORK_TEXT, config.font_bold_path, available)
+    draw.text((left, top), ip_text, font=ip_font, fill=BLACK)
 
     top += layout.IP_LINE_HEIGHT
     if state.ip:
@@ -123,11 +136,12 @@ def render(state: layout.DisplayState, config) -> Image.Image:
             break
         draw.text((left, y), row.label, font=row_font, fill=BLACK)
         if row.is_mark:
-            draw_mark(draw, right - MARK_SIZE, y + 1, MARK_SIZE, row.mark)
+            draw_mark(draw, last_column - MARK_SIZE + 1, y + 1, MARK_SIZE, row.mark)
             continue
         label_width = text_width(draw, row.label, row_font)
         value_width = max(0, available - label_width - LABEL_VALUE_GAP)
-        value_font = fit_font(draw, row.text, config.font_path, value_width, VALUE_FONT_SIZES)
-        draw.text((right - text_width(draw, row.text, value_font), y), row.text, font=value_font, fill=BLACK)
+        value_text, value_font = fit_text(draw, row.text, config.font_path, value_width, VALUE_FONT_SIZES)
+        value_x = last_column - ink_right(draw, value_text, value_font) + 1
+        draw.text((value_x, y), value_text, font=value_font, fill=BLACK)
 
     return image
