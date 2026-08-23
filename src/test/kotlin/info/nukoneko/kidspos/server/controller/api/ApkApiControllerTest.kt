@@ -4,6 +4,7 @@ import info.nukoneko.kidspos.server.domain.exception.DuplicateResourceException
 import info.nukoneko.kidspos.server.domain.exception.InvalidFileException
 import info.nukoneko.kidspos.server.domain.exception.ResourceNotFoundException
 import info.nukoneko.kidspos.server.entity.ApkVersionEntity
+import info.nukoneko.kidspos.server.service.ApkManifestInfo
 import info.nukoneko.kidspos.server.service.ApkVersionService
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -179,7 +180,7 @@ class ApkApiControllerTest {
                 uploadedAt = LocalDateTime.now(),
             )
 
-        whenever(apkVersionService.uploadApk(any(), eq("1.0.0"), eq(100), eq("Initial release")))
+        whenever(apkVersionService.uploadApk(any(), eq("Initial release")))
             .thenReturn(uploadedVersion)
 
         // When & Then
@@ -187,12 +188,135 @@ class ApkApiControllerTest {
             .perform(
                 multipart("/api/apk/upload")
                     .file(mockFile)
-                    .param("version", "1.0.0")
-                    .param("versionCode", "100")
                     .param("releaseNotes", "Initial release"),
             ).andExpect(status().isCreated)
             .andExpect(jsonPath("$.version").value("1.0.0"))
             .andExpect(jsonPath("$.versionCode").value(100))
+
+        verify(apkVersionService, never()).analyzeApk(any())
+    }
+
+    @Test
+    fun `POST upload should accept version parameters that match the APK`() {
+        // Given
+        val mockFile =
+            MockMultipartFile(
+                "file",
+                "test.apk",
+                "application/vnd.android.package-archive",
+                ByteArray(1000),
+            )
+        val uploadedVersion =
+            ApkVersionEntity(
+                id = 1L,
+                version = "1.0.0",
+                versionCode = 100,
+                fileName = "kidspos-v1.0.0.apk",
+                fileSize = 1000L,
+                filePath = "/uploads/apk/kidspos-v1.0.0.apk",
+                releaseNotes = null,
+                isActive = true,
+                uploadedAt = LocalDateTime.now(),
+            )
+
+        whenever(apkVersionService.analyzeApk(any())).thenReturn(ApkManifestInfo("1.0.0", 100))
+        whenever(apkVersionService.uploadApk(any(), eq(null))).thenReturn(uploadedVersion)
+
+        // When & Then
+        mockMvc
+            .perform(
+                multipart("/api/apk/upload")
+                    .file(mockFile)
+                    .param("version", "1.0.0")
+                    .param("versionCode", "100"),
+            ).andExpect(status().isCreated)
+            .andExpect(jsonPath("$.version").value("1.0.0"))
+    }
+
+    @Test
+    fun `POST upload should return 400 when version parameter differs from the APK`() {
+        // Given
+        val mockFile =
+            MockMultipartFile(
+                "file",
+                "test.apk",
+                "application/vnd.android.package-archive",
+                ByteArray(1000),
+            )
+        whenever(apkVersionService.analyzeApk(any())).thenReturn(ApkManifestInfo("1.0.0", 100))
+
+        // When & Then
+        mockMvc
+            .perform(
+                multipart("/api/apk/upload")
+                    .file(mockFile)
+                    .param("version", "9.9.9"),
+            ).andExpect(status().isBadRequest)
+
+        verify(apkVersionService, never()).uploadApk(any(), any())
+    }
+
+    @Test
+    fun `POST upload should return 400 when version code parameter differs from the APK`() {
+        // Given
+        val mockFile =
+            MockMultipartFile(
+                "file",
+                "test.apk",
+                "application/vnd.android.package-archive",
+                ByteArray(1000),
+            )
+        whenever(apkVersionService.analyzeApk(any())).thenReturn(ApkManifestInfo("1.0.0", 100))
+
+        // When & Then
+        mockMvc
+            .perform(
+                multipart("/api/apk/upload")
+                    .file(mockFile)
+                    .param("versionCode", "999"),
+            ).andExpect(status().isBadRequest)
+
+        verify(apkVersionService, never()).uploadApk(any(), any())
+    }
+
+    @Test
+    fun `POST analyze should return version information from the APK`() {
+        // Given
+        val mockFile =
+            MockMultipartFile(
+                "file",
+                "test.apk",
+                "application/vnd.android.package-archive",
+                ByteArray(1000),
+            )
+        whenever(apkVersionService.analyzeApk(any())).thenReturn(ApkManifestInfo("1.2.3", 10203))
+
+        // When & Then
+        mockMvc
+            .perform(multipart("/api/apk/analyze").file(mockFile))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.version").value("1.2.3"))
+            .andExpect(jsonPath("$.versionCode").value(10203))
+    }
+
+    @Test
+    fun `POST analyze should return 400 when the APK cannot be parsed`() {
+        // Given
+        val mockFile =
+            MockMultipartFile(
+                "file",
+                "broken.apk",
+                "application/vnd.android.package-archive",
+                ByteArray(10),
+            )
+        whenever(apkVersionService.analyzeApk(any()))
+            .thenThrow(InvalidFileException("AndroidManifest.xml が見つかりません"))
+
+        // When & Then
+        mockMvc
+            .perform(multipart("/api/apk/analyze").file(mockFile))
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("INVALID_FILE"))
     }
 
     @Test
@@ -305,16 +429,14 @@ class ApkApiControllerTest {
                 "application/vnd.android.package-archive",
                 ByteArray(1000),
             )
-        whenever(apkVersionService.uploadApk(any(), eq("1.0.0"), eq(100), eq(null)))
+        whenever(apkVersionService.uploadApk(any(), eq(null)))
             .thenThrow(DuplicateResourceException("バージョン 1.0.0 は既に存在します"))
 
         // When & Then
         mockMvc
             .perform(
                 multipart("/api/apk/upload")
-                    .file(mockFile)
-                    .param("version", "1.0.0")
-                    .param("versionCode", "100"),
+                    .file(mockFile),
             ).andExpect(status().isConflict)
             .andExpect(jsonPath("$.code").value("DUPLICATE_RESOURCE"))
     }
@@ -329,16 +451,14 @@ class ApkApiControllerTest {
                 "text/plain",
                 ByteArray(10),
             )
-        whenever(apkVersionService.uploadApk(any(), eq("1.0.0"), eq(100), eq(null)))
+        whenever(apkVersionService.uploadApk(any(), eq(null)))
             .thenThrow(InvalidFileException("APKファイルのみアップロード可能です"))
 
         // When & Then
         mockMvc
             .perform(
                 multipart("/api/apk/upload")
-                    .file(mockFile)
-                    .param("version", "1.0.0")
-                    .param("versionCode", "100"),
+                    .file(mockFile),
             ).andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.code").value("INVALID_FILE"))
     }

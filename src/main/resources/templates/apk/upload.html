@@ -48,20 +48,21 @@
                                             </button>
                                         </div>
                                         <div class="form-text">最大ファイルサイズ: 100MB</div>
+                                        <div class="form-text" id="analyzeStatus"></div>
                                     </div>
 
                                     <div class="mb-3">
-                                        <label for="version" class="form-label">バージョン <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="version" name="version"
-                                               placeholder="例: 1.2.3" pattern="^\d+\.\d+\.\d+$" required>
-                                        <div class="form-text">セマンティックバージョニング形式（X.Y.Z）で入力してください</div>
+                                        <label for="version" class="form-label">バージョン</label>
+                                        <input type="text" class="form-control" id="version"
+                                               placeholder="APKファイルを選択すると自動入力されます" readonly>
+                                        <div class="form-text">APKのAndroidManifestから自動的に読み取ります</div>
                                     </div>
 
                                     <div class="mb-3">
-                                        <label for="versionCode" class="form-label">バージョンコード <span class="text-danger">*</span></label>
-                                        <input type="number" class="form-control" id="versionCode" name="versionCode"
-                                               placeholder="例: 10203" min="1" required>
-                                        <div class="form-text">内部バージョン番号（整数）。新しいバージョンは必ず大きい値にしてください</div>
+                                        <label for="versionCode" class="form-label">バージョンコード</label>
+                                        <input type="text" class="form-control" id="versionCode"
+                                               placeholder="APKファイルを選択すると自動入力されます" readonly>
+                                        <div class="form-text">APKのAndroidManifestから自動的に読み取ります</div>
                                     </div>
 
                                     <div class="mb-3">
@@ -74,26 +75,29 @@
                                         <a href="/apk" class="btn btn-secondary">
                                             <i class="bi bi-arrow-left"></i> 戻る
                                         </a>
-                                        <button type="submit" class="btn btn-primary">
+                                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
                                             <i class="bi bi-upload"></i> アップロード
                                         </button>
                                     </div>
                                 </form>
-                </div>
-            </div>
+                            </div>
+                        </div>
 
-            <div class="card-modern mt-4">
-                <div class="card-body">
-                    <h5 class="mb-3">
-                        <i class="fas fa-info-circle text-primary"></i> アップロードガイドライン
-                    </h5>
-                    <ul>
-                        <li>APKファイルは正しく署名されている必要があります</li>
-                        <li>バージョンコードは既存のバージョンより大きい値を設定してください</li>
-                        <li>バージョン名はユーザーに表示される文字列です（例: 1.2.3）</li>
-                        <li>リリースノートには主要な変更点や修正内容を記載してください</li>
-                        <li>アップロード後、自動的に最新バージョンとして設定されます</li>
-                    </ul>
+                        <div class="card-modern mt-4">
+                            <div class="card-body">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-info-circle text-primary"></i> アップロードガイドライン
+                                </h5>
+                                <ul>
+                                    <li>APKファイルは正しく署名されている必要があります</li>
+                                    <li>バージョン名とバージョンコードはAPKから自動的に読み取られます</li>
+                                    <li>バージョンコードは既存のバージョンより大きい値にしてビルドしてください</li>
+                                    <li>リリースノートには主要な変更点や修正内容を記載してください</li>
+                                    <li>アップロード後、自動的に最新バージョンとして設定されます</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -101,61 +105,100 @@
 </div>
 
 <script th:inline="javascript">
+    const MAX_FILE_SIZE = 100 * 1024 * 1024;
+
+    const fileInput = document.getElementById('file');
+    const fileDisplay = document.getElementById('fileDisplay');
+    const versionInput = document.getElementById('version');
+    const versionCodeInput = document.getElementById('versionCode');
+    const analyzeStatus = document.getElementById('analyzeStatus');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function setStatus(message, type) {
+        analyzeStatus.textContent = message;
+        analyzeStatus.classList.remove('text-danger', 'text-success', 'text-muted');
+        if (type) {
+            analyzeStatus.classList.add(type);
+        }
+    }
+
+    function clearVersionFields() {
+        versionInput.value = '';
+        versionCodeInput.value = '';
+        submitBtn.disabled = true;
+    }
+
     function validateForm() {
-        const fileInput = document.getElementById('file');
         if (fileInput.files.length === 0) {
             alert('APKファイルを選択してください');
             return false;
         }
-
-        const file = fileInput.files[0];
-        if (!file.name.toLowerCase().endsWith('.apk')) {
-            alert('APKファイルのみアップロード可能です');
+        if (!versionInput.value || !versionCodeInput.value) {
+            alert('APKの解析が完了していません');
             return false;
         }
-
-        const maxSize = 100 * 1024 * 1024; // 100MB
-        if (file.size > maxSize) {
-            alert('ファイルサイズが100MBを超えています');
-            return false;
-        }
-
-        const version = document.getElementById('version').value;
-        if (!/^\d+\.\d+\.\d+$/.test(version)) {
-            alert('バージョンはX.Y.Z形式で入力してください（例: 1.2.3）');
-            return false;
-        }
-
-        const versionCode = parseInt(document.getElementById('versionCode').value);
-        if (isNaN(versionCode) || versionCode < 1) {
-            alert('バージョンコードは1以上の整数を入力してください');
-            return false;
-        }
-
-        return confirm('APKファイルをアップロードしますか？');
+        return confirm(`バージョン ${versionInput.value} (${versionCodeInput.value}) をアップロードしますか？`);
     }
 
-    // ファイル選択ボタンのクリックイベント
+    function analyzeApk(file) {
+        clearVersionFields();
+        setStatus('APKを解析しています...', 'text-muted');
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/apk/analyze', { method: 'POST', body: formData })
+            .then(response => response.json().then(body => ({ ok: response.ok, body })))
+            .then(result => {
+                if (!result.ok) {
+                    setStatus(result.body.message || 'APKの解析に失敗しました', 'text-danger');
+                    return;
+                }
+                versionInput.value = result.body.version;
+                versionCodeInput.value = result.body.versionCode;
+                setStatus('APKからバージョン情報を読み取りました', 'text-success');
+                submitBtn.disabled = false;
+            })
+            .catch(() => {
+                setStatus('APKの解析に失敗しました', 'text-danger');
+            });
+    }
+
     document.getElementById('fileSelectBtn').addEventListener('click', function() {
-        document.getElementById('file').click();
+        fileInput.click();
     });
 
-    // ファイル選択時の処理
-    document.getElementById('file').addEventListener('change', function(e) {
+    fileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
-        const fileDisplay = document.getElementById('fileDisplay');
 
-        if (file) {
-            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-            fileDisplay.value = `${file.name} (${sizeMB} MB)`;
-            fileDisplay.classList.remove('text-muted');
-            fileDisplay.classList.add('text-success');
-        } else {
+        if (!file) {
             fileDisplay.value = '';
             fileDisplay.placeholder = 'ファイルが選択されていません';
             fileDisplay.classList.remove('text-success');
             fileDisplay.classList.add('text-muted');
+            clearVersionFields();
+            setStatus('', null);
+            return;
         }
+
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        fileDisplay.value = `${file.name} (${sizeMB} MB)`;
+        fileDisplay.classList.remove('text-muted');
+        fileDisplay.classList.add('text-success');
+
+        if (!file.name.toLowerCase().endsWith('.apk')) {
+            clearVersionFields();
+            setStatus('APKファイルのみアップロード可能です', 'text-danger');
+            return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            clearVersionFields();
+            setStatus('ファイルサイズが100MBを超えています', 'text-danger');
+            return;
+        }
+
+        analyzeApk(file);
     });
 </script>
 </body>

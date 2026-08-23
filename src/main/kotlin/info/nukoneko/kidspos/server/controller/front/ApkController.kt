@@ -1,7 +1,10 @@
 package info.nukoneko.kidspos.server.controller.front
 
+import info.nukoneko.kidspos.server.controller.dto.response.ApkAnalyzeResponse
+import info.nukoneko.kidspos.server.controller.dto.response.ErrorResponse
 import info.nukoneko.kidspos.server.service.ApkVersionService
 import org.slf4j.LoggerFactory
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
@@ -33,16 +36,31 @@ class ApkController(
         return "apk/upload"
     }
 
+    @PostMapping("/analyze")
+    @ResponseBody
+    fun analyzeApk(
+        @RequestParam("file") file: MultipartFile,
+    ): ResponseEntity<Any> =
+        try {
+            ResponseEntity.ok(ApkAnalyzeResponse.from(apkVersionService.analyzeApk(file)))
+        } catch (e: Exception) {
+            logger.warn("APK解析エラー: ${e.message}")
+            ResponseEntity.badRequest().body(
+                ErrorResponse(
+                    code = "APK_ANALYZE_FAILED",
+                    message = e.message ?: "APKの解析に失敗しました",
+                ),
+            )
+        }
+
     @PostMapping("/upload")
     fun uploadApk(
         @RequestParam("file") file: MultipartFile,
-        @RequestParam("version") version: String,
-        @RequestParam("versionCode") versionCode: Int,
         @RequestParam("releaseNotes", required = false) releaseNotes: String?,
         redirectAttributes: RedirectAttributes,
     ): String =
         try {
-            val apkVersion = apkVersionService.uploadApk(file, version, versionCode, releaseNotes)
+            val apkVersion = apkVersionService.uploadApk(file, releaseNotes)
             redirectAttributes.addFlashAttribute(
                 "successMessage",
                 "APKバージョン ${apkVersion.version} をアップロードしました",

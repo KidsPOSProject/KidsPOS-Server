@@ -1,7 +1,9 @@
 package info.nukoneko.kidspos.server.controller.api
 
+import info.nukoneko.kidspos.server.controller.dto.response.ApkAnalyzeResponse
 import info.nukoneko.kidspos.server.controller.dto.response.ApkVersionResponse
 import info.nukoneko.kidspos.server.controller.dto.response.UpdateCheckResponse
+import info.nukoneko.kidspos.server.domain.exception.ValidationException
 import info.nukoneko.kidspos.server.service.ApkVersionService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -122,8 +124,22 @@ class ApkApiController(
         return downloadApk(latestVersion.id!!)
     }
 
+    @PostMapping("/analyze", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @Operation(summary = "APKファイルの解析", description = "APKファイルからバージョン名とバージョンコードを読み取ります")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "解析成功"),
+        ApiResponse(responseCode = "400", description = "APKとして解析できない"),
+    )
+    fun analyzeApk(
+        @Parameter(description = "APKファイル", required = true)
+        @RequestPart("file") file: MultipartFile,
+    ): ResponseEntity<ApkAnalyzeResponse> = ResponseEntity.ok(ApkAnalyzeResponse.from(apkVersionService.analyzeApk(file)))
+
     @PostMapping("/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    @Operation(summary = "APKファイルのアップロード", description = "新しいAPKファイルをアップロードします")
+    @Operation(
+        summary = "APKファイルのアップロード",
+        description = "新しいAPKファイルをアップロードします。バージョン情報はAPKから自動的に読み取られます",
+    )
     @ApiResponses(
         ApiResponse(responseCode = "201", description = "アップロード成功"),
         ApiResponse(responseCode = "400", description = "バリデーションエラー"),
@@ -132,15 +148,33 @@ class ApkApiController(
     fun uploadApk(
         @Parameter(description = "APKファイル", required = true)
         @RequestPart("file") file: MultipartFile,
-        @Parameter(description = "バージョン名（例：1.2.3）", required = true)
-        @RequestParam version: String,
-        @Parameter(description = "バージョンコード（整数）", required = true)
-        @RequestParam versionCode: Int,
+        @Parameter(description = "バージョン名（省略可。指定した場合はAPKの値と一致する必要があります）")
+        @RequestParam(required = false) version: String?,
+        @Parameter(description = "バージョンコード（省略可。指定した場合はAPKの値と一致する必要があります）")
+        @RequestParam(required = false) versionCode: Int?,
         @Parameter(description = "リリースノート")
         @RequestParam(required = false) releaseNotes: String?,
     ): ResponseEntity<ApkVersionResponse> {
-        val apkVersion = apkVersionService.uploadApk(file, version, versionCode, releaseNotes)
+        verifyExpectedVersion(file, version, versionCode)
+        val apkVersion = apkVersionService.uploadApk(file, releaseNotes)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApkVersionResponse.from(apkVersion))
+    }
+
+    private fun verifyExpectedVersion(
+        file: MultipartFile,
+        version: String?,
+        versionCode: Int?,
+    ) {
+        if (version == null && versionCode == null) {
+            return
+        }
+        val manifest = apkVersionService.analyzeApk(file)
+        if (version != null && version != manifest.versionName) {
+            throw ValidationException("指定されたバージョン名がAPKの値と一致しません: 指定=$version, APK=${manifest.versionName}")
+        }
+        if (versionCode != null && versionCode != manifest.versionCode) {
+            throw ValidationException("指定されたバージョンコードがAPKの値と一致しません: 指定=$versionCode, APK=${manifest.versionCode}")
+        }
     }
 
     @DeleteMapping("/version/{id}")

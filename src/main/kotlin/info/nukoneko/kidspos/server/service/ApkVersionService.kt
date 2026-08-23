@@ -21,6 +21,7 @@ import java.time.LocalDateTime
 @Transactional
 class ApkVersionService(
     private val apkVersionRepository: ApkVersionRepository,
+    private val apkManifestParser: ApkManifestParser,
     @Value("\${app.apk.upload-dir:./uploads/apk}")
     private val uploadDir: String = "./uploads/apk",
     @Value("\${app.apk.max-file-size:104857600}")
@@ -47,13 +48,19 @@ class ApkVersionService(
         }
     }
 
+    @Transactional(readOnly = true)
+    fun analyzeApk(file: MultipartFile): ApkManifestInfo {
+        validateApkFile(file)
+        return file.inputStream.use { apkManifestParser.parse(it) }
+    }
+
     fun uploadApk(
         file: MultipartFile,
-        version: String,
-        versionCode: Int,
         releaseNotes: String?,
     ): ApkVersionEntity {
-        validateApkFile(file)
+        val manifest = analyzeApk(file)
+        val version = manifest.versionName
+        val versionCode = manifest.versionCode
 
         if (apkVersionRepository.existsByVersion(version)) {
             throw DuplicateResourceException("バージョン $version は既に存在します")
@@ -63,7 +70,7 @@ class ApkVersionService(
             throw DuplicateResourceException("バージョンコード $versionCode は既に存在します")
         }
 
-        val fileName = "kidspos-v$version.apk"
+        val fileName = buildFileName(version)
         val filePath = saveApkFile(file, fileName)
 
         // 新しいIDを生成（最大ID + 1）
@@ -98,6 +105,19 @@ class ApkVersionService(
         if (!contentType.contains("android") && file.originalFilename?.endsWith(".apk", true) != true) {
             throw InvalidFileException("APKファイルのみアップロード可能です")
         }
+    }
+
+    // バージョン名はAPKの中身に由来する信頼できない入力のため、ファイル名に使う前に無害化する
+    private fun buildFileName(version: String): String {
+        val sanitized =
+            version
+                .replace(UNSAFE_FILE_NAME_CHARS, "_")
+                .replace(CONSECUTIVE_DOTS, ".")
+                .take(MAX_VERSION_NAME_LENGTH)
+        if (sanitized.isBlank() || sanitized.all { it == '.' || it == '_' }) {
+            throw InvalidFileException("APKのバージョン名がファイル名として利用できません: $version")
+        }
+        return "kidspos-v$sanitized.apk"
     }
 
     private fun saveApkFile(
@@ -167,5 +187,11 @@ class ApkVersionService(
         }
 
         apkVersionRepository.deleteById(id)
+    }
+
+    companion object {
+        private val UNSAFE_FILE_NAME_CHARS = Regex("[^A-Za-z0-9._-]")
+        private val CONSECUTIVE_DOTS = Regex("\\.{2,}")
+        private const val MAX_VERSION_NAME_LENGTH = 64
     }
 }
