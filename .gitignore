@@ -28,6 +28,10 @@
 ## db
 *.db
 
+## アップロードされたAPKの保存先
+uploads/
+test-uploads/
+
 ## heroku
 app.jar
 

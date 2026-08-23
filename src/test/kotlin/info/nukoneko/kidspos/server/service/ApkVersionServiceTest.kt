@@ -15,6 +15,7 @@ import org.mockito.Mockito.*
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
+import org.springframework.mock.web.MockMultipartFile
 import org.springframework.web.multipart.MultipartFile
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -26,9 +27,6 @@ class ApkVersionServiceTest {
     @Mock
     private lateinit var apkVersionRepository: ApkVersionRepository
 
-    @Mock
-    private lateinit var multipartFile: MultipartFile
-
     private lateinit var apkVersionService: ApkVersionService
 
     private val testUploadDir = "./test-uploads/apk"
@@ -36,7 +34,7 @@ class ApkVersionServiceTest {
 
     @BeforeEach
     fun setUp() {
-        apkVersionService = ApkVersionService(apkVersionRepository, testUploadDir, maxFileSize)
+        apkVersionService = createService(maxFileSize)
 
         // テスト用ディレクトリをクリーンアップ
         val testDir = Paths.get(testUploadDir)
@@ -50,82 +48,122 @@ class ApkVersionServiceTest {
         apkVersionService.init()
     }
 
+    private fun createService(fileSizeLimit: Long) =
+        ApkVersionService(apkVersionRepository, ApkManifestParser(), testUploadDir, fileSizeLimit)
+
+    private fun apkFixture(name: String): MultipartFile {
+        val bytes =
+            checkNotNull(javaClass.getResourceAsStream("/apk/$name")) {
+                "fixture not found: $name"
+            }.use { it.readBytes() }
+        return MockMultipartFile("file", name, "application/vnd.android.package-archive", bytes)
+    }
+
     @Test
-    fun `uploadApk should successfully upload valid APK file`() {
-        // Given
-        val version = "1.0.0"
-        val versionCode = 100
+    fun `analyzeApk should read version information from APK`() {
+        val result = apkVersionService.analyzeApk(apkFixture("valid-utf16.apk"))
+
+        assertEquals("1.2.3", result.versionName)
+        assertEquals(10203, result.versionCode)
+    }
+
+    @Test
+    fun `analyzeApk should throw exception when file is not an APK`() {
+        assertThrows<InvalidFileException> {
+            apkVersionService.analyzeApk(apkFixture("not-a-zip.apk"))
+        }
+    }
+
+    @Test
+    fun `uploadApk should read version from APK and save the file`() {
         val releaseNotes = "Initial release"
-        val fileContent = ByteArray(1000)
+        val file = apkFixture("valid-utf16.apk")
 
-        whenever(multipartFile.isEmpty).thenReturn(false)
-        whenever(multipartFile.size).thenReturn(1000L)
-        whenever(multipartFile.contentType).thenReturn("application/vnd.android.package-archive")
-        whenever(multipartFile.inputStream).thenReturn(fileContent.inputStream())
+        whenever(apkVersionRepository.existsByVersion("1.2.3")).thenReturn(false)
+        whenever(apkVersionRepository.existsByVersionCode(10203)).thenReturn(false)
+        whenever(apkVersionRepository.findMaxId()).thenReturn(null)
+        whenever(apkVersionRepository.save(any<ApkVersionEntity>())).thenAnswer { it.arguments[0] as ApkVersionEntity }
 
-        whenever(apkVersionRepository.existsByVersion(version)).thenReturn(false)
-        whenever(apkVersionRepository.existsByVersionCode(versionCode)).thenReturn(false)
+        val result = apkVersionService.uploadApk(file, releaseNotes)
 
-        val savedEntity =
-            ApkVersionEntity(
-                id = 1L,
-                version = version,
-                versionCode = versionCode,
-                fileName = "kidspos-v$version.apk",
-                fileSize = 1000L,
-                filePath = "$testUploadDir/kidspos-v$version.apk",
-                releaseNotes = releaseNotes,
-                isActive = true,
-                uploadedAt = LocalDateTime.now(),
-            )
-        whenever(apkVersionRepository.save(any<ApkVersionEntity>())).thenReturn(savedEntity)
-
-        // When
-        val result = apkVersionService.uploadApk(multipartFile, version, versionCode, releaseNotes)
-
-        // Then
-        assertNotNull(result)
-        assertEquals(version, result.version)
-        assertEquals(versionCode, result.versionCode)
+        assertEquals("1.2.3", result.version)
+        assertEquals(10203, result.versionCode)
+        assertEquals("kidspos-v1.2.3.apk", result.fileName)
+        assertEquals(file.size, result.fileSize)
         assertEquals(releaseNotes, result.releaseNotes)
-        verify(apkVersionRepository).save(any())
+        assertTrue(Files.exists(Paths.get(testUploadDir, "kidspos-v1.2.3.apk")))
+        assertArrayEquals(file.bytes, Files.readAllBytes(Paths.get(result.filePath)))
+    }
+
+    @Test
+    fun `uploadApk should sanitize version names that contain path separators`() {
+        val file = apkFixture("path-traversal-version.apk")
+
+        whenever(apkVersionRepository.existsByVersion(any())).thenReturn(false)
+        whenever(apkVersionRepository.existsByVersionCode(any())).thenReturn(false)
+        whenever(apkVersionRepository.findMaxId()).thenReturn(null)
+        whenever(apkVersionRepository.save(any<ApkVersionEntity>())).thenAnswer { it.arguments[0] as ApkVersionEntity }
+
+        val result = apkVersionService.uploadApk(file, null)
+
+        assertEquals("../../../etc/evil", result.version)
+        assertFalse(result.fileName.contains("/"))
+        assertFalse(result.fileName.contains(".."))
+        assertEquals(Paths.get(testUploadDir, result.fileName).toString(), result.filePath)
+        assertTrue(Files.exists(Paths.get(result.filePath)))
+    }
+
+    @Test
+    fun `uploadApk should reject version names that sanitize to an unusable file name`() {
+        whenever(apkVersionRepository.existsByVersion(any())).thenReturn(false)
+        whenever(apkVersionRepository.existsByVersionCode(any())).thenReturn(false)
+
+        assertThrows<InvalidFileException> {
+            apkVersionService.uploadApk(apkFixture("only-dots-version.apk"), null)
+        }
     }
 
     @Test
     fun `uploadApk should throw exception when file is empty`() {
-        // Given
-        whenever(multipartFile.isEmpty).thenReturn(true)
+        val emptyFile = MockMultipartFile("file", "empty.apk", "application/vnd.android.package-archive", ByteArray(0))
 
-        // When & Then
         assertThrows<InvalidFileException> {
-            apkVersionService.uploadApk(multipartFile, "1.0.0", 100, null)
+            apkVersionService.uploadApk(emptyFile, null)
         }
     }
 
     @Test
     fun `uploadApk should throw exception when file size exceeds limit`() {
-        // Given
-        whenever(multipartFile.isEmpty).thenReturn(false)
-        whenever(multipartFile.size).thenReturn(maxFileSize + 1)
+        val service = createService(100L)
 
-        // When & Then
         assertThrows<InvalidFileException> {
-            apkVersionService.uploadApk(multipartFile, "1.0.0", 100, null)
+            service.uploadApk(apkFixture("valid-utf16.apk"), null)
+        }
+    }
+
+    @Test
+    fun `uploadApk should throw exception when file is not an APK`() {
+        assertThrows<InvalidFileException> {
+            apkVersionService.uploadApk(apkFixture("no-manifest.apk"), null)
         }
     }
 
     @Test
     fun `uploadApk should throw exception when version already exists`() {
-        // Given
-        val version = "1.0.0"
-        whenever(multipartFile.isEmpty).thenReturn(false)
-        whenever(multipartFile.size).thenReturn(1000L)
-        whenever(multipartFile.contentType).thenReturn("application/vnd.android.package-archive")
-        whenever(apkVersionRepository.existsByVersion(version)).thenReturn(true)
+        whenever(apkVersionRepository.existsByVersion("1.2.3")).thenReturn(true)
 
-        // When & Then
         assertThrows<DuplicateResourceException> {
-            apkVersionService.uploadApk(multipartFile, version, 100, null)
+            apkVersionService.uploadApk(apkFixture("valid-utf16.apk"), null)
+        }
+    }
+
+    @Test
+    fun `uploadApk should throw exception when version code already exists`() {
+        whenever(apkVersionRepository.existsByVersion("1.2.3")).thenReturn(false)
+        whenever(apkVersionRepository.existsByVersionCode(10203)).thenReturn(true)
+
+        assertThrows<DuplicateResourceException> {
+            apkVersionService.uploadApk(apkFixture("valid-utf16.apk"), null)
         }
     }
 
