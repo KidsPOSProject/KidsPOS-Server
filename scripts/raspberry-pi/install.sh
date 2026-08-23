@@ -62,7 +62,7 @@ JAVA_MAJOR=$(java -version 2>&1 | sed -n 's/.*version "\([0-9][0-9]*\).*/\1/p' |
 log "アプリケーションディレクトリを準備します: $APP_DIR"
 mkdir -p "$APP_DIR" "${APP_DIR}/backup"
 
-for script in update-app.sh doctor.sh; do
+for script in update-app.sh doctor.sh upload-apk.sh; do
     if [ -f "${SCRIPT_DIR}/${script}" ]; then
         cp "${SCRIPT_DIR}/${script}" "${APP_DIR}/${script}"
         chmod +x "${APP_DIR}/${script}"
