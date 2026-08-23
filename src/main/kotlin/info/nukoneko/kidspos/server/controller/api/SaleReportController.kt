@@ -1,5 +1,8 @@
 package info.nukoneko.kidspos.server.controller.api
 
+import info.nukoneko.kidspos.server.controller.dto.response.SaleSummaryResponse
+import info.nukoneko.kidspos.server.service.ReportPeriod
+import info.nukoneko.kidspos.server.service.SaleAggregationService
 import info.nukoneko.kidspos.server.service.SaleExcelReportService
 import info.nukoneko.kidspos.server.service.SaleReportService
 import org.slf4j.LoggerFactory
@@ -9,16 +12,40 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
 
 @RestController
 @RequestMapping("/api/reports")
 class SaleReportController(
     private val saleReportService: SaleReportService,
     private val saleExcelReportService: SaleExcelReportService,
+    private val saleAggregationService: SaleAggregationService,
 ) {
     private val logger = LoggerFactory.getLogger(SaleReportController::class.java)
     private val dateFormat = SimpleDateFormat("yyyyMMdd")
+
+    @GetMapping("/sales/summary")
+    fun getSalesSummary(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: Date,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: Date,
+        @RequestParam(required = false) storeId: Int?,
+    ): ResponseEntity<SaleSummaryResponse> = ResponseEntity.ok(saleAggregationService.summaryResponse(startDate, endDate, storeId))
+
+    @GetMapping("/sales/summary/today")
+    fun getTodaySalesSummary(
+        @RequestParam(required = false) storeId: Int?,
+    ): ResponseEntity<SaleSummaryResponse> {
+        val today = Date()
+        return getSalesSummary(today, today, storeId)
+    }
+
+    @GetMapping("/sales/summary/month")
+    fun getMonthlySalesSummary(
+        @RequestParam year: Int,
+        @RequestParam month: Int,
+        @RequestParam(required = false) storeId: Int?,
+    ): ResponseEntity<SaleSummaryResponse> =
+        getSalesSummary(ReportPeriod.monthStart(year, month), ReportPeriod.monthEnd(year, month), storeId)
 
     @GetMapping("/sales/pdf")
     fun downloadSalesReport(
@@ -55,19 +82,8 @@ class SaleReportController(
     fun downloadTodaySalesReport(
         @RequestParam(required = false) storeId: Int?,
     ): ResponseEntity<ByteArray> {
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val startDate = calendar.time
-
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        val endDate = calendar.time
-
-        return downloadSalesReport(startDate, endDate, storeId)
+        val today = Date()
+        return downloadSalesReport(today, today, storeId)
     }
 
     @GetMapping("/sales/pdf/month")
@@ -76,20 +92,8 @@ class SaleReportController(
         @RequestParam month: Int,
         @RequestParam(required = false) storeId: Int?,
     ): ResponseEntity<ByteArray> {
-        val calendar = Calendar.getInstance()
-        calendar.set(year, month - 1, 1, 0, 0, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val startDate = calendar.time
-
-        calendar.add(Calendar.MONTH, 1)
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        val endDate = calendar.time
-
         logger.info("Generating monthly sales report for {}/{}", year, month)
-        return downloadSalesReport(startDate, endDate, storeId)
+        return downloadSalesReport(ReportPeriod.monthStart(year, month), ReportPeriod.monthEnd(year, month), storeId)
     }
 
     @GetMapping("/sales/excel")
@@ -127,19 +131,8 @@ class SaleReportController(
     fun downloadTodaySalesExcelReport(
         @RequestParam(required = false) storeId: Int?,
     ): ResponseEntity<ByteArray> {
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val startDate = calendar.time
-
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        val endDate = calendar.time
-
-        return downloadSalesExcelReport(startDate, endDate, storeId)
+        val today = Date()
+        return downloadSalesExcelReport(today, today, storeId)
     }
 
     @GetMapping("/sales/excel/month")
@@ -148,20 +141,8 @@ class SaleReportController(
         @RequestParam month: Int,
         @RequestParam(required = false) storeId: Int?,
     ): ResponseEntity<ByteArray> {
-        val calendar = Calendar.getInstance()
-        calendar.set(year, month - 1, 1, 0, 0, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val startDate = calendar.time
-
-        calendar.add(Calendar.MONTH, 1)
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        val endDate = calendar.time
-
         logger.info("Generating monthly sales Excel report for {}/{}", year, month)
-        return downloadSalesExcelReport(startDate, endDate, storeId)
+        return downloadSalesExcelReport(ReportPeriod.monthStart(year, month), ReportPeriod.monthEnd(year, month), storeId)
     }
 
     private fun buildFileName(

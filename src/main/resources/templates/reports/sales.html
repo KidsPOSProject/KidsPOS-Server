@@ -54,6 +54,9 @@
                                                 </div>
                                                 <div class="col-md-3 d-flex align-items-end">
                                                     <div class="btn-group w-100" role="group">
+                                                        <button type="button" class="btn btn-primary btn-sm" onclick="loadSummary()">
+                                                            <i class="fas fa-calculator"></i> 集計
+                                                        </button>
                                                         <button type="button" class="btn btn-danger btn-sm" onclick="downloadReport('pdf', 'range')">
                                                             <i class="fas fa-file-pdf"></i> PDF
                                                         </button>
@@ -64,6 +67,107 @@
                                                 </div>
                                             </div>
                                         </form>
+                                    </div>
+                                </div>
+
+                                <!-- 集計結果 -->
+                                <div class="card mb-4">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0"><i class="fas fa-chart-bar"></i> 集計結果</h5>
+                                        <small class="text-muted" id="summaryPeriod">-</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="summaryLoading" class="text-center text-muted py-3">
+                                            <i class="fas fa-spinner fa-spin"></i> 読み込み中...
+                                        </div>
+                                        <div id="summaryError" class="alert alert-danger d-none" role="alert"></div>
+                                        <div id="summaryBody" class="d-none">
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-6 col-lg-3">
+                                                    <div class="border rounded p-3 h-100">
+                                                        <div class="text-muted small">総売上金額</div>
+                                                        <div class="fs-3 fw-bold" id="statTotalAmount">-</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-lg-3">
+                                                    <div class="border rounded p-3 h-100">
+                                                        <div class="text-muted small">取引件数</div>
+                                                        <div class="fs-3 fw-bold" id="statTotalSales">-</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-lg-3">
+                                                    <div class="border rounded p-3 h-100">
+                                                        <div class="text-muted small">販売点数</div>
+                                                        <div class="fs-3 fw-bold" id="statTotalItemCount">-</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-lg-3">
+                                                    <div class="border rounded p-3 h-100">
+                                                        <div class="text-muted small">平均客単価</div>
+                                                        <div class="fs-3 fw-bold" id="statAverageAmount">-</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <ul class="nav nav-tabs" role="tablist">
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabDaily" type="button" role="tab">日別</button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabItems" type="button" role="tab">商品別</button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabStores" type="button" role="tab">店舗別</button>
+                                                </li>
+                                            </ul>
+                                            <div class="tab-content pt-3">
+                                                <div class="tab-pane fade show active" id="tabDaily" role="tabpanel">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-striped align-middle">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>日付</th>
+                                                                <th class="text-end">件数</th>
+                                                                <th class="text-end">点数</th>
+                                                                <th class="text-end">売上金額</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody id="dailyBody"></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                                <div class="tab-pane fade" id="tabItems" role="tabpanel">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-striped align-middle">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>商品名</th>
+                                                                <th class="text-end">単価</th>
+                                                                <th class="text-end">販売数</th>
+                                                                <th class="text-end">売上金額</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody id="itemsBody"></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                                <div class="tab-pane fade" id="tabStores" role="tabpanel">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-striped align-middle">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>店舗名</th>
+                                                                <th class="text-end">件数</th>
+                                                                <th class="text-end">点数</th>
+                                                                <th class="text-end">売上金額</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody id="storesBody"></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -189,7 +293,107 @@
 
         // 店舗リストを取得
         loadStores();
+
+        ['startDate', 'endDate', 'storeId'].forEach(function(id) {
+            document.getElementById(id).addEventListener('change', loadSummary);
+        });
+
+        loadSummary();
     });
+
+    const yenFormatter = new Intl.NumberFormat('ja-JP');
+
+    function yen(value) {
+        return '¥' + yenFormatter.format(value);
+    }
+
+    function loadSummary() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const storeId = document.getElementById('storeId').value;
+
+        const loading = document.getElementById('summaryLoading');
+        const error = document.getElementById('summaryError');
+        const body = document.getElementById('summaryBody');
+
+        if (!startDate || !endDate) {
+            return;
+        }
+
+        loading.classList.remove('d-none');
+        error.classList.add('d-none');
+        body.classList.add('d-none');
+
+        const params = new URLSearchParams();
+        params.append('startDate', startDate);
+        params.append('endDate', endDate);
+        if (storeId) params.append('storeId', storeId);
+
+        fetch('/api/reports/sales/summary?' + params.toString())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('集計の取得に失敗しました (' + response.status + ')');
+                }
+                return response.json();
+            })
+            .then(summary => {
+                renderSummary(summary, startDate, endDate);
+                loading.classList.add('d-none');
+                body.classList.remove('d-none');
+            })
+            .catch(e => {
+                loading.classList.add('d-none');
+                error.textContent = e.message;
+                error.classList.remove('d-none');
+            });
+    }
+
+    function renderSummary(summary, startDate, endDate) {
+        document.getElementById('summaryPeriod').textContent = startDate + ' ～ ' + endDate;
+        document.getElementById('statTotalAmount').textContent = yen(summary.totalAmount);
+        document.getElementById('statTotalSales').textContent = yenFormatter.format(summary.totalSales) + ' 件';
+        document.getElementById('statTotalItemCount').textContent = yenFormatter.format(summary.totalItemCount) + ' 点';
+        document.getElementById('statAverageAmount').textContent = yen(summary.averageAmount);
+
+        renderRows('dailyBody', summary.daily, 4, function(row) {
+            return [row.date, yenFormatter.format(row.salesCount), yenFormatter.format(row.itemCount), yen(row.amount)];
+        });
+        renderRows('itemsBody', summary.items, 4, function(row) {
+            return [row.itemName, yen(row.unitPrice), yenFormatter.format(row.quantity), yen(row.amount)];
+        });
+        renderRows('storesBody', summary.stores, 4, function(row) {
+            return [row.storeName, yenFormatter.format(row.salesCount), yenFormatter.format(row.itemCount), yen(row.amount)];
+        });
+    }
+
+    function renderRows(tbodyId, rows, columnCount, toCells) {
+        const tbody = document.getElementById(tbodyId);
+        tbody.textContent = '';
+
+        if (!rows || rows.length === 0) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = columnCount;
+            td.className = 'text-center text-muted';
+            td.textContent = '対象期間のデータはありません';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        rows.forEach(function(row) {
+            const tr = document.createElement('tr');
+            toCells(row).forEach(function(value, index) {
+                const td = document.createElement('td');
+                if (index > 0) {
+                    td.className = 'text-end';
+                }
+                td.textContent = value;
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+    }
 
     // 店舗リストを取得
     function loadStores() {

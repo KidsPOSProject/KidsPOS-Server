@@ -22,6 +22,7 @@ data class SaleReportDetailData(
 
 data class SaleReportSummary(
     val totalSales: Int,
+    val totalItemCount: Int,
     val totalAmount: Int,
     val averageAmount: Double,
     val startDate: Date,
