@@ -9,13 +9,16 @@ import os
 import signal
 import threading
 import time
-from typing import Callable, Optional
+from typing import Callable, Dict, Optional, Tuple
 
 import config as config_module
 import health
 import layout
 
 logger = logging.getLogger("kidspos-display")
+
+STAGE_POLL = "状態の取得"
+STAGE_DRAW = "表示の更新"
 
 
 class Monitor:
@@ -67,6 +70,7 @@ class Runner:
         self._sleeper = sleeper or self._stop.wait
         self._previous: Optional[layout.DisplayState] = None
         self._last_drawn: Optional[float] = None
+        self._failures: Dict[str, Tuple[Tuple[str, str], int]] = {}
 
     @property
     def previous(self) -> Optional[layout.DisplayState]:
@@ -75,8 +79,36 @@ class Runner:
     def stop(self) -> None:
         self._stop.set()
 
-    def tick(self) -> layout.DisplayState:
-        state = self._monitor.poll()
+    def _note_failure(self, stage: str, exc: BaseException) -> None:
+        """同じ失敗が続く間はスタックトレースを繰り返さない.
+
+        数十秒おきに動き続けるため、抑制しないと journal が同一の
+        トレースで埋まって他のログが読めなくなる。
+        """
+        signature = (type(exc).__name__, str(exc))
+        previous = self._failures.get(stage)
+        if previous is not None and previous[0] == signature:
+            count = previous[1] + 1
+            self._failures[stage] = (signature, count)
+            logger.debug("%sに失敗しました（%d 回連続）: %s", stage, count, exc)
+            return
+
+        self._failures[stage] = (signature, 1)
+        logger.exception("%sに失敗しました", stage)
+
+    def _note_success(self, stage: str) -> None:
+        previous = self._failures.pop(stage, None)
+        if previous is not None:
+            logger.info("%sが回復しました（%d 回連続で失敗していました）", stage, previous[1])
+
+    def tick(self) -> Optional[layout.DisplayState]:
+        try:
+            state = self._monitor.poll()
+        except Exception as exc:
+            self._note_failure(STAGE_POLL, exc)
+            return self._previous
+        self._note_success(STAGE_POLL)
+
         now = self._clock()
         # ghosting を薄めるため、変化が無くても間隔を空けて描き直す
         stale = self._last_drawn is None or (now - self._last_drawn) >= self._config.refresh_interval
@@ -85,9 +117,10 @@ class Runner:
 
         try:
             self._device.show(self._render(state, self._config))
-        except Exception:
-            logger.exception("表示の更新に失敗しました")
+        except Exception as exc:
+            self._note_failure(STAGE_DRAW, exc)
             return state
+        self._note_success(STAGE_DRAW)
 
         self._previous = state
         self._last_drawn = now
@@ -129,6 +162,7 @@ def parse_args(argv=None) -> argparse.Namespace:
         help="e-Paper ではなく指定したパスに画像を保存する（実機が無い環境での確認用）",
     )
     parser.add_argument("--once", action="store_true", help="1 回だけ描画して終了する")
+    parser.add_argument("--clear", action="store_true", help="画面を白に戻して終了する（常駐を止めた後の消去用）")
     parser.add_argument("--verbose", action="store_true", help="デバッグログを出力する")
     return parser.parse_args(argv)
 
@@ -142,6 +176,17 @@ def main(argv=None) -> int:
 
     config = config_module.Config.from_env()
     device = build_device(args.output)
+
+    if args.clear:
+        try:
+            device.clear()
+        except Exception:
+            logger.exception("画面の消去に失敗しました")
+            return 1
+        finally:
+            device.close()
+        return 0
+
     runner = Runner(config, device, build_render())
 
     for name in ("SIGTERM", "SIGINT"):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import http.client
 import json
 import logging
 import socket
@@ -41,15 +42,17 @@ def get_local_ipv4(probe_host: str, probe_port: int) -> Optional[str]:
     UDP ソケットの connect はパケットを送出しないため、外部への到達性がなくても
     OS のルーティング結果だけを取り出せる。
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock = None
     try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.connect((probe_host, probe_port))
         ip = sock.getsockname()[0]
     except OSError as exc:
         logger.debug("IPv4 アドレスを取得できませんでした: %s", exc)
         return None
     finally:
-        sock.close()
+        if sock is not None:
+            sock.close()
 
     if not ip or ip.startswith(LOOPBACK_PREFIX):
         return None
@@ -60,7 +63,7 @@ def fetch_status(url: str, timeout: int) -> ServerStatus:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as response:
             body = response.read()
-    except (urllib.error.URLError, OSError, ValueError) as exc:
+    except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError) as exc:
         logger.debug("ステータスを取得できませんでした: %s", exc)
         return UNREACHABLE
 
@@ -114,6 +117,10 @@ class Debouncer:
 
     一度の通信失敗で表示が書き換わると e-Paper の寿命を無駄に削るため、
     連続回数がしきい値に達するまで前の状態を保つ。
+
+    未確定（None）からの遷移だけは非対称にしてある。成功は待たせても得が無いので
+    即座に採用し、失敗は起動直後の一時的な未起動を × と誤表示しないよう
+    fail_threshold 回続くまで未確定のままにする。
     """
 
     def __init__(self, fail_threshold: int, ok_threshold: int) -> None:
@@ -141,7 +148,10 @@ class Debouncer:
             self._streak = 1
 
         if self._value is None:
-            self._value = observed
+            if observed:
+                self._value = True
+            elif self._streak >= self._fail_threshold:
+                self._value = False
         elif observed != self._value:
             threshold = self._ok_threshold if observed else self._fail_threshold
             if self._streak >= threshold:

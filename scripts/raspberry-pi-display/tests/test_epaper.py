@@ -44,6 +44,33 @@ class EPaperTest(unittest.TestCase):
         self.assertEqual(1, create.call_count)
         self.assertEqual(2, driver.init.call_count)
 
+    def test_clear_initialises_whitens_and_sleeps(self):
+        panel = epaper.EPaper()
+        driver = mock.MagicMock()
+        panel._create = lambda: driver
+
+        panel.clear()
+
+        driver.init.assert_called_once_with()
+        driver.Clear.assert_called_once_with(epaper.WHITE)
+        driver.display.assert_not_called()
+        driver.sleep.assert_called_once_with()
+
+    def test_clear_reports_a_missing_driver(self):
+        with self.assertRaises(epaper.EPaperUnavailable):
+            epaper.EPaper().clear()
+
+    def test_clear_reuses_the_driver_created_by_show(self):
+        panel = epaper.EPaper()
+        driver = mock.MagicMock()
+        create = mock.MagicMock(return_value=driver)
+        panel._create = create
+
+        panel.show("image")
+        panel.clear()
+
+        self.assertEqual(1, create.call_count)
+
     def test_close_sleeps_the_panel(self):
         panel = epaper.EPaper()
         driver = mock.MagicMock()
@@ -78,6 +105,15 @@ class FileEPaperTest(unittest.TestCase):
             epaper.FileEPaper(path).show(image)
 
             image.save.assert_called_once_with(path)
+
+    def test_clear_leaves_no_file_behind(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "preview.png")
+
+            with self.assertLogs(epaper.logger, level="INFO"):
+                epaper.FileEPaper(path).clear()
+
+            self.assertFalse(os.path.exists(path))
 
     def test_close_does_nothing(self):
         epaper.FileEPaper("/tmp/preview.png").close()

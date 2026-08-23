@@ -6,6 +6,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+WHITE = 0xFF
+
 
 class EPaperUnavailable(RuntimeError):
     pass
@@ -35,6 +37,13 @@ class EPaper:
         self._epd.display(self._epd.getbuffer(image))
         self._epd.sleep()
 
+    def clear(self) -> None:
+        if self._epd is None:
+            self._epd = self._create()
+        self._epd.init()
+        self._epd.Clear(WHITE)
+        self._epd.sleep()
+
     def close(self) -> None:
         if self._epd is None:
             return
@@ -54,6 +63,9 @@ class FileEPaper:
     def show(self, image) -> None:
         image.save(self._path)
         logger.info("表示内容を保存しました: %s", self._path)
+
+    def clear(self) -> None:
+        logger.info("ファイル出力では消去する画面がありません: %s", self._path)
 
     def close(self) -> None:
         return

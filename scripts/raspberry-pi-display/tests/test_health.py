@@ -1,3 +1,4 @@
+import http.client
 import io
 import json
 import os
@@ -103,6 +104,17 @@ class FetchStatusTest(unittest.TestCase):
         with mock.patch.object(health.urllib.request, "urlopen", side_effect=socket.timeout()):
             self.assertFalse(health.fetch_status("http://127.0.0.1:8080/api/status", 3).reachable)
 
+    def test_malformed_status_line_is_unreachable(self):
+        error = http.client.BadStatusLine("GARBAGE")
+        with mock.patch.object(health.urllib.request, "urlopen", side_effect=error):
+            self.assertFalse(health.fetch_status("http://127.0.0.1:8080/api/status", 3).reachable)
+
+    def test_truncated_body_is_unreachable(self):
+        response = self._response(b"")
+        response.read.side_effect = http.client.IncompleteRead(b"12345", 95)
+        with mock.patch.object(health.urllib.request, "urlopen", return_value=response):
+            self.assertFalse(health.fetch_status("http://127.0.0.1:8080/api/status", 3).reachable)
+
     def test_broken_json_is_unreachable(self):
         with mock.patch.object(health.urllib.request, "urlopen", return_value=self._response(b"<html>")):
             with self.assertLogs(health.logger, level="WARNING"):
@@ -145,6 +157,10 @@ class LocalIpv4Test(unittest.TestCase):
 
         sock.close.assert_called_once_with()
 
+    def test_socket_creation_failure_returns_none(self):
+        with mock.patch.object(health.socket, "socket", side_effect=OSError("too many open files")):
+            self.assertIsNone(health.get_local_ipv4("1.1.1.1", 80))
+
     def test_udp_socket_is_used_so_no_packet_is_sent(self):
         with mock.patch.object(health.socket, "socket") as factory:
             factory.return_value = self._socket("192.168.11.20")
@@ -154,8 +170,22 @@ class LocalIpv4Test(unittest.TestCase):
 
 
 class DebouncerTest(unittest.TestCase):
-    def test_first_observation_is_adopted_immediately(self):
+    def test_first_success_is_adopted_immediately(self):
         debouncer = health.Debouncer(fail_threshold=3, ok_threshold=2)
+
+        self.assertTrue(debouncer.update(True))
+
+    def test_first_failure_stays_unknown_until_the_fail_threshold(self):
+        debouncer = health.Debouncer(fail_threshold=3, ok_threshold=2)
+
+        self.assertIsNone(debouncer.update(False))
+        self.assertIsNone(debouncer.update(False))
+        self.assertFalse(debouncer.update(False))
+
+    def test_a_success_while_unknown_cancels_the_failure_streak(self):
+        debouncer = health.Debouncer(fail_threshold=3, ok_threshold=2)
+        debouncer.update(False)
+        debouncer.update(False)
 
         self.assertTrue(debouncer.update(True))
 
@@ -202,12 +232,23 @@ class DebouncerTest(unittest.TestCase):
         self.assertIsNone(debouncer.update(None))
         self.assertIsNone(debouncer.value)
 
-    def test_value_is_adopted_again_after_unknown(self):
+    def test_failure_after_unknown_needs_the_fail_threshold_again(self):
         debouncer = health.Debouncer(fail_threshold=3, ok_threshold=2)
         debouncer.update(True)
         debouncer.update(None)
 
+        self.assertIsNone(debouncer.update(False))
+        self.assertIsNone(debouncer.update(False))
         self.assertFalse(debouncer.update(False))
+
+    def test_success_after_unknown_is_adopted_immediately(self):
+        debouncer = health.Debouncer(fail_threshold=3, ok_threshold=2)
+        debouncer.update(False)
+        debouncer.update(False)
+        debouncer.update(False)
+        debouncer.update(None)
+
+        self.assertTrue(debouncer.update(True))
 
     def test_thresholds_below_one_are_clamped(self):
         debouncer = health.Debouncer(fail_threshold=0, ok_threshold=0)

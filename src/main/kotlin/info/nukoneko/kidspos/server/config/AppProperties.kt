@@ -14,6 +14,7 @@ data class AppProperties(
         data class PrinterProperties(
             val host: String = "localhost",
             val port: Int = 9100,
+            val statusCacheSeconds: Int = 15,
         )
     }
 
