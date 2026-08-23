@@ -16,9 +16,10 @@ Raspberry Pi 上で KidsPOS Server を運用するためのファイル一式で
 |---|---|
 | install.sh | 初回セットアップ（ディレクトリ作成、systemd ユニット配置、自動起動有効化、jar 導入） |
 | update-app.sh | jar の更新（バックアップ、差し替え、ヘルスチェック、失敗時の巻き戻し） |
+| upload-apk.sh | Android アプリの APK をサーバーへ登録（GitHub Releases から取得、または持ち込んだファイル） |
 | doctor.sh | 稼働診断（Java、jar、サービス、ヘルスチェック、DB、ディスク、ログ、時刻） |
 | kidspos-server.service | systemd ユニットのテンプレート |
-| test-install.sh / test-update-app.sh / test-doctor.sh | 上記スクリプトの自動テスト |
+| test-install.sh / test-update-app.sh / test-upload-apk.sh / test-doctor.sh | 上記スクリプトの自動テスト |
 
 ## 初回セットアップ
 
@@ -72,6 +73,36 @@ USB メモリやイントラネット経由（scp など）で Raspberry Pi に�
 sudo /opt/kidspos/update-app.sh /path/to/app.jar
 ```
 
+## Android アプリ（APK）の登録
+
+タブレットのアプリ更新はサーバーに登録された APK を配信する仕組みです。
+ブラウザの /apk 画面からアップロードするほか、コマンドからも登録できます。
+バージョン名とバージョンコードは APK から自動で読み取られるため、指定は不要です。
+
+### ネット接続時
+
+```bash
+/opt/kidspos/upload-apk.sh
+```
+
+KidsPOS-for-Android の GitHub Releases から最新の APK を取得し、そのままサーバーへ登録します。
+リリースノートにはリリースのタグと本文が入ります（--notes で上書きできます）。
+同じバージョンが登録済みの場合は何もせず正常終了します。
+
+### オフライン時（APK を持ち込む場合）
+
+```bash
+/opt/kidspos/upload-apk.sh /path/to/kidspos.apk
+```
+
+### 別の端末から登録する場合
+
+```bash
+/opt/kidspos/upload-apk.sh --server http://192.168.100.9:8080 /path/to/kidspos.apk
+```
+
+登録後、タブレットの設定画面からアップデートを実行してください。
+
 ## 状況の診断
 
 不調のときや更新の前後に実行すると、どこが原因かを OK / 注意 / NG で切り分けられます。
@@ -119,6 +150,9 @@ Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョ�
 | KIDSPOS_SERVICE | kidspos-server | install / update / doctor |
 | KIDSPOS_HEALTH_URL | http://localhost:8080/api/status | install / update / doctor |
 | KIDSPOS_REPO | KidsPOSProject/KidsPOS-Server | update / doctor |
+| KIDSPOS_ANDROID_REPO | KidsPOSProject/KidsPOS-for-Android | upload-apk |
+| KIDSPOS_SERVER_URL | http://localhost:8080 | upload-apk |
+| KIDSPOS_UPLOAD_TIMEOUT | 600 | upload-apk |
 | KIDSPOS_REQUIRED_JAVA_MAJOR | 21 | install / doctor |
 | KIDSPOS_HEALTH_RETRIES | update は 600、install は 300 | install / update |
 | KIDSPOS_HEALTH_TIMEOUT | 10 | install / update |
@@ -136,5 +170,6 @@ Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョ�
 ```bash
 bash scripts/raspberry-pi/test-install.sh
 bash scripts/raspberry-pi/test-update-app.sh
+bash scripts/raspberry-pi/test-upload-apk.sh
 bash scripts/raspberry-pi/test-doctor.sh
 ```
