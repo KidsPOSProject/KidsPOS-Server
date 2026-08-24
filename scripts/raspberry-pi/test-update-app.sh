@@ -54,6 +54,8 @@ setup() {
     export HEALTH_OK_FILE="${WORK}/health-ok"
     export FAIL_START_ONCE_FILE="${WORK}/fail-start-once"
     export RELEASE_JSON_FILE="${WORK}/release.json"
+    export SCRIPTS_TARBALL_FILE="${WORK}/scripts.tar.gz"
+    export SCRIPTS_DOWNLOAD_EXIT=0
     export UPLOAD_APK_EXIT=0
     : > "$CALL_LOG"
 
@@ -79,6 +81,17 @@ URL="${@: -1}"
 case "$URL" in
     https://api.github.com/*)
         cat "$RELEASE_JSON_FILE"
+        exit 0
+        ;;
+    https://example.invalid/kidspos-scripts.tar.gz)
+        [ "${SCRIPTS_DOWNLOAD_EXIT:-0}" = "0" ] || exit "${SCRIPTS_DOWNLOAD_EXIT}"
+        OUT=""
+        PREV=""
+        for arg in "$@"; do
+            [ "$PREV" = "-o" ] && OUT="$arg"
+            PREV="$arg"
+        done
+        cp "$SCRIPTS_TARBALL_FILE" "$OUT"
         exit 0
         ;;
     https://example.invalid/*)
@@ -126,6 +139,40 @@ EOF
 write_release_json() {
     printf '[{"tag_name":"%s","draft":false,"prerelease":false,"assets":[{"name":"app.jar","browser_download_url":"https://example.invalid/app.jar"}]}]' \
         "$1" > "$RELEASE_JSON_FILE"
+}
+
+write_release_json_with_scripts() {
+    printf '[{"tag_name":"%s","draft":false,"prerelease":false,"assets":[{"name":"app.jar","browser_download_url":"https://example.invalid/app.jar"},{"name":"kidspos-scripts.tar.gz","browser_download_url":"https://example.invalid/kidspos-scripts.tar.gz"}]}]' \
+        "$1" > "$RELEASE_JSON_FILE"
+}
+
+make_scripts_tarball() {
+    local names=("$@")
+    [ "${#names[@]}" -gt 0 ] || names=(update-app.sh doctor.sh upload-apk.sh)
+    local src="${WORK}/scripts-src/raspberry-pi"
+    rm -rf "${WORK}/scripts-src"
+    mkdir -p "$src"
+    local name
+    for name in "${names[@]}"; do
+        if [ "$name" = "upload-apk.sh" ]; then
+            cat > "${src}/${name}" <<'EOF'
+#!/usr/bin/env bash
+echo "upload-apk-new $*" >> "$CALL_LOG"
+exit 0
+EOF
+        else
+            printf '#!/usr/bin/env bash\n# new-script-marker\n' > "${src}/${name}"
+        fi
+    done
+    tar -czf "$SCRIPTS_TARBALL_FILE" -C "${WORK}/scripts-src" raspberry-pi
+}
+
+assert_scripts_untouched() {
+    if [ -e "${APP_DIR}/update-app.sh" ] || [ -e "${APP_DIR}/doctor.sh" ]; then
+        fail_assert "$1"
+    else
+        pass "$1"
+    fi
 }
 
 run_update() {
@@ -380,6 +427,180 @@ test_apk_sync_not_run_when_rolled_back() {
     teardown
 }
 
+test_self_update_replaces_scripts() {
+    setup "リリースに同梱されたスクリプトで自身が差し替えられる"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    install_upload_apk_stub
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${APP_DIR}/update-app.sh" "new-script-marker" "update-app.sh が差し替わる"
+    assert_contains "${APP_DIR}/doctor.sh" "new-script-marker" "doctor.sh が差し替わる"
+    assert_contains "${APP_DIR}/upload-apk.sh" "upload-apk-new" "upload-apk.sh が差し替わる"
+    assert_eq "v9.9.9" "$(cat "${APP_DIR}/.installed-scripts-version")" "スクリプトのバージョンが記録される"
+    if [ -x "${APP_DIR}/update-app.sh" ]; then
+        pass "差し替えたスクリプトに実行権限が付く"
+    else
+        fail_assert "差し替えたスクリプトに実行権限が付く"
+    fi
+    if [ -e "${APP_DIR}/.scripts-update" ]; then
+        fail_assert "作業ディレクトリが後片付けされる"
+    else
+        pass "作業ディレクトリが後片付けされる"
+    fi
+    teardown
+}
+
+test_self_update_runs_before_apk_sync() {
+    setup "APK の確認は差し替え後の upload-apk.sh で行われる"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    install_upload_apk_stub
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "$CALL_LOG" "upload-apk-new --server http://localhost:8080" "新しい APK 登録スクリプトが呼ばれる"
+    teardown
+}
+
+test_self_update_when_jar_already_latest() {
+    setup "jar が最新でもスクリプトが古ければ差し替えられる"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    install_upload_apk_stub
+    echo "v9.9.9" > "${APP_DIR}/.installed-version"
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "すでに最新です" "最新である旨が出力される"
+    assert_contains "${APP_DIR}/doctor.sh" "new-script-marker" "doctor.sh が差し替わる"
+    assert_not_contains "$CALL_LOG" "systemctl" "サービスは操作されない"
+    teardown
+}
+
+test_self_update_skipped_when_scripts_version_matches() {
+    setup "スクリプトが同じバージョンなら再取得しない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    install_upload_apk_stub
+    echo "v9.9.9" > "${APP_DIR}/.installed-version"
+    echo "v9.9.9" > "${APP_DIR}/.installed-scripts-version"
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_not_contains "$CALL_LOG" "kidspos-scripts.tar.gz" "スクリプトはダウンロードされない"
+    assert_contains "$CALL_LOG" "upload-apk --server http://localhost:8080" "既存の APK 登録スクリプトが呼ばれる"
+    teardown
+}
+
+test_self_update_skipped_with_flag() {
+    setup "--skip-self-update を付けるとスクリプトは差し替えられない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    run_update --skip-self-update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "サーバーの更新は完了する"
+    assert_not_contains "$CALL_LOG" "kidspos-scripts.tar.gz" "スクリプトはダウンロードされない"
+    assert_scripts_untouched "スクリプトは配置されない"
+    teardown
+}
+
+test_self_update_skipped_when_asset_missing() {
+    setup "リリースにスクリプトが無くても更新は成功する"
+    touch "$HEALTH_OK_FILE"
+    write_release_json "v9.9.9"
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "kidspos-scripts.tar.gz が無いためスクリプトの更新は行いません" "スキップした旨が出力される"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "サーバーの更新は完了する"
+    assert_scripts_untouched "スクリプトは配置されない"
+    teardown
+}
+
+test_self_update_download_failure_does_not_fail_update() {
+    setup "スクリプトの取得に失敗してもサーバーの更新は成功扱いになる"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    export SCRIPTS_DOWNLOAD_EXIT=22
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "スクリプトの取得に失敗しました" "警告が出力される"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "サーバーの更新は完了扱いになる"
+    assert_scripts_untouched "スクリプトは配置されない"
+    if [ -e "${APP_DIR}/.installed-scripts-version" ]; then
+        fail_assert "スクリプトのバージョンは記録されない"
+    else
+        pass "スクリプトのバージョンは記録されない"
+    fi
+    teardown
+}
+
+test_self_update_extract_failure_does_not_fail_update() {
+    setup "スクリプトの展開に失敗してもサーバーの更新は成功扱いになる"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    printf 'not-a-tarball' > "$SCRIPTS_TARBALL_FILE"
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "スクリプトの展開に失敗しました" "警告が出力される"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "サーバーの更新は完了扱いになる"
+    assert_scripts_untouched "スクリプトは配置されない"
+    teardown
+}
+
+test_self_update_partial_tarball_is_not_recorded() {
+    setup "配布物に足りないスクリプトがあればバージョンを記録しない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball update-app.sh upload-apk.sh
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "配布物に含まれていません: doctor.sh" "不足が警告される"
+    assert_contains "${APP_DIR}/update-app.sh" "new-script-marker" "含まれている分は差し替わる"
+    if [ -e "${APP_DIR}/.installed-scripts-version" ]; then
+        fail_assert "スクリプトのバージョンは記録されない"
+    else
+        pass "スクリプトのバージョンは記録されない"
+    fi
+    teardown
+}
+
+test_self_update_skipped_for_local_jar() {
+    setup "持ち込んだ jar での更新ではスクリプトは差し替えられない"
+    touch "$HEALTH_OK_FILE"
+    run_update "${WORK}/new.jar"
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "サーバーの更新は完了する"
+    assert_scripts_untouched "スクリプトは配置されない"
+    teardown
+}
+
+test_self_update_not_run_when_rolled_back() {
+    setup "巻き戻しが起きたときはスクリプトは差し替えられない"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    run_update
+
+    assert_eq 1 "$RC" "終了コードが 1"
+    assert_contains "${WORK}/out.log" "巻き戻しを実行します" "巻き戻しログが出力される"
+    assert_not_contains "$CALL_LOG" "kidspos-scripts.tar.gz" "スクリプトはダウンロードされない"
+    assert_scripts_untouched "スクリプトは配置されない"
+    teardown
+}
+
 test_success_path
 test_health_check_failure_rolls_back
 test_start_failure_rolls_back
@@ -396,6 +617,17 @@ test_apk_sync_skipped_with_flag
 test_apk_sync_skipped_for_local_jar
 test_apk_sync_skipped_when_script_missing
 test_apk_sync_not_run_when_rolled_back
+test_self_update_replaces_scripts
+test_self_update_runs_before_apk_sync
+test_self_update_when_jar_already_latest
+test_self_update_skipped_when_scripts_version_matches
+test_self_update_skipped_with_flag
+test_self_update_skipped_when_asset_missing
+test_self_update_download_failure_does_not_fail_update
+test_self_update_extract_failure_does_not_fail_update
+test_self_update_partial_tarball_is_not_recorded
+test_self_update_skipped_for_local_jar
+test_self_update_not_run_when_rolled_back
 
 echo ""
 echo "passed: $PASS_COUNT, failed: $FAIL_COUNT"

@@ -54,8 +54,9 @@ scp -r scripts/raspberry-pi pi@kidspos-server.local:~/kidspos-scripts
 オフライン運用の場合はローカルマシンでダウンロードして持ち込みます:
 
 ```bash
-curl -fL -o app.jar \
-  https://github.com/KidsPOSProject/KidsPOS-Server/releases/latest/download/app.jar
+JAR_URL=$(curl -fsSL "https://api.github.com/repos/KidsPOSProject/KidsPOS-Server/releases?per_page=20" \
+  | grep -o '"browser_download_url": *"[^"]*/app\.jar"' | head -1 | cut -d'"' -f4)
+curl -fL -o app.jar "$JAR_URL"
 
 scp app.jar pi@kidspos-server.local:~/app.jar
 ```

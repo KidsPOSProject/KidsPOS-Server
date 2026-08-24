@@ -11,19 +11,24 @@ HEALTH_TIMEOUT="${KIDSPOS_HEALTH_TIMEOUT:-10}"
 BACKUP_KEEP="${KIDSPOS_BACKUP_KEEP:-5}"
 SERVER_URL="${KIDSPOS_SERVER_URL:-http://localhost:8080}"
 ASSET_NAME="app.jar"
+SCRIPTS_ASSET="kidspos-scripts.tar.gz"
+MANAGED_SCRIPTS="update-app.sh doctor.sh upload-apk.sh"
 
 JAR_PATH="${APP_DIR}/${JAR_NAME}"
 DB_PATH="${APP_DIR}/kidspos.db"
 BACKUP_DIR="${APP_DIR}/backup"
 VERSION_FILE="${APP_DIR}/.installed-version"
+SCRIPTS_VERSION_FILE="${APP_DIR}/.installed-scripts-version"
+STAGE_DIR="${APP_DIR}/.scripts-update"
 UPLOAD_SCRIPT="${APP_DIR}/upload-apk.sh"
 
 usage() {
     echo "Usage:"
-    echo "  sudo $0                  GitHub Releases から最新の ${ASSET_NAME} を取得して更新（要インターネット接続）"
-    echo "  sudo $0 <path/to/jar>    手元に持ち込んだ jar ファイルで更新（オフライン運用）"
-    echo "  sudo $0 --force          同一バージョンでも強制的に再インストール"
-    echo "  sudo $0 --skip-apk       サーバーの更新のみ行い、APK の確認は行わない"
+    echo "  sudo $0                    GitHub Releases から最新の ${ASSET_NAME} を取得して更新（要インターネット接続）"
+    echo "  sudo $0 <path/to/jar>      手元に持ち込んだ jar ファイルで更新（オフライン運用）"
+    echo "  sudo $0 --force            同一バージョンでも強制的に再インストール"
+    echo "  sudo $0 --skip-apk         サーバーの更新のみ行い、APK の確認は行わない"
+    echo "  sudo $0 --skip-self-update スクリプト自身の更新は行わない"
     exit 1
 }
 
@@ -32,11 +37,14 @@ fail() { echo "[update-app] ERROR: $*" >&2; exit 1; }
 
 FORCE=false
 SKIP_APK=false
+SKIP_SELF_UPDATE=false
 LOCAL_JAR=""
+SCRIPTS_URL=""
 for arg in "$@"; do
     case "$arg" in
         --force) FORCE=true ;;
         --skip-apk) SKIP_APK=true ;;
+        --skip-self-update) SKIP_SELF_UPDATE=true ;;
         -h|--help) usage ;;
         -*)
             echo "[update-app] 不明なオプション: $arg" >&2
@@ -45,6 +53,68 @@ for arg in "$@"; do
         *) LOCAL_JAR="$arg" ;;
     esac
 done
+
+# スクリプトの更新に失敗してもサーバーの更新は完了しているため、警告のみで成功扱いにする。
+# 成功した分だけ差し替え、全て成功したときだけバージョンを記録して次回の再試行に備える
+self_update() {
+    if [ "$SKIP_SELF_UPDATE" = true ]; then
+        return 0
+    fi
+    if [ -n "$LOCAL_JAR" ]; then
+        return 0
+    fi
+    if [ -z "$SCRIPTS_URL" ]; then
+        log "リリースに ${SCRIPTS_ASSET} が無いためスクリプトの更新は行いません"
+        return 0
+    fi
+    local current
+    current=$(cat "$SCRIPTS_VERSION_FILE" 2>/dev/null || echo "none")
+    if [ "$current" = "$NEW_VERSION" ] && [ "$FORCE" = false ]; then
+        return 0
+    fi
+
+    log "スクリプトを更新します: $NEW_VERSION"
+    rm -rf "$STAGE_DIR"
+    if ! mkdir -p "$STAGE_DIR"; then
+        log "WARN: スクリプト更新用ディレクトリを作成できません: $STAGE_DIR"
+        return 0
+    fi
+    if ! curl -fL --retry 3 -o "${STAGE_DIR}/${SCRIPTS_ASSET}" "$SCRIPTS_URL"; then
+        log "WARN: スクリプトの取得に失敗しました。サーバーの更新は完了しています"
+        rm -rf "$STAGE_DIR"
+        return 0
+    fi
+    if ! tar -xzf "${STAGE_DIR}/${SCRIPTS_ASSET}" -C "$STAGE_DIR"; then
+        log "WARN: スクリプトの展開に失敗しました。サーバーの更新は完了しています"
+        rm -rf "$STAGE_DIR"
+        return 0
+    fi
+
+    local all_ok=true
+    local script src
+    for script in $MANAGED_SCRIPTS; do
+        src="${STAGE_DIR}/raspberry-pi/${script}"
+        if [ ! -f "$src" ]; then
+            log "WARN: 配布物に含まれていません: $script"
+            all_ok=false
+            continue
+        fi
+        chmod +x "$src"
+        # 実行中の自分自身を上書きすると bash の読み込みが壊れるため、
+        # 同一ファイルシステム上に展開してから mv で差し替える
+        if mv -f "$src" "${APP_DIR}/${script}"; then
+            log "更新しました: ${APP_DIR}/${script}"
+        else
+            log "WARN: 差し替えに失敗しました: ${APP_DIR}/${script}"
+            all_ok=false
+        fi
+    done
+    rm -rf "$STAGE_DIR"
+
+    if [ "$all_ok" = true ]; then
+        echo "$NEW_VERSION" > "$SCRIPTS_VERSION_FILE"
+    fi
+}
 
 # APK の登録に失敗してもサーバーの更新は完了しているため、警告のみで成功扱いにする
 sync_apk() {
@@ -82,24 +152,30 @@ if [ -n "$LOCAL_JAR" ]; then
 else
     command -v python3 >/dev/null || fail "python3 が必要です（Raspberry Pi OS には標準搭載）"
     log "GitHub Releases から最新の ${ASSET_NAME} を探しています..."
-    RELEASE_INFO=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases?per_page=20" | python3 -c '
-import json, sys
+    RELEASE_INFO=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases?per_page=20" |
+        ASSET_NAME="$ASSET_NAME" SCRIPTS_ASSET="$SCRIPTS_ASSET" python3 -c '
+import json, os, sys
+jar_name = os.environ["ASSET_NAME"]
+scripts_name = os.environ["SCRIPTS_ASSET"]
 for release in json.load(sys.stdin):
     if release.get("draft") or release.get("prerelease"):
         continue
-    for asset in release.get("assets", []):
-        if asset["name"] == "'"$ASSET_NAME"'":
-            print(release["tag_name"])
-            print(asset["browser_download_url"])
-            sys.exit(0)
+    assets = {a["name"]: a["browser_download_url"] for a in release.get("assets", [])}
+    if jar_name in assets:
+        print(release["tag_name"])
+        print(assets[jar_name])
+        print(assets.get(scripts_name, ""))
+        sys.exit(0)
 sys.exit(1)
 ') || fail "${ASSET_NAME} を含むリリースが見つかりません"
     NEW_VERSION=$(echo "$RELEASE_INFO" | sed -n 1p)
     DOWNLOAD_URL=$(echo "$RELEASE_INFO" | sed -n 2p)
+    SCRIPTS_URL=$(echo "$RELEASE_INFO" | sed -n 3p)
 
     CURRENT_VERSION=$(cat "$VERSION_FILE" 2>/dev/null || echo "none")
     if [ "$NEW_VERSION" = "$CURRENT_VERSION" ] && [ "$FORCE" = false ]; then
         log "すでに最新です（$CURRENT_VERSION）。強制更新は --force を付けてください。"
+        self_update
         sync_apk
         exit 0
     fi
@@ -175,4 +251,5 @@ done
 
 log "更新が完了しました: $NEW_VERSION"
 
+self_update
 sync_apk

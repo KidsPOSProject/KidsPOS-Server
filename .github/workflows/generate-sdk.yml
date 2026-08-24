@@ -84,13 +84,7 @@ jobs:
           path: ${{ env.SDK_ARTIFACT_ID }}-kotlin-${{ steps.version.outputs.SDK_VERSION }}.zip
           retention-days: 90
 
-      - name: Build application jar
-        run: |
-          ./gradlew bootJar -x test -x detekt
-          JAR_FILE=$(ls build/libs/server-*.jar | grep -v plain | head -1)
-          cp "$JAR_FILE" app.jar
-
-      - name: Create GitHub Release with SDK and app.jar assets
+      - name: Create GitHub Release with SDK asset
         id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -105,7 +99,7 @@ jobs:
           - apiVersion: ${API_VERSION}
           - 生成元コミット: ${GITHUB_SHA}
           - ジェネレーター: OpenAPI Generator ${OPENAPI_GENERATOR_VERSION} (kotlin / jvm-okhttp4)
-          - 同梱: app.jar（サーバー実行可能 jar。java -jar app.jar で起動）
+          - サーバー実行可能 jar は Release Server ワークフローの server-v* リリースで配布しています
           EOF
           )
           RELEASE_JSON=$(jq -n \
@@ -128,12 +122,6 @@ jobs:
             "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=${ASSET_NAME}" | jq -r '.id')
           echo "Uploaded asset ID: $ASSET_ID"
           echo "ASSET_ID=$ASSET_ID" >> "$GITHUB_OUTPUT"
-          APP_JAR_ASSET_ID=$(curl -sSf -X POST \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Content-Type: application/java-archive" \
-            --data-binary "@app.jar" \
-            "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?name=app.jar" | jq -r '.id')
-          echo "Uploaded app.jar asset ID: $APP_JAR_ASSET_ID"
 
   create-client-pr:
     name: Create PR on client repository
