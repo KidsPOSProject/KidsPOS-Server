@@ -9,18 +9,21 @@ HEALTH_URL="${KIDSPOS_HEALTH_URL:-http://localhost:8080/api/status}"
 HEALTH_RETRIES="${KIDSPOS_HEALTH_RETRIES:-600}"
 HEALTH_TIMEOUT="${KIDSPOS_HEALTH_TIMEOUT:-10}"
 BACKUP_KEEP="${KIDSPOS_BACKUP_KEEP:-5}"
+SERVER_URL="${KIDSPOS_SERVER_URL:-http://localhost:8080}"
 ASSET_NAME="app.jar"
 
 JAR_PATH="${APP_DIR}/${JAR_NAME}"
 DB_PATH="${APP_DIR}/kidspos.db"
 BACKUP_DIR="${APP_DIR}/backup"
 VERSION_FILE="${APP_DIR}/.installed-version"
+UPLOAD_SCRIPT="${APP_DIR}/upload-apk.sh"
 
 usage() {
     echo "Usage:"
     echo "  sudo $0                  GitHub Releases から最新の ${ASSET_NAME} を取得して更新（要インターネット接続）"
     echo "  sudo $0 <path/to/jar>    手元に持ち込んだ jar ファイルで更新（オフライン運用）"
     echo "  sudo $0 --force          同一バージョンでも強制的に再インストール"
+    echo "  sudo $0 --skip-apk       サーバーの更新のみ行い、APK の確認は行わない"
     exit 1
 }
 
@@ -28,10 +31,12 @@ log() { echo "[update-app] $*"; }
 fail() { echo "[update-app] ERROR: $*" >&2; exit 1; }
 
 FORCE=false
+SKIP_APK=false
 LOCAL_JAR=""
 for arg in "$@"; do
     case "$arg" in
         --force) FORCE=true ;;
+        --skip-apk) SKIP_APK=true ;;
         -h|--help) usage ;;
         -*)
             echo "[update-app] 不明なオプション: $arg" >&2
@@ -40,6 +45,25 @@ for arg in "$@"; do
         *) LOCAL_JAR="$arg" ;;
     esac
 done
+
+# APK の登録に失敗してもサーバーの更新は完了しているため、警告のみで成功扱いにする
+sync_apk() {
+    if [ "$SKIP_APK" = true ]; then
+        return 0
+    fi
+    if [ -n "$LOCAL_JAR" ]; then
+        log "オフライン更新のため APK の確認は行いません（登録する場合: ${UPLOAD_SCRIPT} <path/to/apk>）"
+        return 0
+    fi
+    if [ ! -x "$UPLOAD_SCRIPT" ]; then
+        log "APK 登録スクリプトが無いため APK の確認は行いません: $UPLOAD_SCRIPT"
+        return 0
+    fi
+    log "最新の APK を確認します"
+    if ! "$UPLOAD_SCRIPT" --server "$SERVER_URL"; then
+        log "WARN: APK の更新に失敗しました。サーバーの更新は完了しています"
+    fi
+}
 
 [ -d "$APP_DIR" ] || fail "アプリケーションディレクトリがありません: $APP_DIR"
 command -v curl >/dev/null || fail "curl が必要です"
@@ -76,6 +100,7 @@ sys.exit(1)
     CURRENT_VERSION=$(cat "$VERSION_FILE" 2>/dev/null || echo "none")
     if [ "$NEW_VERSION" = "$CURRENT_VERSION" ] && [ "$FORCE" = false ]; then
         log "すでに最新です（$CURRENT_VERSION）。強制更新は --force を付けてください。"
+        sync_apk
         exit 0
     fi
 
@@ -149,3 +174,5 @@ for prefix in "kidspos.db." "${JAR_NAME}."; do
 done
 
 log "更新が完了しました: $NEW_VERSION"
+
+sync_apk
