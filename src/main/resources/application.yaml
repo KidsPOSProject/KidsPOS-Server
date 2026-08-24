@@ -50,6 +50,7 @@ app:
       host: ${RECEIPT_PRINTER_HOST:localhost}
       port: ${RECEIPT_PRINTER_PORT:9100}
       status-cache-seconds: ${RECEIPT_PRINTER_STATUS_CACHE_SECONDS:15}
+      connect-timeout-millis: ${RECEIPT_PRINTER_CONNECT_TIMEOUT_MILLIS:3000}
   barcode:
     qr-size: ${QR_CODE_SIZE:200}
     pdf:

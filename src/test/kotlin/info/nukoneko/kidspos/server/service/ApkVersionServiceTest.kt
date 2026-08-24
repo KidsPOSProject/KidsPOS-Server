@@ -248,6 +248,84 @@ class ApkVersionServiceTest {
     }
 
     @Test
+    fun `detectVersionOrderConflicts should report a version code that contradicts the version name`() {
+        val mistyped = versionOf(id = 1L, version = "1.0.10", versionCode = 100)
+        val newest = versionOf(id = 2L, version = "1.0.11", versionCode = 12)
+
+        val conflicts = apkVersionService.detectVersionOrderConflicts(listOf(mistyped, newest))
+
+        assertEquals(1, conflicts.size)
+        assertEquals(newest, conflicts.first().newerName)
+        assertEquals(mistyped, conflicts.first().higherCode)
+    }
+
+    @Test
+    fun `detectVersionOrderConflicts should return empty when version codes follow version names`() {
+        val versions =
+            listOf(
+                versionOf(id = 3L, version = "1.0.11", versionCode = 12),
+                versionOf(id = 2L, version = "1.0.10", versionCode = 11),
+                versionOf(id = 1L, version = "1.0.9", versionCode = 10),
+            )
+
+        assertTrue(apkVersionService.detectVersionOrderConflicts(versions).isEmpty())
+    }
+
+    @Test
+    fun `detectVersionOrderConflicts should compare version name segments numerically`() {
+        val versions =
+            listOf(
+                versionOf(id = 1L, version = "1.0.9", versionCode = 9),
+                versionOf(id = 2L, version = "1.0.10", versionCode = 10),
+            )
+
+        assertTrue(apkVersionService.detectVersionOrderConflicts(versions).isEmpty())
+    }
+
+    @Test
+    fun `detectVersionOrderConflicts should report every conflicting pair`() {
+        val mistyped = versionOf(id = 1L, version = "1.0.10", versionCode = 100)
+        val versions =
+            listOf(
+                mistyped,
+                versionOf(id = 2L, version = "1.0.11", versionCode = 12),
+                versionOf(id = 3L, version = "1.1.0", versionCode = 13),
+            )
+
+        val conflicts = apkVersionService.detectVersionOrderConflicts(versions)
+
+        assertEquals(2, conflicts.size)
+        assertTrue(conflicts.all { it.higherCode == mistyped })
+        assertEquals(listOf("1.0.11", "1.1.0"), conflicts.map { it.newerName.version })
+    }
+
+    @Test
+    fun `detectVersionOrderConflicts should ignore versions that share a version name`() {
+        val versions =
+            listOf(
+                versionOf(id = 1L, version = "1.0.0", versionCode = 1),
+                versionOf(id = 2L, version = "1.0.0", versionCode = 2),
+            )
+
+        assertTrue(apkVersionService.detectVersionOrderConflicts(versions).isEmpty())
+    }
+
+    private fun versionOf(
+        id: Long,
+        version: String,
+        versionCode: Int,
+    ) = ApkVersionEntity(
+        id = id,
+        version = version,
+        versionCode = versionCode,
+        fileName = "kidspos-v$version.apk",
+        fileSize = 1000L,
+        filePath = "$testUploadDir/kidspos-v$version.apk",
+        isActive = true,
+        uploadedAt = LocalDateTime.now(),
+    )
+
+    @Test
     fun `getVersionById should return version when exists`() {
         // Given
         val id = 1L

@@ -17,6 +17,14 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.time.LocalDateTime
 
+/**
+ * バージョン名の新しさとバージョンコードの大小が食い違う組み合わせ
+ */
+data class VersionOrderConflict(
+    val newerName: ApkVersionEntity,
+    val higherCode: ApkVersionEntity,
+)
+
 @Service
 @Transactional
 class ApkVersionService(
@@ -141,6 +149,59 @@ class ApkVersionService(
 
     @Transactional(readOnly = true)
     fun getAllVersions(): List<ApkVersionEntity> = apkVersionRepository.findAllByOrderByVersionCodeDesc()
+
+    /**
+     * バージョン名の新しさとバージョンコードの大小が食い違う組み合わせを洗い出す
+     *
+     * 最新バージョンはバージョンコードの降順で決まるため、
+     * 手入力ミスで大きすぎるコードが登録されると古いAPKが配信され続ける。
+     */
+    fun detectVersionOrderConflicts(versions: List<ApkVersionEntity>): List<VersionOrderConflict> =
+        versions.indices.flatMap { left ->
+            (left + 1 until versions.size).mapNotNull { right ->
+                conflictBetween(versions[left], versions[right])
+            }
+        }
+
+    private fun conflictBetween(
+        left: ApkVersionEntity,
+        right: ApkVersionEntity,
+    ): VersionOrderConflict? {
+        val nameOrder = compareVersionNames(left.version, right.version)
+        val codeOrder = left.versionCode.compareTo(right.versionCode)
+        if (nameOrder == 0 || codeOrder == 0 || (nameOrder > 0) == (codeOrder > 0)) {
+            return null
+        }
+        return if (nameOrder > 0) {
+            VersionOrderConflict(newerName = left, higherCode = right)
+        } else {
+            VersionOrderConflict(newerName = right, higherCode = left)
+        }
+    }
+
+    private fun compareVersionNames(
+        left: String,
+        right: String,
+    ): Int {
+        val leftParts = left.split('.')
+        val rightParts = right.split('.')
+        for (index in 0 until maxOf(leftParts.size, rightParts.size)) {
+            val leftPart = leftParts.getOrElse(index) { "" }
+            val rightPart = rightParts.getOrElse(index) { "" }
+            val leftNumber = leftPart.toIntOrNull()
+            val rightNumber = rightPart.toIntOrNull()
+            val order =
+                if (leftNumber != null && rightNumber != null) {
+                    leftNumber.compareTo(rightNumber)
+                } else {
+                    leftPart.compareTo(rightPart)
+                }
+            if (order != 0) {
+                return order
+            }
+        }
+        return 0
+    }
 
     @Transactional(readOnly = true)
     fun getVersionById(id: Long): ApkVersionEntity =

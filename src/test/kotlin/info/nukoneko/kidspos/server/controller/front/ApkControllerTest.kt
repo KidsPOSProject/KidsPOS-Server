@@ -4,6 +4,9 @@ import info.nukoneko.kidspos.server.domain.exception.InvalidFileException
 import info.nukoneko.kidspos.server.entity.ApkVersionEntity
 import info.nukoneko.kidspos.server.service.ApkManifestInfo
 import info.nukoneko.kidspos.server.service.ApkVersionService
+import info.nukoneko.kidspos.server.service.VersionOrderConflict
+import org.hamcrest.Matchers.containsString
+import org.hamcrest.Matchers.not
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito.*
@@ -33,6 +36,56 @@ class ApkControllerTest {
         name: String = "test.apk",
         contentType: String = "application/vnd.android.package-archive",
     ) = MockMultipartFile("file", name, contentType, ByteArray(100))
+
+    @Test
+    fun `GET index should expose detected version order conflicts`() {
+        val mistyped = apkVersion(id = 1L, version = "1.0.10", versionCode = 100)
+        val newest = apkVersion(id = 2L, version = "1.0.11", versionCode = 12)
+        val conflicts = listOf(VersionOrderConflict(newerName = newest, higherCode = mistyped))
+        val versions = listOf(mistyped, newest)
+
+        whenever(apkVersionService.getAllVersions()).thenReturn(versions)
+        whenever(apkVersionService.getLatestVersion()).thenReturn(mistyped)
+        whenever(apkVersionService.detectVersionOrderConflicts(versions)).thenReturn(conflicts)
+
+        mockMvc
+            .perform(get("/apk"))
+            .andExpect(status().isOk)
+            .andExpect(view().name("apk/index"))
+            .andExpect(model().attribute("versionOrderConflicts", conflicts))
+            .andExpect(content().string(containsString("バージョン番号の並びが逆転しています")))
+            .andExpect(content().string(containsString("1.0.11")))
+    }
+
+    @Test
+    fun `GET index should expose an empty conflict list when versions are consistent`() {
+        val versions = listOf(apkVersion(id = 1L, version = "1.0.11", versionCode = 12))
+
+        whenever(apkVersionService.getAllVersions()).thenReturn(versions)
+        whenever(apkVersionService.getLatestVersion()).thenReturn(versions.first())
+        whenever(apkVersionService.detectVersionOrderConflicts(versions)).thenReturn(emptyList())
+
+        mockMvc
+            .perform(get("/apk"))
+            .andExpect(status().isOk)
+            .andExpect(model().attribute("versionOrderConflicts", emptyList<VersionOrderConflict>()))
+            .andExpect(content().string(not(containsString("バージョン番号の並びが逆転しています"))))
+    }
+
+    private fun apkVersion(
+        id: Long,
+        version: String,
+        versionCode: Int,
+    ) = ApkVersionEntity(
+        id = id,
+        version = version,
+        versionCode = versionCode,
+        fileName = "kidspos-v$version.apk",
+        fileSize = 1000L,
+        filePath = "/uploads/apk/kidspos-v$version.apk",
+        isActive = true,
+        uploadedAt = LocalDateTime.now(),
+    )
 
     @Test
     fun `POST analyze should return version information as JSON`() {

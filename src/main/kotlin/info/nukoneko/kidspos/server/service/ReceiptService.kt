@@ -5,10 +5,15 @@ import info.nukoneko.kidspos.receipt.ReceiptPrinter
 import info.nukoneko.kidspos.server.config.AppProperties
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.entity.ItemEntity
+import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.IOException
 import java.util.*
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
  * Service responsible for receipt operations
@@ -21,27 +26,59 @@ class ReceiptService(
 ) {
     private val logger = LoggerFactory.getLogger(ReceiptService::class.java)
 
+    private val executor =
+        ThreadPoolExecutor(
+            PRINT_THREADS,
+            PRINT_THREADS,
+            KEEP_ALIVE_SECONDS,
+            TimeUnit.SECONDS,
+            LinkedBlockingQueue(QUEUE_CAPACITY),
+            { runnable -> Thread(runnable, "receipt-printer").apply { isDaemon = true } },
+        ).apply { allowCoreThreadTimeOut(true) }
+
     /**
-     * Print receipt for a sale
+     * レシート印刷を依頼する
+     *
+     * 到達できないプリンターは接続タイムアウトまで待たされるため、
+     * 送信は別スレッドに任せて会計のレスポンスを待たせない。
+     * 戻り値は印刷を実際に依頼できたかどうかで、印刷の成否ではない。
      */
-    fun printReceipt(
+    fun printReceiptAsync(
         storeId: Int,
         items: List<ItemBean>,
         deposit: Int,
     ): Boolean {
         logger.debug("Printing receipt for store: {}, items: {}", storeId, items.size)
 
-        return try {
-            val receiptDetail = createReceiptDetail(storeId, items, deposit)
-            val printerIp = getPrinterIp(storeId) ?: return false
+        val printerIp = getPrinterIp(storeId) ?: return false
 
-            sendToPrinter(printerIp, receiptDetail)
-            logger.info("Receipt printed successfully for store: {}", storeId)
+        val receiptDetail =
+            try {
+                createReceiptDetail(storeId, items, deposit)
+            } catch (e: Exception) {
+                logger.error("Failed to build receipt for store: {}", storeId, e)
+                return false
+            }
+
+        return try {
+            executor.execute {
+                try {
+                    sendToPrinter(printerIp, receiptDetail)
+                    logger.info("Receipt printed successfully for store: {}", storeId)
+                } catch (e: Exception) {
+                    logger.error("Failed to print receipt for store: {}", storeId, e)
+                }
+            }
             true
-        } catch (e: Exception) {
-            logger.error("Failed to print receipt for store: {}", storeId, e)
+        } catch (e: RejectedExecutionException) {
+            logger.error("Print queue is full, receipt discarded for store: {}", storeId, e)
             false
         }
+    }
+
+    @PreDestroy
+    fun shutdown() {
+        executor.shutdownNow()
     }
 
     /**
@@ -99,15 +136,16 @@ class ReceiptService(
         printerIp: String,
         receiptDetail: ReceiptDetail,
     ) {
+        val printerProperties = appProperties.receipt.printer
         val printer =
             ReceiptPrinter(
                 printerIp,
-                appProperties.receipt.printer.port,
+                printerProperties.port,
                 receiptDetail,
             )
 
         try {
-            printer.print()
+            printer.print(printerProperties.connectTimeoutMillis)
             logger.debug("Receipt sent to printer at: {}", printerIp)
         } catch (e: IOException) {
             logger.error("Failed to send receipt to printer at {}: {}", printerIp, e.message, e)
@@ -147,4 +185,10 @@ class ReceiptService(
      * Validate printer configuration for store
      */
     fun validatePrinterConfiguration(storeId: Int): Boolean = getPrinterIp(storeId) != null
+
+    companion object {
+        const val PRINT_THREADS = 2
+        const val KEEP_ALIVE_SECONDS = 60L
+        const val QUEUE_CAPACITY = 64
+    }
 }

@@ -15,6 +15,7 @@ data class AppProperties(
             val host: String = "localhost",
             val port: Int = 9100,
             val statusCacheSeconds: Int = 15,
+            val connectTimeoutMillis: Int = 3_000,
         )
     }
 

@@ -4,6 +4,7 @@ import info.nukoneko.kidspos.common.PrintCommand
 import info.nukoneko.kidspos.common.toAllEm
 import info.nukoneko.kidspos.common.toEm
 import java.io.IOException
+import java.net.InetSocketAddress
 import java.net.Socket
 import java.nio.charset.Charset
 import java.text.SimpleDateFormat
@@ -85,16 +86,21 @@ class ReceiptPrinter(
         command.newLine()
     }
 
+    // 到達できないプリンターへの接続は OS 既定では数分待たされるため、必ず上限を設ける
     @Throws(IOException::class)
-    fun print() {
-        Socket(ipOrHost, port).use { socket ->
+    fun print(timeoutMillis: Int = DEFAULT_TIMEOUT_MILLIS) {
+        Socket().use { socket ->
+            socket.soTimeout = timeoutMillis
+            socket.connect(InetSocketAddress(ipOrHost, port), timeoutMillis)
             socket.getOutputStream().use {
                 it.write(command.build())
+                it.flush()
             }
         }
     }
 
     companion object {
+        const val DEFAULT_TIMEOUT_MILLIS = 3_000
         private const val MAX_ROW_TEXT_NUM = 20
         private val dateFormat =
             SimpleDateFormat("yyyy年MM月dd日(E) HH時mm分ss秒")

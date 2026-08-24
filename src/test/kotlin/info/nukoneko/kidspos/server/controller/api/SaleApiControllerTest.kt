@@ -96,7 +96,7 @@ class SaleApiControllerTest {
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(any(), any()))
             .thenReturn(SaleResult.Success(testSale, summary))
-        `when`(receiptService.printReceipt(any(), any(), any())).thenReturn(true)
+        `when`(receiptService.printReceiptAsync(any(), any(), any())).thenReturn(true)
 
         // When & Then
         mockMvc
@@ -139,7 +139,7 @@ class SaleApiControllerTest {
 
         verify(itemParsingService).parseItemsFromIds("1,2")
         verify(saleProcessingService).processSaleWithValidation(any(), any())
-        verify(receiptService, never()).printReceipt(any(), any(), any())
+        verify(receiptService, never()).printReceiptAsync(any(), any(), any())
     }
 
     @Test
