@@ -54,6 +54,69 @@
     <script th:src="@{/js/modern-scripts.js}" defer></script>
 </head>
 <body>
+    <!-- Navigation Fragment -->
+    <nav th:fragment="nav(active)" class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+        <div class="container-fluid px-3">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-store"></i> KidsPOS
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#globalNav" aria-controls="globalNav"
+                    aria-expanded="false" aria-label="メニューを開く">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="globalNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'top'} ? 'active fw-bold'" href="/">
+                            <i class="fas fa-home"></i> ダッシュボード
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'items'} ? 'active fw-bold'" href="/items">
+                            <i class="fas fa-box"></i> 商品
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'stores'} ? 'active fw-bold'" href="/stores">
+                            <i class="fas fa-store-alt"></i> 店舗
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'sales'} ? 'active fw-bold'" href="/sales">
+                            <i class="fas fa-chart-line"></i> 売上
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'reports'} ? 'active fw-bold'" href="/reports/sales">
+                            <i class="fas fa-file-pdf"></i> レポート
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'apk'} ? 'active fw-bold'" href="/apk">
+                            <i class="fas fa-mobile-alt"></i> APK
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'logs'} ? 'active fw-bold'" href="/logs">
+                            <i class="fas fa-clipboard-list"></i> ログ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'ip'} ? 'active fw-bold'" href="/ip">
+                            <i class="fas fa-network-wired"></i> 接続情報
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${active == 'settings'} ? 'active fw-bold'" href="/settings">
+                            <i class="fas fa-cog"></i> 設定
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
     <!-- Footer Fragment -->
     <footer th:fragment="footer" class="footer mt-auto py-3 bg-light">
         <div class="container text-center">

@@ -14,7 +14,7 @@ class SettingsController(
 ) {
     @GetMapping
     fun index(model: Model): String {
-        model.addAttribute("title", javaClass.simpleName)
+        model.addAttribute("title", "システム設定")
         model.addAttribute("settings", settingService.findAllSetting())
         model.addAttribute("stores", storeService.findAll())
         return "settings/index"
@@ -25,7 +25,8 @@ class SettingsController(
         @PathVariable key: String,
         model: Model,
     ): String {
-        val setting = settingService.findSetting(key)
+        val setting = settingService.findSetting(key) ?: return "redirect:/settings"
+        model.addAttribute("title", "設定編集")
         model.addAttribute("setting", setting)
         return "settings/edit"
     }

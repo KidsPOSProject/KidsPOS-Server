@@ -72,6 +72,27 @@ class ReportPeriodTest {
         assertFieldsEqual(dateOf(2026, 12, 31, 23, 59, 59, 999), result)
     }
 
+    @Test
+    fun `previousDay は前日の同時刻を返す`() {
+        val result = ReportPeriod.previousDay(dateOf(2026, 8, 21, 15, 30, 45, 123))
+
+        assertFieldsEqual(dateOf(2026, 8, 20, 15, 30, 45, 123), result)
+    }
+
+    @Test
+    fun `previousDay は月初で前月末に戻る`() {
+        val result = ReportPeriod.previousDay(dateOf(2026, 8, 1, 0, 0, 0, 0))
+
+        assertFieldsEqual(dateOf(2026, 7, 31, 0, 0, 0, 0), result)
+    }
+
+    @Test
+    fun `previousDay は年初で前年末に戻る`() {
+        val result = ReportPeriod.previousDay(dateOf(2026, 1, 1, 0, 0, 0, 0))
+
+        assertFieldsEqual(dateOf(2025, 12, 31, 0, 0, 0, 0), result)
+    }
+
     private fun assertFieldsEqual(
         expected: Date,
         actual: Date,

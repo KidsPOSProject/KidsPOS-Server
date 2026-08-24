@@ -28,6 +28,8 @@ object ReportPeriod {
                 set(Calendar.MILLISECOND, 999)
             }.time
 
+    fun previousDay(date: Date): Date = calendarOf(date).apply { add(Calendar.DAY_OF_MONTH, -1) }.time
+
     fun monthStart(
         year: Int,
         month: Int,

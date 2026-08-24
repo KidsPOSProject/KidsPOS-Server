@@ -54,6 +54,50 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// DataTables (opt-in: <table data-datatable>)
+const DATATABLE_LANGUAGE = {
+    emptyTable: 'データがありません',
+    info: '_TOTAL_ 件中 _START_ - _END_ 件を表示',
+    infoEmpty: '0 件',
+    infoFiltered: '(全 _MAX_ 件から絞り込み)',
+    lengthMenu: '_MENU_ 件ずつ表示',
+    loadingRecords: '読み込み中...',
+    processing: '処理中...',
+    search: '検索:',
+    searchPlaceholder: 'キーワード',
+    zeroRecords: '一致するデータがありません',
+    paginate: {
+        first: '最初',
+        last: '最後',
+        next: '次',
+        previous: '前'
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof jQuery === 'undefined' || typeof jQuery.fn.DataTable === 'undefined') {
+        return;
+    }
+
+    jQuery('table[data-datatable]').each(function() {
+        const table = jQuery(this);
+        if (jQuery.fn.DataTable.isDataTable(table)) {
+            return;
+        }
+
+        table.DataTable({
+            language: DATATABLE_LANGUAGE,
+            // 並び順はサーバー側で意味のある順に整えてあるため、初期状態では崩さない
+            order: [],
+            pageLength: 25,
+            lengthMenu: [[25, 50, 100, -1], ['25', '50', '100', 'すべて']],
+            columnDefs: [
+                { targets: 'no-sort', orderable: false, searchable: false }
+            ]
+        });
+    });
+});
+
 // Form Validation
 document.addEventListener('DOMContentLoaded', function() {
     const forms = document.querySelectorAll('form');
@@ -64,6 +108,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.stopPropagation();
             }
             form.classList.add('was-validated');
+        });
+    });
+});
+
+// Delete confirmation (opt-in: <form data-confirm-delete="表示名">)
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('form[data-confirm-delete]').forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (form.dataset.confirmed === 'true') {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+
+            const name = form.dataset.confirmDelete;
+            const text = name + ' を削除します。この操作は取り消せません。';
+
+            if (typeof Swal === 'undefined') {
+                if (window.confirm(text)) {
+                    form.dataset.confirmed = 'true';
+                    form.submit();
+                }
+                return;
+            }
+
+            Swal.fire({
+                title: '削除しますか？',
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '削除する',
+                cancelButtonText: 'キャンセル'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    form.dataset.confirmed = 'true';
+                    form.submit();
+                }
+            });
         });
     });
 });

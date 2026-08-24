@@ -81,19 +81,20 @@
 
 ### JavaScript Libraries
 
-- **jQuery 3.6.0**: DOM manipulation and AJAX
-- **jQuery UI 1.13.2**: UI interactions and widgets
-- **DataTables 1.10.18**: Advanced table functionality
-    - Sorting and filtering
-    - Pagination
-    - Search capabilities
-    - Bootstrap 4 integration
+- **jQuery 3.7.0**: DOM manipulation and AJAX
+- **DataTables**: Advanced table functionality with the Bootstrap 5 integration
+    - Opt-in per table via the `data-datatable` attribute
+    - Sorting, filtering, pagination, search
+    - Japanese localisation bundled under `vendor/datatables/i18n`
+- **Chart.js**: Sales report charts
+- **SweetAlert2**: Confirmation dialogs
 
 ### Additional Frontend
 
 - **QR Code Generator**: JavaScript-based QR code generation
     - `qrcode.js` and `qrcode.min.js`
-- **Custom Scripts**: `scripts.js` for application-specific behavior
+- **Custom Scripts**: `js/modern-scripts.js` for shared behaviour (DataTables init, delete confirmation)
+- **Form Validation**: `validation.js` for the item and store creation forms
 
 ## Development Environment
 
