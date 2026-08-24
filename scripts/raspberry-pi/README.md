@@ -15,7 +15,7 @@ Raspberry Pi 上で KidsPOS Server を運用するためのファイル一式で
 | ファイル | 用途 |
 |---|---|
 | install.sh | 初回セットアップ（ディレクトリ作成、systemd ユニット配置、自動起動有効化、jar 導入） |
-| update-app.sh | jar の更新（バックアップ、差し替え、ヘルスチェック、失敗時の巻き戻し） |
+| update-app.sh | jar の更新（バックアップ、差し替え、ヘルスチェック、失敗時の巻き戻し）と最新 APK の登録 |
 | upload-apk.sh | Android アプリの APK をサーバーへ登録（GitHub Releases から取得、または持ち込んだファイル） |
 | doctor.sh | 稼働診断（Java、jar、サービス、ヘルスチェック、DB、ディスク、ログ、時刻） |
 | kidspos-server.service | systemd ユニットのテンプレート |
@@ -24,7 +24,7 @@ Raspberry Pi 上で KidsPOS Server を運用するためのファイル一式で
 ## 初回セットアップ
 
 このディレクトリを Raspberry Pi にコピーし、install.sh を実行します。
-必要なコマンドの確認、ディレクトリ作成、update-app.sh と doctor.sh の配置、systemd ユニットの配置と自動起動の有効化、jar の導入、最後に診断まで一度に行います。
+必要なコマンドの確認、ディレクトリ作成、update-app.sh と doctor.sh と upload-apk.sh の配置、systemd ユニットの配置と自動起動の有効化、jar の導入、最後に診断まで一度に行います。
 
 ```bash
 sudo ./install.sh                  # GitHub Releases から最新の app.jar を導入（要インターネット接続）
@@ -57,7 +57,12 @@ sudo /opt/kidspos/update-app.sh
 ```
 
 最新リリースを確認し、未適用なら「停止 → DB と旧 jar のバックアップ → 差し替え → 起動 → ヘルスチェック」を自動で行います。
-同一バージョンなら何もしません（--force で強制再インストール）。
+同一バージョンなら jar の差し替えは行いません（--force で強制再インストール）。
+
+続けて Android アプリの最新 APK も確認し、新しいものがあればサーバーへ登録します。
+jar が同一バージョンで差し替えを行わなかった場合も APK の確認だけは行います。
+APK の登録に失敗しても（ネット不通、リリースが無いなど）警告のみでサーバーの更新は成功扱いになります。
+APK を確認せずサーバーだけ更新したい場合は --skip-apk を付けてください。
 
 ### オフライン時（jar を持ち込む場合）
 
@@ -76,7 +81,9 @@ sudo /opt/kidspos/update-app.sh /path/to/app.jar
 ## Android アプリ（APK）の登録
 
 タブレットのアプリ更新はサーバーに登録された APK を配信する仕組みです。
-ブラウザの /apk 画面からアップロードするほか、コマンドからも登録できます。
+ネット接続時の update-app.sh は最後にこのスクリプトを呼ぶため、通常はサーバーの更新だけで APK も最新になります。
+個別に登録したい場合や、オフラインで APK を持ち込む場合は以下のように単体で実行します。
+ブラウザの /apk 画面からアップロードすることもできます。
 バージョン名とバージョンコードは APK から自動で読み取られるため、指定は不要です。
 
 ### ネット接続時
@@ -151,7 +158,7 @@ Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョ�
 | KIDSPOS_HEALTH_URL | http://localhost:8080/api/status | install / update / doctor |
 | KIDSPOS_REPO | KidsPOSProject/KidsPOS-Server | update / doctor |
 | KIDSPOS_ANDROID_REPO | KidsPOSProject/KidsPOS-for-Android | upload-apk |
-| KIDSPOS_SERVER_URL | http://localhost:8080 | upload-apk |
+| KIDSPOS_SERVER_URL | http://localhost:8080 | update / upload-apk |
 | KIDSPOS_UPLOAD_TIMEOUT | 600 | upload-apk |
 | KIDSPOS_REQUIRED_JAVA_MAJOR | 21 | install / doctor |
 | KIDSPOS_HEALTH_RETRIES | update は 600、install は 300 | install / update |

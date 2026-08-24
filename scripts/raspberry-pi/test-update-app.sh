@@ -53,6 +53,8 @@ setup() {
     export CALL_LOG="${WORK}/calls.log"
     export HEALTH_OK_FILE="${WORK}/health-ok"
     export FAIL_START_ONCE_FILE="${WORK}/fail-start-once"
+    export RELEASE_JSON_FILE="${WORK}/release.json"
+    export UPLOAD_APK_EXIT=0
     : > "$CALL_LOG"
 
     cat > "${STUB_DIR}/sudo" <<'EOF'
@@ -73,6 +75,23 @@ EOF
     cat > "${STUB_DIR}/curl" <<'EOF'
 #!/usr/bin/env bash
 echo "curl $*" >> "$CALL_LOG"
+URL="${@: -1}"
+case "$URL" in
+    https://api.github.com/*)
+        cat "$RELEASE_JSON_FILE"
+        exit 0
+        ;;
+    https://example.invalid/*)
+        OUT=""
+        PREV=""
+        for arg in "$@"; do
+            [ "$PREV" = "-o" ] && OUT="$arg"
+            PREV="$arg"
+        done
+        printf 'PK-downloaded-jar' > "$OUT"
+        exit 0
+        ;;
+esac
 if [ -f "$HEALTH_OK_FILE" ]; then
     exit 0
 fi
@@ -93,6 +112,20 @@ EOF
 
 teardown() {
     rm -rf "$WORK"
+}
+
+install_upload_apk_stub() {
+    cat > "${APP_DIR}/upload-apk.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "upload-apk $*" >> "$CALL_LOG"
+exit "${UPLOAD_APK_EXIT:-0}"
+EOF
+    chmod +x "${APP_DIR}/upload-apk.sh"
+}
+
+write_release_json() {
+    printf '[{"tag_name":"%s","draft":false,"prerelease":false,"assets":[{"name":"app.jar","browser_download_url":"https://example.invalid/app.jar"}]}]' \
+        "$1" > "$RELEASE_JSON_FILE"
 }
 
 run_update() {
@@ -255,6 +288,98 @@ test_non_jar_file_is_rejected() {
     teardown
 }
 
+test_apk_sync_after_online_update() {
+    setup "オンライン更新の成功後に APK の確認が行われる"
+    touch "$HEALTH_OK_FILE"
+    write_release_json "v9.9.9"
+    install_upload_apk_stub
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_eq "PK-downloaded-jar" "$(cat "${APP_DIR}/app.jar")" "取得した jar が配置される"
+    assert_contains "$CALL_LOG" "upload-apk --server http://localhost:8080" "APK 登録スクリプトが呼ばれる"
+    teardown
+}
+
+test_apk_sync_when_already_up_to_date() {
+    setup "jar が最新でも APK の確認は行われる"
+    touch "$HEALTH_OK_FILE"
+    write_release_json "v9.9.9"
+    install_upload_apk_stub
+    echo "v9.9.9" > "${APP_DIR}/.installed-version"
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "すでに最新です" "最新である旨が出力される"
+    assert_contains "$CALL_LOG" "upload-apk --server http://localhost:8080" "APK 登録スクリプトが呼ばれる"
+    assert_not_contains "$CALL_LOG" "systemctl" "サービスは操作されない"
+    assert_eq "PK-old-jar" "$(cat "${APP_DIR}/app.jar")" "jar は差し替えられない"
+    teardown
+}
+
+test_apk_sync_failure_does_not_fail_update() {
+    setup "APK の登録に失敗してもサーバーの更新は成功扱いになる"
+    touch "$HEALTH_OK_FILE"
+    write_release_json "v9.9.9"
+    install_upload_apk_stub
+    export UPLOAD_APK_EXIT=1
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "APK の更新に失敗しました" "警告が出力される"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "サーバーの更新は完了扱いになる"
+    teardown
+}
+
+test_apk_sync_skipped_with_flag() {
+    setup "--skip-apk を付けると APK の確認は行われない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json "v9.9.9"
+    install_upload_apk_stub
+    run_update --skip-apk
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "サーバーの更新は完了する"
+    assert_not_contains "$CALL_LOG" "upload-apk" "APK 登録スクリプトは呼ばれない"
+    teardown
+}
+
+test_apk_sync_skipped_for_local_jar() {
+    setup "持ち込んだ jar での更新では APK の確認は行われない"
+    touch "$HEALTH_OK_FILE"
+    install_upload_apk_stub
+    run_update "${WORK}/new.jar"
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "オフライン更新のため APK の確認は行いません" "スキップした旨が出力される"
+    assert_not_contains "$CALL_LOG" "upload-apk" "APK 登録スクリプトは呼ばれない"
+    teardown
+}
+
+test_apk_sync_skipped_when_script_missing() {
+    setup "APK 登録スクリプトが無くても更新は成功する"
+    touch "$HEALTH_OK_FILE"
+    write_release_json "v9.9.9"
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "APK 登録スクリプトが無いため" "スキップした旨が出力される"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "サーバーの更新は完了する"
+    teardown
+}
+
+test_apk_sync_not_run_when_rolled_back() {
+    setup "巻き戻しが起きたときは APK の確認は行われない"
+    write_release_json "v9.9.9"
+    install_upload_apk_stub
+    run_update
+
+    assert_eq 1 "$RC" "終了コードが 1"
+    assert_contains "${WORK}/out.log" "巻き戻しを実行します" "巻き戻しログが出力される"
+    assert_not_contains "$CALL_LOG" "upload-apk" "APK 登録スクリプトは呼ばれない"
+    teardown
+}
+
 test_success_path
 test_health_check_failure_rolls_back
 test_start_failure_rolls_back
@@ -264,6 +389,13 @@ test_health_check_uses_timeout
 test_health_check_timeout_applies_while_retrying
 test_unknown_flag_is_rejected
 test_non_jar_file_is_rejected
+test_apk_sync_after_online_update
+test_apk_sync_when_already_up_to_date
+test_apk_sync_failure_does_not_fail_update
+test_apk_sync_skipped_with_flag
+test_apk_sync_skipped_for_local_jar
+test_apk_sync_skipped_when_script_missing
+test_apk_sync_not_run_when_rolled_back
 
 echo ""
 echo "passed: $PASS_COUNT, failed: $FAIL_COUNT"
