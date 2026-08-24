@@ -30,6 +30,8 @@ tags:
     description: 売上レポート
   - name: Logs
     description: サーバーログ
+  - name: System
+    description: サーバー時刻
 
 paths:
   # Status
@@ -1325,6 +1327,53 @@ paths:
         '204':
           description: No Content
 
+  # System
+  /api/system/time:
+    get:
+      tags:
+        - System
+      summary: サーバー時刻取得
+      description: サーバーの現在時刻とタイムゾーンを取得する
+      operationId: getSystemTime
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemTimeResponse'
+    post:
+      tags:
+        - System
+      summary: サーバー時刻同期
+      description: 指定された時刻にサーバーのシステム時刻を合わせる。イントラネット運用で時刻同期サーバーに到達できない環境向け
+      operationId: syncSystemTime
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncSystemTimeRequest'
+      responses:
+        '200':
+          description: 同期成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemTimeSyncResponse'
+        '400':
+          description: 時刻が有効範囲外
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 時刻変更に失敗（権限不足など）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemTimeSyncResponse'
+
 
 components:
   schemas:
@@ -1840,6 +1889,71 @@ components:
         - counts
         - total
         - capacity
+
+    SystemTimeResponse:
+      type: object
+      properties:
+        epochMillis:
+          type: integer
+          format: int64
+          description: エポックミリ秒
+          example: 1735689600000
+        iso:
+          type: string
+          description: ISO 8601形式の時刻
+          example: "2025-01-01T09:00:00+09:00"
+        display:
+          type: string
+          description: 表示用の時刻
+          example: "2025-01-01 09:00:00"
+        timeZone:
+          type: string
+          description: サーバーのタイムゾーン
+          example: "Asia/Tokyo"
+      required:
+        - epochMillis
+        - iso
+        - display
+        - timeZone
+
+    SyncSystemTimeRequest:
+      type: object
+      properties:
+        epochMillis:
+          type: integer
+          format: int64
+          description: 同期したい時刻のエポックミリ秒
+          minimum: 1577836800000
+          maximum: 4102444800000
+          example: 1735689600000
+      required:
+        - epochMillis
+
+    SystemTimeSyncResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 同期に成功したか
+        message:
+          type: string
+          description: 結果メッセージ
+          example: "システム時刻を同期しました"
+        driftMillis:
+          type: integer
+          format: int64
+          description: 同期前のサーバー時刻との差分ミリ秒
+          example: 125000
+        requested:
+          $ref: '#/components/schemas/SystemTimeResponse'
+        current:
+          $ref: '#/components/schemas/SystemTimeResponse'
+      required:
+        - success
+        - message
+        - driftMillis
+        - requested
+        - current
 
   securitySchemes:
     bearerAuth:

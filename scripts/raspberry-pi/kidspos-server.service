@@ -8,6 +8,8 @@ Type=simple
 User=pi
 WorkingDirectory=/opt/kidspos
 ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -jar /opt/kidspos/app.jar
+AmbientCapabilities=CAP_SYS_TIME
+CapabilityBoundingSet=CAP_SYS_TIME
 Restart=always
 RestartSec=10
 StandardOutput=journal
