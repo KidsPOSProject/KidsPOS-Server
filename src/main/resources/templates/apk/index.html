@@ -2,19 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header('APK管理')}"></head>
 <body>
-<!-- ナビゲーションバー -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="fas fa-store"></i> KidsPOS
-        </a>
-        <div class="navbar-nav ms-auto">
-            <a class="nav-link" href="/">
-                <i class="fas fa-home"></i> ダッシュボード
-            </a>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{layout::nav('apk')}"></div>
 
 <div class="main-container">
     <!-- Main Content -->
@@ -26,10 +14,10 @@
                         <div class="card-modern">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h4 class="mb-0">
+                                    <h1 class="h4 mb-0">
                                         <i class="fas fa-mobile-alt text-purple me-2"></i>
                                         APKバージョン管理
-                                    </h4>
+                                    </h1>
                                     <a href="/apk/upload" class="btn btn-primary">
                                         <i class="fas fa-cloud-upload"></i> 新しいAPKをアップロード
                                     </a>
@@ -145,45 +133,42 @@
                             </tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-            </div>
-
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- API情報カード -->
-                    <div class="card-modern mt-4">
-                        <div class="card-body">
-                            <h5 class="mb-3">
-                                <i class="fas fa-code"></i> API エンドポイント
-                            </h5>
-                    <div class="table-responsive">
-                        <table class="table">
-                            <tr>
-                                <th style="width: 200px;">最新バージョン取得</th>
-                                <td><code>GET /api/apk/version/latest</code></td>
-                            </tr>
-                            <tr>
-                                <th>アップデート確認</th>
-                                <td><code>GET /api/apk/version/check?currentVersionCode={versionCode}</code></td>
-                            </tr>
-                            <tr>
-                                <th>最新APKダウンロード</th>
-                                <td><code>GET /api/apk/download/latest</code></td>
-                            </tr>
-                            <tr>
-                                <th>特定バージョンダウンロード</th>
-                                <td><code>GET /api/apk/download/{id}</code></td>
-                            </tr>
-                            </table>
+                        <div class="card-modern mt-4">
+                            <div class="card-body">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-code"></i> API エンドポイント
+                                </h5>
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <tr>
+                                            <th style="width: 200px;">最新バージョン取得</th>
+                                            <td><code>GET /api/apk/version/latest</code></td>
+                                        </tr>
+                                        <tr>
+                                            <th>アップデート確認</th>
+                                            <td><code>GET /api/apk/version/check?currentVersionCode={versionCode}</code></td>
+                                        </tr>
+                                        <tr>
+                                            <th>最新APKダウンロード</th>
+                                            <td><code>GET /api/apk/download/latest</code></td>
+                                        </tr>
+                                        <tr>
+                                            <th>特定バージョンダウンロード</th>
+                                            <td><code>GET /api/apk/download/{id}</code></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 </div>
 
 <script>
@@ -250,5 +235,6 @@
     // DataTable initialization removed due to Thymeleaf compatibility issues
 /*]]>*/
 </script>
+<div th:replace="~{layout::footer}"></div>
 </body>
 </html>

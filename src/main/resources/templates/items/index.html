@@ -2,19 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header(${title})}"></head>
 <body>
-<!-- ナビゲーションバー -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="fas fa-store"></i> KidsPOS
-        </a>
-        <div class="navbar-nav ms-auto">
-            <a class="nav-link" href="/">
-                <i class="fas fa-home"></i> ダッシュボード
-            </a>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{layout::nav('items')}"></div>
 
 <div class="main-container">
     <!-- Main Content -->
@@ -37,7 +25,7 @@
 
                                 <!-- Action Bar -->
                                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3 p-3 bg-light rounded">
-                                    <div class="d-flex gap-2 flex-wrap">
+                                    <div class="d-flex gap-2 flex-wrap align-items-center">
                                         <a id="printSelected" class="btn btn-success btn-sm disabled" role="button"
                                            aria-disabled="true" href="/api/item/barcode-pdf/selected">
                                             <i class="fas fa-print"></i> 選択印刷
@@ -46,6 +34,7 @@
                                            href="/api/item/barcode-pdf?showBorders=false">
                                             <i class="fas fa-file-pdf"></i> PDF出力
                                         </a>
+                                        <span id="selectedCount" class="text-muted small">未選択</span>
                                     </div>
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="form-check mb-0">
@@ -59,10 +48,10 @@
                                 </div>
 
                                 <div class="table-responsive">
-                                    <table id="content" class="table table-striped table-hover">
+                                    <table id="content" class="table table-striped table-hover" data-datatable>
                                         <thead>
                                             <tr>
-                                                <th width="50">
+                                                <th width="50" class="no-sort">
                                                     <div class="form-check">
                                                         <input type="checkbox" class="form-check-input" id="selectAll" title="全選択">
                                                     </div>
@@ -71,7 +60,7 @@
                                                 <th>商品名</th>
                                                 <th>バーコード</th>
                                                 <th>値段</th>
-                                                <th width="100">操作</th>
+                                                <th width="180" class="no-sort">操作</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -96,9 +85,17 @@
                                                     <strong style="font-size: 1.1rem; color: #000;">¥<span th:text="${#numbers.formatInteger(item.price, 1, 'COMMA')}"></span></strong>
                                                 </td>
                                                 <td>
-                                                    <a class="btn btn-outline-primary btn-sm" th:href="@{/items/{id}/edit(id=${item.id})}">
-                                                        <i class="fas fa-edit"></i> 編集
-                                                    </a>
+                                                    <div class="d-flex gap-2">
+                                                        <a class="btn btn-outline-primary btn-sm" th:href="@{/items/{id}/edit(id=${item.id})}">
+                                                            <i class="fas fa-edit"></i> 編集
+                                                        </a>
+                                                        <form th:action="@{/items/{id}/delete(id=${item.id})}" method="post"
+                                                              th:data-confirm-delete="${item.name}" class="d-inline">
+                                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                                <i class="fas fa-trash"></i> 削除
+                                                            </button>
+                                                        </form>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         </tbody>
@@ -112,66 +109,75 @@
         </div>
     </div>
 </div>
+<div th:replace="~{layout::footer}"></div>
 
 <script>
 /*<![CDATA[*/
         document.addEventListener('DOMContentLoaded', function () {
+            const table = document.getElementById('content');
             const selectAllCheckbox = document.getElementById('selectAll');
-            const itemCheckboxes = document.getElementsByClassName('item-checkbox');
             const printLink = document.getElementById('printSelected');
             const downloadPdfLink = document.getElementById('downloadPdf');
             const showBordersCheckbox = document.getElementById('showBorders');
+            const selectedCountLabel = document.getElementById('selectedCount');
 
-            selectAllCheckbox.addEventListener('change', function () {
-                for (let checkbox of itemCheckboxes) {
-                    checkbox.checked = this.checked;
+            // DataTables はページ外の行を DOM から外すため、選択状態は DOM ではなく Set で保持する
+            const selectedIds = new Set();
+            const allIds = Array.prototype.map.call(
+                table.querySelectorAll('.item-checkbox'),
+                function (checkbox) { return checkbox.dataset.id; }
+            );
+
+            table.addEventListener('change', function (event) {
+                const checkbox = event.target;
+                if (!checkbox.classList.contains('item-checkbox')) {
+                    return;
                 }
-                updateLinks();
+                if (checkbox.checked) {
+                    selectedIds.add(checkbox.dataset.id);
+                } else {
+                    selectedIds.delete(checkbox.dataset.id);
+                }
+                update();
             });
 
-            for (let checkbox of itemCheckboxes) {
-                checkbox.addEventListener('change', function () {
-                    updateSelectAll();
-                    updateLinks();
+            selectAllCheckbox.addEventListener('change', function () {
+                selectedIds.clear();
+                if (this.checked) {
+                    allIds.forEach(function (id) { selectedIds.add(id); });
+                }
+                update();
+            });
+
+            showBordersCheckbox.addEventListener('change', update);
+
+            printLink.addEventListener('click', function (event) {
+                if (selectedIds.size === 0) {
+                    event.preventDefault();
+                }
+            });
+
+            function syncVisibleCheckboxes() {
+                table.querySelectorAll('.item-checkbox').forEach(function (checkbox) {
+                    checkbox.checked = selectedIds.has(checkbox.dataset.id);
                 });
             }
 
-            showBordersCheckbox.addEventListener('change', updateLinks);
+            function update() {
+                syncVisibleCheckboxes();
 
-            function updateSelectAll() {
-                let allChecked = true;
-                let anyChecked = false;
-                for (let checkbox of itemCheckboxes) {
-                    if (!checkbox.checked) {
-                        allChecked = false;
-                    } else {
-                        anyChecked = true;
-                    }
-                }
-                selectAllCheckbox.checked = allChecked;
-                selectAllCheckbox.indeterminate = !allChecked && anyChecked;
-            }
+                const total = allIds.length;
+                const count = selectedIds.size;
+                selectAllCheckbox.checked = total > 0 && count === total;
+                selectAllCheckbox.indeterminate = count > 0 && count < total;
+                selectedCountLabel.textContent = count > 0 ? count + ' 件選択中' : '未選択';
 
-            function selectedIds() {
-                const ids = [];
-                for (let checkbox of itemCheckboxes) {
-                    if (checkbox.checked) {
-                        ids.push(checkbox.dataset.id);
-                    }
-                }
-                return ids;
-            }
-
-            // iOS Safari では blob URL と download 属性が働かないため、
-            // PDF は常に通常のリンク遷移でサーバーから直接受け取る
-            function updateLinks() {
                 const showBorders = showBordersCheckbox.checked;
                 downloadPdfLink.href = '/api/item/barcode-pdf?showBorders=' + showBorders;
 
-                const ids = selectedIds();
-                if (ids.length > 0) {
+                if (count > 0) {
                     printLink.href = '/api/item/barcode-pdf/selected?showBorders=' + showBorders +
-                        '&ids=' + ids.join(',');
+                        '&ids=' + Array.from(selectedIds).join(',');
                     printLink.classList.remove('disabled');
                     printLink.setAttribute('aria-disabled', 'false');
                 } else {
@@ -181,16 +187,13 @@
                 }
             }
 
-            printLink.addEventListener('click', function (event) {
-                if (selectedIds().length === 0) {
-                    event.preventDefault();
-                }
-            });
+            if (typeof jQuery !== 'undefined') {
+                jQuery(table).on('draw.dt', syncVisibleCheckboxes);
+            }
 
-            updateLinks();
+            update();
         });
 /*]]>*/
 </script>
 </body>
 </html>
-

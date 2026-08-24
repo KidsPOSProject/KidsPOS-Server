@@ -2,22 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header('APKアップロード')}"></head>
 <body>
-<!-- ナビゲーションバー -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="fas fa-store"></i> KidsPOS
-        </a>
-        <div class="navbar-nav ms-auto">
-            <a class="nav-link" href="/apk">
-                <i class="fas fa-mobile-alt"></i> APK管理
-            </a>
-            <a class="nav-link" href="/">
-                <i class="fas fa-home"></i> ダッシュボード
-            </a>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{layout::nav('apk')}"></div>
 
 <div class="main-container">
     <!-- Main Content -->
@@ -28,10 +13,10 @@
                     <div class="col-12 col-md-8 col-lg-6 mx-auto">
                         <div class="card-modern">
                             <div class="card-body">
-                                <h4 class="mb-4 text-center">
+                                <h1 class="h4 mb-4 text-center">
                                     <i class="fas fa-mobile-alt text-purple me-2"></i>
                                     APKアップロード
-                                </h4>
+                                </h1>
                                 <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
                                     <span th:text="${errorMessage}"></span>
                                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -201,5 +186,6 @@
         analyzeApk(file);
     });
 </script>
+<div th:replace="~{layout::footer}"></div>
 </body>
 </html>

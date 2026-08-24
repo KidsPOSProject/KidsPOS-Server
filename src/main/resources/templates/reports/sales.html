@@ -2,19 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header('売上レポート')}"></head>
 <body>
-<!-- ナビゲーションバー -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="fas fa-store"></i> KidsPOS
-        </a>
-        <div class="navbar-nav ms-auto">
-            <a class="nav-link" href="/">
-                <i class="fas fa-home"></i> ダッシュボード
-            </a>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{layout::nav('reports')}"></div>
 
 <div class="main-container">
     <!-- Main Content -->
@@ -458,5 +446,6 @@
     }
 /*]]>*/
 </script>
+<div th:replace="~{layout::footer}"></div>
 </body>
 </html>

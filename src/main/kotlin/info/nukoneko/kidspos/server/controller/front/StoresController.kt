@@ -13,20 +13,25 @@ class StoresController(
 ) {
     @GetMapping
     fun index(model: Model): String {
-        model.addAttribute("title", javaClass.simpleName)
+        model.addAttribute("title", "店舗管理")
         model.addAttribute("data", storeService.findAll())
         return "stores/index"
     }
 
     @GetMapping("new")
-    fun newItem(model: Model): String = "stores/new"
+    fun newItem(model: Model): String {
+        model.addAttribute("title", "店舗作成")
+        return "stores/new"
+    }
 
     @GetMapping("{id}/edit")
     fun edit(
         @PathVariable id: Int,
         model: Model,
     ): String {
-        model.addAttribute("store", storeService.findStore(id))
+        val store = storeService.findStore(id) ?: return "redirect:/stores"
+        model.addAttribute("title", "店舗編集")
+        model.addAttribute("store", store)
         return "stores/edit"
     }
 

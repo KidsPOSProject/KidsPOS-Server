@@ -7,6 +7,7 @@ import info.nukoneko.kidspos.server.controller.dto.response.SaleReportDetailData
 import info.nukoneko.kidspos.server.controller.dto.response.SaleReportSummary
 import info.nukoneko.kidspos.server.controller.dto.response.SaleSummaryResponse
 import info.nukoneko.kidspos.server.controller.dto.response.StoreSalesSummary
+import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.repository.ItemRepository
 import info.nukoneko.kidspos.server.repository.SaleDetailRepository
 import info.nukoneko.kidspos.server.repository.SaleRepository
@@ -36,6 +37,29 @@ class SaleAggregationService(
         val sales: List<SaleReportData>,
         val summary: SaleReportSummary,
     )
+
+    /**
+     * 当日実績と前日実績の比較。
+     *
+     * @property changeRatio 前日比。前日に実績が無いときは比較できないため null。
+     */
+    data class DailyComparison(
+        val date: Date,
+        val totalAmount: Int,
+        val salesCount: Int,
+        val averageAmount: Int,
+        val previousAmount: Int,
+        val previousSalesCount: Int,
+        val changeRatio: Double?,
+    )
+
+    data class SaleDetailView(
+        val sale: SaleEntity,
+        val storeName: String,
+        val details: List<SaleReportDetailData>,
+    ) {
+        val detailAmount: Int get() = details.sumOf { it.subtotal }
+    }
 
     fun aggregate(
         startDate: Date,
@@ -102,6 +126,49 @@ class SaleAggregationService(
             stores = byStore(aggregation.sales),
             items = byItem(aggregation.sales),
             daily = byDay(aggregation.sales),
+        )
+    }
+
+    fun dailyComparison(date: Date): DailyComparison {
+        val today = aggregate(date, date).summary
+        val previousDate = ReportPeriod.previousDay(date)
+        val previous = aggregate(previousDate, previousDate).summary
+
+        return DailyComparison(
+            date = ReportPeriod.startOfDay(date),
+            totalAmount = today.totalAmount,
+            salesCount = today.totalSales,
+            averageAmount = today.averageAmount.toInt(),
+            previousAmount = previous.totalAmount,
+            previousSalesCount = previous.totalSales,
+            changeRatio =
+                if (previous.totalAmount > 0) {
+                    (today.totalAmount - previous.totalAmount).toDouble() / previous.totalAmount
+                } else {
+                    null
+                },
+        )
+    }
+
+    fun findSaleDetail(saleId: Int): SaleDetailView? {
+        val sale = saleRepository.findById(saleId).orElse(null) ?: return null
+        val details = saleDetailRepository.findBySaleIdIn(listOf(saleId))
+        val itemNames = loadItemNames(details.map { it.itemId })
+        val storeNames = loadStoreNames(listOf(sale.storeId))
+
+        return SaleDetailView(
+            sale = sale,
+            storeName = storeNames[sale.storeId] ?: UNKNOWN_STORE,
+            details =
+                details.map { detail ->
+                    SaleReportDetailData(
+                        itemId = detail.itemId,
+                        itemName = itemNames[detail.itemId] ?: UNKNOWN_ITEM,
+                        price = detail.price,
+                        quantity = detail.quantity,
+                        subtotal = detail.price * detail.quantity,
+                    )
+                },
         )
     }
 

@@ -2,22 +2,9 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header(${title})}"></head>
 <body>
-<!-- ナビゲーションバー -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="fas fa-store"></i> KidsPOS
-        </a>
-        <div class="navbar-nav ms-auto">
-            <a class="nav-link" href="/">
-                <i class="fas fa-home"></i> ダッシュボード
-            </a>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{layout::nav('sales')}"></div>
 
 <div class="main-container">
-    <!-- Main Content -->
     <div class="container-wrapper">
         <div class="content-area">
             <div class="container-fluid mt-3">
@@ -31,12 +18,9 @@
                                         売上管理
                                     </h1>
                                     <div class="d-flex gap-2">
-                                        <button class="btn btn-info btn-sm">
-                                            <i class="fas fa-download"></i> エクスポート
-                                        </button>
-                                        <button class="btn btn-primary btn-sm">
-                                            <i class="fas fa-filter"></i> フィルター
-                                        </button>
+                                        <a class="btn btn-info btn-sm" href="/reports/sales">
+                                            <i class="fas fa-download"></i> レポート・エクスポート
+                                        </a>
                                     </div>
                                 </div>
                                 <!-- Stats Cards -->
@@ -45,7 +29,9 @@
                                         <div class="card bg-light border-0 text-center">
                                             <div class="card-body py-3">
                                                 <h6 class="text-muted mb-2">本日の売上</h6>
-                                                <h5 class="mb-0 text-primary">¥0</h5>
+                                                <h5 class="mb-0 text-primary">
+                                                    ¥<span th:text="${#numbers.formatInteger(stats.totalAmount, 1, 'COMMA')}"></span>
+                                                </h5>
                                             </div>
                                         </div>
                                     </div>
@@ -53,7 +39,9 @@
                                         <div class="card bg-light border-0 text-center">
                                             <div class="card-body py-3">
                                                 <h6 class="text-muted mb-2">本日の取引数</h6>
-                                                <h5 class="mb-0 text-info">0件</h5>
+                                                <h5 class="mb-0 text-info">
+                                                    <span th:text="${stats.salesCount}"></span>件
+                                                </h5>
                                             </div>
                                         </div>
                                     </div>
@@ -61,7 +49,9 @@
                                         <div class="card bg-light border-0 text-center">
                                             <div class="card-body py-3">
                                                 <h6 class="text-muted mb-2">平均単価</h6>
-                                                <h5 class="mb-0 text-warning">¥0</h5>
+                                                <h5 class="mb-0 text-warning">
+                                                    ¥<span th:text="${#numbers.formatInteger(stats.averageAmount, 1, 'COMMA')}"></span>
+                                                </h5>
                                             </div>
                                         </div>
                                     </div>
@@ -69,13 +59,23 @@
                                         <div class="card bg-light border-0 text-center">
                                             <div class="card-body py-3">
                                                 <h6 class="text-muted mb-2">前日比</h6>
-                                                <h5 class="mb-0 text-success">+0%</h5>
+                                                <h5 class="mb-0" th:if="${stats.changeRatio == null}">
+                                                    <span class="text-muted">-</span>
+                                                </h5>
+                                                <h5 class="mb-0"
+                                                    th:if="${stats.changeRatio != null}"
+                                                    th:classappend="${stats.changeRatio >= 0} ? 'text-success' : 'text-danger'">
+                                                    <span th:text="${(stats.changeRatio >= 0 ? '+' : '') + #numbers.formatDecimal(stats.changeRatio * 100, 1, 1)}"></span>%
+                                                </h5>
+                                                <small class="text-muted">
+                                                    前日 ¥<span th:text="${#numbers.formatInteger(stats.previousAmount, 1, 'COMMA')}"></span>
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="table-responsive">
-                                    <table id="content" class="table table-striped table-hover">
+                                    <table id="content" class="table table-striped table-hover" data-datatable>
                                         <thead>
                                             <tr>
                                                 <th>取引ID</th>
@@ -90,10 +90,13 @@
                                         <tbody>
                                             <tr th:each="sale: ${data}">
                                                 <td style="font-weight: 500;">
-                                                    #<span th:text="${sale.id}"></span>
+                                                    <a th:href="@{/sales/{id}(id=${sale.id})}">
+                                                        #<span th:text="${sale.id}"></span>
+                                                    </a>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-primary" th:text="${'店舗' + sale.storeId}"></span>
+                                                    <span class="badge bg-primary"
+                                                          th:text="${storeNames.containsKey(sale.storeId)} ? ${storeNames.get(sale.storeId)} : ${'店舗' + sale.storeId}"></span>
                                                 </td>
                                                 <td style="text-align: center;">
                                                     <strong th:text="${sale.quantity}"></strong>
@@ -114,7 +117,9 @@
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span class="text-muted">-</span>
+                                                    <span th:if="${sale.createdAt != null}"
+                                                          th:text="${#dates.format(sale.createdAt, 'yyyy/MM/dd HH:mm')}"></span>
+                                                    <span th:if="${sale.createdAt == null}" class="text-muted">-</span>
                                                 </td>
                                             </tr>
                                         </tbody>
@@ -134,5 +139,6 @@
         </div>
     </div>
 </div>
+<div th:replace="~{layout::footer}"></div>
 </body>
 </html>

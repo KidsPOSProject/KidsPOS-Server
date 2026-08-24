@@ -2,19 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header(${title})}"></head>
 <body>
-<!-- ナビゲーションバー -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="fas fa-store"></i> KidsPOS
-        </a>
-        <div class="navbar-nav ms-auto">
-            <a class="nav-link" href="/">
-                <i class="fas fa-home"></i> ダッシュボード
-            </a>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{layout::nav('settings')}"></div>
 
 <div class="main-container">
     <!-- Main Content -->
@@ -26,10 +14,10 @@
                         <div class="card-modern">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h4 class="mb-0">
+                                    <h1 class="h4 mb-0">
                                         <i class="fas fa-cog text-secondary me-2"></i>
                                         システム設定
-                                    </h4>
+                                    </h1>
                                 </div>
 
                                 <div class="table-responsive">
@@ -177,5 +165,6 @@ function showResult(type, message) {
     resultDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}`;
 }
 </script>
+<div th:replace="~{layout::footer}"></div>
 </body>
 </html>

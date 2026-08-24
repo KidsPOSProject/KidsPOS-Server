@@ -153,19 +153,21 @@ service/
 ```
 resources/
 ├── static/                     # Static web assets
-│   ├── Bootstrap-4-4.1.1/    # Bootstrap CSS framework
-│   ├── DataTables-1.10.18/   # DataTables plugin
+│   ├── vendor/                # Offline third-party assets (Bootstrap 5, DataTables, jQuery, Chart.js, SweetAlert2, Font Awesome, Inter)
 │   ├── QrCode/                # QR code generation
-│   ├── datatables.js          # DataTables configuration
-│   ├── datatables.min.js      # DataTables minified
-│   └── scripts.js             # Custom JavaScript
+│   ├── css/                   # modern-style.css, mobile-responsive.css
+│   ├── js/                    # modern-scripts.js
+│   └── validation.js          # Form validation helpers
 ├── templates/                  # Thymeleaf HTML templates
-│   ├── fragments/             # Reusable template fragments
+│   ├── apk/                  # APK version management views
+│   ├── ip/                   # Network information view
 │   ├── items/                # Item management views
+│   ├── logs/                 # Server log view
+│   ├── reports/              # Sales report views
 │   ├── sales/                # Sales management views
 │   ├── settings/             # Settings views
-│   ├── staffs/               # Staff management views
 │   ├── stores/               # Store management views
+│   ├── layout.html           # Shared header / nav / footer fragments
 │   └── index.html            # Main page template
 ├── db/migration/              # Flyway migrations (source of truth for the schema)
 └── application.yaml           # Spring Boot configuration

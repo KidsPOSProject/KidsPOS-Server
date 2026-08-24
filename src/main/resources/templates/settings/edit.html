@@ -1,25 +1,50 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
-<!--suppress HtmlRequiredTitleElement -->
-<head th:replace="~{layout::base_header(${title})}">
-</head>
+<head th:replace="~{layout::base_header(${title})}"></head>
 <body>
-<div class="container">
-    <h1>Edit Setting</h1>
-    <form th:action="@{/settings/{key}(key=${setting.key})}" th:method="post">
-        <div class="form-group">
-            <label class="control-label">key</label>
-            <input class="form-control" name="key" type="text" th:value="${setting.key}" readonly/>
+<div th:replace="~{layout::nav('settings')}"></div>
+
+<div class="main-container">
+    <div class="container-wrapper">
+        <div class="content-area">
+            <div class="container-fluid mt-3">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card-modern">
+                            <div class="card-body">
+                                <h1 class="h4 mb-4">
+                                    <i class="fas fa-cog text-secondary me-2"></i>
+                                    設定編集
+                                </h1>
+
+                                <form th:action="@{/settings/{key}(key=${setting.key})}" method="post">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="settingKey">設定項目</label>
+                                        <input class="form-control" id="settingKey" name="key" type="text"
+                                               th:value="${setting.key}" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="settingValue">値</label>
+                                        <input class="form-control" id="settingValue" name="value" type="text"
+                                               th:value="${setting.value}" required>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-primary" type="submit">
+                                            <i class="fas fa-save"></i> 更新
+                                        </button>
+                                        <a class="btn btn-secondary" href="/settings">
+                                            <i class="fas fa-arrow-left"></i> 一覧へ戻る
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label class="control-label">value</label>
-            <input class="form-control" name="value" type="text" th:value="${setting.value}"/>
-        </div>
-        <button class="btn btn-outline-primary" type="submit">更新</button>
-    </form>
-    <div class="pull-right">
-        <a class="btn btn-outline-warning" href="/settings">一覧画面へ</a>
     </div>
 </div>
+<div th:replace="~{layout::footer}"></div>
 </body>
 </html>

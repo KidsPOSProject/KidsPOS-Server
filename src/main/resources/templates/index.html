@@ -2,6 +2,8 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header('ダッシュボード')}"></head>
 <body>
+    <div th:replace="~{layout::nav('top')}"></div>
+
     <div class="main-container">
         <!-- Main Content -->
         <div class="container-wrapper">
@@ -123,6 +125,18 @@
                                         <i class="fas fa-clipboard-list fa-3x text-info mb-3"></i>
                                         <h3 class="h4">ログ</h3>
                                         <p class="text-muted">直近のエラーログを確認</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-lg-4 col-md-6">
+                            <a href="/ip" class="text-decoration-none">
+                                <div class="card-modern h-100">
+                                    <div class="card-body text-center p-4">
+                                        <i class="fas fa-network-wired fa-3x text-primary mb-3"></i>
+                                        <h3 class="h4">接続情報</h3>
+                                        <p class="text-muted">端末から接続するQRコード</p>
                                     </div>
                                 </div>
                             </a>

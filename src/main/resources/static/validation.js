@@ -11,18 +11,14 @@ function validateIPAddress(ip) {
 
 /**
  * バーコードのバリデーション
- * 数字のみで構成され、8-13桁（EAN-8, EAN-13, JAN, UPCなど）
+ * 独自フォーマット A + 種別2桁(00/01/02) + ID6桁 + A（例: A01000001A）
+ * サーバー側 Constants.Validation.BARCODE_PATTERN と一致させること
  */
 function validateBarcode(barcode) {
-    // 空文字は許可
+    // 空文字は許可（サーバー側で自動生成される）
     if (!barcode || barcode.length === 0) return true;
 
-    // 数字のみチェック
-    const numericPattern = /^\d+$/;
-    if (!numericPattern.test(barcode)) return false;
-
-    // 長さチェック（8-13桁）
-    return barcode.length >= 8 && barcode.length <= 13;
+    return /^A(00|01|02)\d{6}A$/.test(barcode);
 }
 
 /**
@@ -69,7 +65,7 @@ function initializeValidation() {
                 const value = this.value.trim();
                 if (value && !validateBarcode(value)) {
                     this.classList.add('is-invalid');
-                    showValidationError(this, 'バーコードは8〜13桁の数字で入力してください');
+                    showValidationError(this, 'バーコードは A01000001A の形式で入力してください');
                 } else {
                     this.classList.remove('is-invalid');
                     removeValidationError(this);
@@ -82,7 +78,7 @@ function initializeValidation() {
                 if (value && !validateBarcode(value)) {
                     e.preventDefault();
                     barcodeInput.classList.add('is-invalid');
-                    showValidationError(barcodeInput, 'バーコードは8〜13桁の数字で入力してください');
+                    showValidationError(barcodeInput, 'バーコードは A01000001A の形式で入力してください');
                     barcodeInput.focus();
                 }
             });

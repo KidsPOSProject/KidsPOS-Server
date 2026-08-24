@@ -9,6 +9,7 @@ import info.nukoneko.kidspos.server.repository.SaleDetailRepository
 import info.nukoneko.kidspos.server.repository.SaleRepository
 import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,6 +23,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.Calendar
 import java.util.Date
+import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 class SaleAggregationServiceTest {
@@ -196,6 +198,81 @@ class SaleAggregationServiceTest {
         assertEquals(dateOf(2026, 8, 20, 0, 0, 0, 0), response.startDate)
         assertEquals(dateOf(2026, 8, 21, 23, 59, 59, 999), response.endDate)
     }
+
+    @Test
+    fun `dailyComparison は当日実績と前日実績と前日比を返す`() {
+        whenever(saleRepository.findByDateRange(any(), any()))
+            .thenReturn(
+                listOf(
+                    saleOf(id = 1, amount = 300, createdAt = dateOf(2026, 8, 21, 10, 0, 0, 0)),
+                    saleOf(id = 2, amount = 100, createdAt = dateOf(2026, 8, 21, 11, 0, 0, 0)),
+                ),
+            ).thenReturn(
+                listOf(saleOf(id = 3, amount = 200, createdAt = dateOf(2026, 8, 20, 10, 0, 0, 0))),
+            )
+        stubDetails(emptyList())
+
+        val comparison = service.dailyComparison(dateOf(2026, 8, 21, 15, 0, 0, 0))
+
+        assertEquals(dateOf(2026, 8, 21, 0, 0, 0, 0), comparison.date)
+        assertEquals(400, comparison.totalAmount)
+        assertEquals(2, comparison.salesCount)
+        assertEquals(200, comparison.averageAmount)
+        assertEquals(200, comparison.previousAmount)
+        assertEquals(1, comparison.previousSalesCount)
+        assertEquals(1.0, comparison.changeRatio!!, 0.001)
+    }
+
+    @Test
+    fun `dailyComparison は前日に実績が無いとき前日比を null にする`() {
+        whenever(saleRepository.findByDateRange(any(), any()))
+            .thenReturn(listOf(saleOf(id = 1, amount = 300, createdAt = dateOf(2026, 8, 21, 10, 0, 0, 0))))
+            .thenReturn(emptyList())
+        stubDetails(emptyList())
+
+        val comparison = service.dailyComparison(dateOf(2026, 8, 21, 15, 0, 0, 0))
+
+        assertEquals(300, comparison.totalAmount)
+        assertEquals(0, comparison.previousAmount)
+        assertEquals(0, comparison.previousSalesCount)
+        assertNull(comparison.changeRatio)
+    }
+
+    @Test
+    fun `findSaleDetail は明細と店舗名を組み立てて返す`() {
+        val sale = allSales().first()
+        whenever(saleRepository.findById(1)).thenReturn(Optional.of(sale))
+        stubDetails(allDetails().filter { it.saleId == 1 })
+        stubItems(allItems())
+        stubStores(allStores())
+
+        val detail = service.findSaleDetail(1)!!
+
+        assertEquals("本店", detail.storeName)
+        assertEquals(listOf("りんご", "みかん"), detail.details.map { it.itemName })
+        assertEquals(listOf(200, 100), detail.details.map { it.subtotal })
+        assertEquals(300, detail.detailAmount)
+    }
+
+    @Test
+    fun `findSaleDetail は存在しない取引で null を返す`() {
+        whenever(saleRepository.findById(999)).thenReturn(Optional.empty())
+
+        assertNull(service.findSaleDetail(999))
+    }
+
+    private fun saleOf(
+        id: Int,
+        amount: Int,
+        createdAt: Date,
+    ) = SaleEntity(
+        id = id,
+        storeId = 1,
+        quantity = 1,
+        amount = amount,
+        deposit = amount,
+        createdAt = createdAt,
+    )
 
     private fun stubAllSales() {
         stubSales(allSales())
