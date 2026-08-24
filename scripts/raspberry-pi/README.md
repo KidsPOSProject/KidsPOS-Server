@@ -15,7 +15,7 @@ Raspberry Pi 上で KidsPOS Server を運用するためのファイル一式で
 | ファイル | 用途 |
 |---|---|
 | install.sh | 初回セットアップ（ディレクトリ作成、systemd ユニット配置、自動起動有効化、jar 導入） |
-| update-app.sh | jar の更新（バックアップ、差し替え、ヘルスチェック、失敗時の巻き戻し）と最新 APK の登録 |
+| update-app.sh | jar の更新（バックアップ、差し替え、ヘルスチェック、失敗時の巻き戻し）、スクリプト自身の更新、最新 APK の登録 |
 | upload-apk.sh | Android アプリの APK をサーバーへ登録（GitHub Releases から取得、または持ち込んだファイル） |
 | doctor.sh | 稼働診断（Java、jar、サービス、ヘルスチェック、DB、ディスク、ログ、時刻） |
 | kidspos-server.service | systemd ユニットのテンプレート |
@@ -48,6 +48,7 @@ sudo apt install -y openjdk-21-jre-headless
 ## 更新方法
 
 GitHub Releases の最新リリースに添付される app.jar を使って更新します。
+このリリースは main が更新されるたびに Release Server ワークフローが自動で作成する server-v* で、常に main の最新コードから作られます。
 DB スキーマの変更は jar 内の Flyway マイグレーションが起動時に自動適用されるため、追加の作業は不要です。
 
 ### ネット接続時（年1メンテナンスなど）
@@ -64,12 +65,20 @@ jar が同一バージョンで差し替えを行わなかった場合も APK �
 APK の登録に失敗しても（ネット不通、リリースが無いなど）警告のみでサーバーの更新は成功扱いになります。
 APK を確認せずサーバーだけ更新したい場合は --skip-apk を付けてください。
 
+同じリリースには Raspberry Pi 用スクリプト一式（kidspos-scripts.tar.gz）も添付されており、update-app.sh は APK を確認する前に /opt/kidspos の update-app.sh と doctor.sh と upload-apk.sh を最新版へ差し替えます。
+実行中のスクリプトを壊さないよう、一時ディレクトリに展開してから差し替えるため、新しい内容は次回の実行から反映されます。
+差し替えたバージョンは .installed-scripts-version に記録され、失敗した場合は記録せず次回に再試行します。
+取得や展開に失敗しても警告のみでサーバーの更新は成功扱いです。スクリプトを差し替えたくない場合は --skip-self-update を付けてください。
+なお install.sh と systemd ユニットは daemon-reload を伴うため自動更新の対象外です。変更があった場合はリポジトリを取得し直して install.sh を実行してください。
+
 ### オフライン時（jar を持ち込む場合）
 
-別の PC で最新リリースの app.jar をダウンロードしておきます:
+別の PC で、app.jar が添付された最新リリース（server-v*）から app.jar をダウンロードしておきます:
 
 ```bash
-curl -fL -o app.jar https://github.com/KidsPOSProject/KidsPOS-Server/releases/latest/download/app.jar
+JAR_URL=$(curl -fsSL "https://api.github.com/repos/KidsPOSProject/KidsPOS-Server/releases?per_page=20" \
+    | grep -o '"browser_download_url": *"[^"]*/app\.jar"' | head -1 | cut -d'"' -f4)
+curl -fL -o app.jar "$JAR_URL"
 ```
 
 USB メモリやイントラネット経由（scp など）で Raspberry Pi にコピーし、パスを渡して実行します:
