@@ -2,6 +2,7 @@ package info.nukoneko.kidspos.server.controller.api
 
 import info.nukoneko.kidspos.server.controller.dto.response.StatusResponse
 import info.nukoneko.kidspos.server.domain.exception.ResourceNotFoundException
+import info.nukoneko.kidspos.server.domain.exception.ValidationException
 import info.nukoneko.kidspos.server.entity.SettingEntity
 import info.nukoneko.kidspos.server.service.SettingService
 import info.nukoneko.kidspos.server.service.StatusService
@@ -25,14 +26,14 @@ class SettingApiController(
     fun getStatus(): StatusResponse = statusService.getStatus()
 
     @GetMapping
-    fun getAllSettings(): ResponseEntity<List<SettingEntity>> = ResponseEntity.ok(service.findAllSetting())
+    fun getAllSettings(): ResponseEntity<List<SettingEntity>> = ResponseEntity.ok(service.findVisibleSetting())
 
     @GetMapping("/{key}")
     fun getSetting(
         @PathVariable key: String,
     ): ResponseEntity<SettingEntity> {
         val setting =
-            service.findSetting(key)
+            findEditableSetting(key)
                 ?: throw ResourceNotFoundException("Setting with key $key not found")
         return ResponseEntity.ok(setting)
     }
@@ -41,6 +42,7 @@ class SettingApiController(
     fun createSetting(
         @Valid @RequestBody setting: SettingEntity,
     ): ResponseEntity<SettingEntity> {
+        rejectProtectedKey(setting.key)
         val savedSetting = service.saveSetting(setting)
         return ResponseEntity.status(HttpStatus.CREATED).body(savedSetting)
     }
@@ -51,7 +53,7 @@ class SettingApiController(
         @RequestParam value: String,
     ): ResponseEntity<SettingEntity> {
         val existingSetting =
-            service.findSetting(key)
+            findEditableSetting(key)
                 ?: throw ResourceNotFoundException("Setting with key $key not found")
 
         existingSetting.value = value
@@ -63,7 +65,7 @@ class SettingApiController(
     fun deleteSetting(
         @PathVariable key: String,
     ): ResponseEntity<Void> {
-        service.findSetting(key)
+        findEditableSetting(key)
             ?: throw ResourceNotFoundException("Setting with key $key not found")
 
         service.deleteSetting(key)
@@ -154,6 +156,19 @@ class SettingApiController(
                 ),
             )
         }
+
+    private fun findEditableSetting(key: String): SettingEntity? =
+        if (service.isProtectedKey(key)) {
+            null
+        } else {
+            service.findSetting(key)
+        }
+
+    private fun rejectProtectedKey(key: String) {
+        if (service.isProtectedKey(key)) {
+            throw ValidationException("Setting with key $key cannot be modified through this endpoint")
+        }
+    }
 
     /**
      * プリンタ設定のリクエストDTO

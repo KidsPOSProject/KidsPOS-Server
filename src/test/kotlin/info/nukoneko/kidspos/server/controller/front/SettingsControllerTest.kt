@@ -43,7 +43,7 @@ class SettingsControllerTest {
     fun showsSettings() {
         val settings = listOf(SettingEntity(key = "printer.host", value = "192.168.1.10"))
         val stores = listOf(StoreEntity(id = 1, name = "本店"))
-        whenever(settingService.findAllSetting()).thenReturn(settings)
+        whenever(settingService.findVisibleSetting()).thenReturn(settings)
         whenever(storeService.findAll()).thenReturn(stores)
 
         mockMvc
@@ -103,6 +103,32 @@ class SettingsControllerTest {
 
         mockMvc
             .perform(post("/settings/unknown").param("value", "x"))
+            .andExpect(status().is3xxRedirection)
+            .andExpect(redirectedUrl("/settings"))
+
+        verify(settingService, never()).saveSetting(any())
+    }
+
+    @Test
+    @DisplayName("保護された設定の編集画面は一覧へ戻す")
+    fun redirectsProtectedSettingEdit() {
+        whenever(settingService.isProtectedKey(eq(SettingService.KEY_DANGER_ZONE_PASSWORD))).thenReturn(true)
+
+        mockMvc
+            .perform(get("/settings/${SettingService.KEY_DANGER_ZONE_PASSWORD}/edit"))
+            .andExpect(status().is3xxRedirection)
+            .andExpect(redirectedUrl("/settings"))
+
+        verify(settingService, never()).findSetting(any())
+    }
+
+    @Test
+    @DisplayName("保護された設定は更新できない")
+    fun doesNotUpdateProtectedSetting() {
+        whenever(settingService.isProtectedKey(eq(SettingService.KEY_DANGER_ZONE_PASSWORD))).thenReturn(true)
+
+        mockMvc
+            .perform(post("/settings/${SettingService.KEY_DANGER_ZONE_PASSWORD}").param("value", "x"))
             .andExpect(status().is3xxRedirection)
             .andExpect(redirectedUrl("/settings"))
 

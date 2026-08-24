@@ -44,6 +44,14 @@ class SettingService(
         return repository.findAll()
     }
 
+    @Cacheable(value = [CacheConfig.SETTINGS_CACHE], key = "'visible'")
+    fun findVisibleSetting(): List<SettingEntity> {
+        logger.debug("Fetching visible settings from database")
+        return repository.findAll().filterNot { isProtectedKey(it.key) }
+    }
+
+    fun isProtectedKey(key: String): Boolean = key in PROTECTED_KEYS
+
     @Cacheable(value = [CacheConfig.SETTINGS_CACHE], key = "#key")
     fun findSetting(key: String): SettingEntity? {
         logger.debug("Fetching setting by key: {} from database", key)
@@ -152,7 +160,11 @@ class SettingService(
         logger.info("Test print completed successfully for store ID: {}", storeId)
     }
 
-    private companion object {
+    companion object {
+        const val KEY_DANGER_ZONE_PASSWORD = "danger_zone_password"
+
+        val PROTECTED_KEYS = setOf(KEY_DANGER_ZONE_PASSWORD)
+
         private const val KEY_PRINTER = "printer"
         private const val KEY_APP = "application"
 

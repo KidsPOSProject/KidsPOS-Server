@@ -32,6 +32,8 @@ tags:
     description: サーバーログ
   - name: System
     description: サーバー時刻
+  - name: DangerZone
+    description: 危険操作を保護するパスワード
 
 paths:
   # Status
@@ -1374,6 +1376,103 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemTimeSyncResponse'
 
+  # DangerZone
+  /api/setting/danger-zone/status:
+    get:
+      tags:
+        - DangerZone
+      summary: Danger Zone パスワード設定状態取得
+      description: 危険操作を保護するパスワードが設定済みかを取得する
+      operationId: getDangerZoneStatus
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerZoneStatusResponse'
+
+  /api/setting/danger-zone/password:
+    post:
+      tags:
+        - DangerZone
+      summary: Danger Zone パスワード設定
+      description: 危険操作を保護するパスワードを設定または変更する。設定済みの場合は現在のパスワードが必要
+      operationId: changeDangerZonePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeDangerZonePasswordRequest'
+      responses:
+        '200':
+          description: 設定成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerZonePasswordResponse'
+        '400':
+          description: 現在のパスワード不一致、または新パスワードが長さ制約を満たさない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerZonePasswordResponse'
+
+  /api/setting/danger-zone/password/clear:
+    post:
+      tags:
+        - DangerZone
+      summary: Danger Zone パスワード解除
+      description: 設定済みのパスワードを削除する。現在のパスワードが必要
+      operationId: clearDangerZonePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClearDangerZonePasswordRequest'
+      responses:
+        '200':
+          description: 解除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerZonePasswordResponse'
+        '400':
+          description: 現在のパスワード不一致、または未設定
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerZonePasswordResponse'
+
+  /api/setting/danger-zone/verify:
+    post:
+      tags:
+        - DangerZone
+      summary: Danger Zone パスワード照合
+      description: 入力されたパスワードが設定済みパスワードと一致するかを判定する。不一致でも200を返し、validフラグで判定する
+      operationId: verifyDangerZonePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyDangerZonePasswordRequest'
+      responses:
+        '200':
+          description: 照合結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerZoneVerifyResponse'
+        '400':
+          description: パスワードが空
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 
 components:
   schemas:
@@ -1954,6 +2053,87 @@ components:
         - driftMillis
         - requested
         - current
+
+    DangerZoneStatusResponse:
+      type: object
+      properties:
+        configured:
+          type: boolean
+          description: パスワードが設定済みか
+      required:
+        - configured
+
+    ChangeDangerZonePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+          description: 現在のパスワード。未設定の状態から初めて設定する場合は不要
+          example: "kidspos1234"
+        newPassword:
+          type: string
+          description: 新しいパスワード
+          minLength: 4
+          maxLength: 128
+          example: "kidspos5678"
+      required:
+        - newPassword
+
+    ClearDangerZonePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+          description: 現在のパスワード
+          example: "kidspos1234"
+      required:
+        - currentPassword
+
+    VerifyDangerZonePasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          description: 照合するパスワード
+          example: "kidspos1234"
+      required:
+        - password
+
+    DangerZonePasswordResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 操作に成功したか
+        message:
+          type: string
+          description: 結果メッセージ
+          example: "パスワードを保存しました"
+        configured:
+          type: boolean
+          description: 操作後にパスワードが設定済みか
+      required:
+        - success
+        - message
+        - configured
+
+    DangerZoneVerifyResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: パスワードが一致したか
+        configured:
+          type: boolean
+          description: サーバーにパスワードが設定済みか
+        message:
+          type: string
+          description: 結果メッセージ
+          example: "認証しました"
+      required:
+        - valid
+        - configured
+        - message
 
   securitySchemes:
     bearerAuth:
