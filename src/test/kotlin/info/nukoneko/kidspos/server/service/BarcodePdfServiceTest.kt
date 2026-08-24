@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
+import org.mockito.Mockito.timeout
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -18,6 +19,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @ExtendWith(MockitoExtension::class)
 @DisplayName("BarcodePdfService")
@@ -132,14 +134,19 @@ class BarcodePdfServiceTest {
     }
 
     @Test
-    @DisplayName("ウォームアップ前後でキャッシュの有無が変わる")
+    @DisplayName("ウォームアップは罫線ありとなしの両方を作る")
     fun warmUpFillsCache() {
         whenever(itemService.findAll()).thenReturn(items)
         whenever(barcodeService.generateBarcodePdf(any(), eq(false))).thenReturn(byteArrayOf(1))
+        whenever(barcodeService.generateBarcodePdf(any(), eq(true))).thenReturn(byteArrayOf(2))
 
         assertFalse(service.isCached(false))
+        assertFalse(service.isCached(true))
+
         service.warmUp()
+
         assertTrue(service.isCached(false))
+        assertTrue(service.isCached(true))
     }
 
     @Test
@@ -168,13 +175,123 @@ class BarcodePdfServiceTest {
     fun warmsUpOnStartupWhenEnabled() {
         whenever(itemService.findAll()).thenReturn(items)
         whenever(barcodeService.generateBarcodePdf(any(), eq(false))).thenReturn(byteArrayOf(1))
+        whenever(barcodeService.generateBarcodePdf(any(), eq(true))).thenReturn(byteArrayOf(2))
 
         service.warmUpInBackground()
 
+        awaitCached(false)
+        awaitCached(true)
+        assertTrue(service.isCached(false))
+        assertTrue(service.isCached(true))
+    }
+
+    @Test
+    @DisplayName("商品が変わったらキャッシュを作り直す")
+    fun rebuildsCacheOnItemsChanged() {
+        val current = AtomicReference(items)
+        whenever(itemService.findAll()).thenAnswer { current.get() }
+        whenever(barcodeService.generateBarcodePdf(any(), eq(false)))
+            .thenReturn(byteArrayOf(1))
+            .thenReturn(byteArrayOf(9))
+        whenever(barcodeService.generateBarcodePdf(any(), eq(true))).thenReturn(byteArrayOf(2))
+
+        service.warmUp()
+        assertArrayEquals(byteArrayOf(1), service.getAllItemsPdf(false))
+
+        current.set(items + ItemEntity(3, "A01000003A", "ぶどう", 200))
+        service.onItemsChanged(ItemsChangedEvent(3))
+
+        verify(barcodeService, timeout(5_000).times(2)).generateBarcodePdf(any(), eq(false))
+        assertArrayEquals(byteArrayOf(9), service.getAllItemsPdf(false))
+    }
+
+    @Test
+    @DisplayName("同じ選択の再要求では生成し直さない")
+    fun reusesCachedSelectedPdf() {
+        whenever(barcodeService.generateBarcodePdf(any(), eq(false))).thenReturn(byteArrayOf(7))
+
+        val first = service.getSelectedItemsPdf(items, false)
+        val second = service.getSelectedItemsPdf(items, false)
+
+        assertArrayEquals(byteArrayOf(7), first)
+        assertArrayEquals(first, second)
+        verify(barcodeService, times(1)).generateBarcodePdf(any(), eq(false))
+    }
+
+    @Test
+    @DisplayName("選択の中身が変われば別のPDFを作る")
+    fun regeneratesSelectedPdfWhenSelectionChanges() {
+        whenever(barcodeService.generateBarcodePdf(any(), eq(false)))
+            .thenReturn(byteArrayOf(1))
+            .thenReturn(byteArrayOf(2))
+
+        assertArrayEquals(byteArrayOf(1), service.getSelectedItemsPdf(items, false))
+        assertArrayEquals(byteArrayOf(2), service.getSelectedItemsPdf(listOf(items[0]), false))
+        assertArrayEquals(byteArrayOf(1), service.getSelectedItemsPdf(items, false))
+
+        verify(barcodeService, times(2)).generateBarcodePdf(any(), eq(false))
+    }
+
+    @Test
+    @DisplayName("選択PDFの罫線ありとなしは別々に保持される")
+    fun cachesSelectedPdfPerShowBordersFlag() {
+        whenever(barcodeService.generateBarcodePdf(any(), eq(false))).thenReturn(byteArrayOf(1))
+        whenever(barcodeService.generateBarcodePdf(any(), eq(true))).thenReturn(byteArrayOf(2))
+
+        assertArrayEquals(byteArrayOf(1), service.getSelectedItemsPdf(items, false))
+        assertArrayEquals(byteArrayOf(2), service.getSelectedItemsPdf(items, true))
+        assertArrayEquals(byteArrayOf(1), service.getSelectedItemsPdf(items, false))
+
+        verify(barcodeService, times(1)).generateBarcodePdf(any(), eq(false))
+        verify(barcodeService, times(1)).generateBarcodePdf(any(), eq(true))
+    }
+
+    @Test
+    @DisplayName("選択PDFのキャッシュは上限を超えると古いものから捨てる")
+    fun evictsOldestSelectedPdf() {
+        whenever(barcodeService.generateBarcodePdf(any(), eq(false))).thenReturn(byteArrayOf(1))
+
+        val selections = (1..SELECTED_CACHE_CAPACITY + 1).map { listOf(ItemEntity(it, "A0100000${it}A", "商品$it", it * 10)) }
+        selections.forEach { service.getSelectedItemsPdf(it, false) }
+
+        service.getSelectedItemsPdf(selections.first(), false)
+
+        verify(barcodeService, times(SELECTED_CACHE_CAPACITY + 2)).generateBarcodePdf(any(), eq(false))
+    }
+
+    @Test
+    @DisplayName("同じ選択が同時に要求されても生成は一度だけ行われる")
+    fun generatesSelectedPdfOnceUnderConcurrentAccess() {
+        val threadCount = 8
+        val start = CountDownLatch(1)
+        val done = CountDownLatch(threadCount)
+
+        whenever(barcodeService.generateBarcodePdf(any(), eq(false))).thenAnswer {
+            Thread.sleep(20)
+            byteArrayOf(1)
+        }
+
+        repeat(threadCount) {
+            Thread {
+                start.await()
+                service.getSelectedItemsPdf(items, false)
+                done.countDown()
+            }.also { it.isDaemon = true }.start()
+        }
+
+        start.countDown()
+        assertTrue(done.await(10, TimeUnit.SECONDS))
+        verify(barcodeService, times(1)).generateBarcodePdf(any(), eq(false))
+    }
+
+    private fun awaitCached(showBorders: Boolean) {
         val deadline = System.currentTimeMillis() + 5_000
-        while (!service.isCached(false) && System.currentTimeMillis() < deadline) {
+        while (!service.isCached(showBorders) && System.currentTimeMillis() < deadline) {
             Thread.sleep(10)
         }
-        assertTrue(service.isCached(false))
+    }
+
+    private companion object {
+        const val SELECTED_CACHE_CAPACITY = 8
     }
 }

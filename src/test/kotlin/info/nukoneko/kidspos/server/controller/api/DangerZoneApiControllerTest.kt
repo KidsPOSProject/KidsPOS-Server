@@ -1,6 +1,7 @@
 package info.nukoneko.kidspos.server.controller.api
 
 import info.nukoneko.kidspos.server.service.DangerZonePasswordService
+import info.nukoneko.kidspos.server.service.DangerZoneVerifyRateLimiter
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -17,6 +18,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -29,6 +31,9 @@ class DangerZoneApiControllerTest {
 
     @MockBean
     private lateinit var dangerZonePasswordService: DangerZonePasswordService
+
+    @MockBean
+    private lateinit var verifyRateLimiter: DangerZoneVerifyRateLimiter
 
     @Test
     fun `未設定なら設定状態はfalseを返す`() {
@@ -195,5 +200,77 @@ class DangerZoneApiControllerTest {
             ).andExpect(status().isBadRequest)
 
         verify(dangerZonePasswordService, never()).verify(any())
+    }
+
+    @Test
+    fun `連打が上限を超えると429を返し照合しない`() {
+        whenever(verifyRateLimiter.retryAfterSeconds(any())).thenReturn(30)
+        whenever(dangerZonePasswordService.isConfigured()).thenReturn(true)
+
+        mockMvc
+            .perform(
+                post("/api/setting/danger-zone/verify")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"password":"wrong"}"""),
+            ).andExpect(status().isTooManyRequests)
+            .andExpect(header().string("Retry-After", "30"))
+            .andExpect(jsonPath("$.valid").value(false))
+            .andExpect(jsonPath("$.configured").value(true))
+            .andExpect(jsonPath("$.message").value("試行回数が多すぎます。30秒後にもう一度お試しください"))
+
+        verify(dangerZonePasswordService, never()).verify(any())
+    }
+
+    @Test
+    fun `照合に失敗したら失敗として記録する`() {
+        whenever(dangerZonePasswordService.verify(eq("wrong")))
+            .thenReturn(DangerZonePasswordService.VerifyResult(false, configured = true, message = "パスワードが違います"))
+
+        mockMvc
+            .perform(
+                post("/api/setting/danger-zone/verify")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"password":"wrong"}"""),
+            ).andExpect(status().isOk)
+
+        verify(verifyRateLimiter).recordFailure(any())
+        verify(verifyRateLimiter, never()).recordSuccess(any())
+    }
+
+    @Test
+    fun `照合に成功したら記録を消す`() {
+        whenever(dangerZonePasswordService.verify(eq("kidspos1234")))
+            .thenReturn(DangerZonePasswordService.VerifyResult(true, configured = true, message = "認証しました"))
+
+        mockMvc
+            .perform(
+                post("/api/setting/danger-zone/verify")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"password":"kidspos1234"}"""),
+            ).andExpect(status().isOk)
+
+        verify(verifyRateLimiter).recordSuccess(any())
+        verify(verifyRateLimiter, never()).recordFailure(any())
+    }
+
+    @Test
+    fun `パスワード未設定の照合は失敗として数えない`() {
+        whenever(dangerZonePasswordService.verify(eq("kidspos1234")))
+            .thenReturn(
+                DangerZonePasswordService.VerifyResult(
+                    false,
+                    configured = false,
+                    message = "サーバーにパスワードが設定されていません",
+                ),
+            )
+
+        mockMvc
+            .perform(
+                post("/api/setting/danger-zone/verify")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"password":"kidspos1234"}"""),
+            ).andExpect(status().isOk)
+
+        verify(verifyRateLimiter, never()).recordFailure(any())
     }
 }

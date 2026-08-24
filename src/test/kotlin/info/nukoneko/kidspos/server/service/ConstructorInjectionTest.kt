@@ -10,6 +10,7 @@ import org.mockito.Mockito.mock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationEventPublisher
 
 @SpringBootTest
 class ConstructorInjectionTest {
@@ -21,9 +22,10 @@ class ConstructorInjectionTest {
         // Given - Create mocks
         val itemRepository = mock(ItemRepository::class.java)
         val idGenerationService = mock(IdGenerationService::class.java)
+        val eventPublisher = mock(ApplicationEventPublisher::class.java)
 
         // When - Create service with constructor injection
-        val itemService = ItemService(itemRepository, idGenerationService)
+        val itemService = ItemService(itemRepository, idGenerationService, eventPublisher)
 
         // Then - Service should be properly initialized
         assertThat(itemService).isNotNull

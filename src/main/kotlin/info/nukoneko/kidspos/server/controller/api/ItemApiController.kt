@@ -7,7 +7,6 @@ import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
 import info.nukoneko.kidspos.server.domain.exception.InvalidBarcodeException
 import info.nukoneko.kidspos.server.domain.exception.ItemNotFoundException
 import info.nukoneko.kidspos.server.service.BarcodePdfService
-import info.nukoneko.kidspos.server.service.BarcodeService
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
 import info.nukoneko.kidspos.server.service.mapper.ItemMapper
@@ -42,7 +41,6 @@ class ItemApiController(
     private val itemService: ItemService,
     private val itemMapper: ItemMapper,
     private val validationService: ValidationService,
-    private val barcodeService: BarcodeService,
     private val barcodePdfService: BarcodePdfService,
 ) {
     private val logger = LoggerFactory.getLogger(ItemApiController::class.java)
@@ -279,7 +277,7 @@ class ItemApiController(
             throw ItemNotFoundException()
         }
 
-        val pdfBytes = barcodeService.generateBarcodePdf(items, showBorders)
+        val pdfBytes = barcodePdfService.getSelectedItemsPdf(items, showBorders)
 
         logger.info("Selected barcode PDF generated successfully with {} items", items.size)
 
