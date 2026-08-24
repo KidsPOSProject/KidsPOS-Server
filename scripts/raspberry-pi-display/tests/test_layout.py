@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -14,6 +15,54 @@ class RowTest(unittest.TestCase):
 
     def test_text_row_is_not_a_mark(self):
         self.assertFalse(layout.Row("VER", text="1.0.0").is_mark)
+
+
+class FormatVersionTest(unittest.TestCase):
+    def test_version_alone_is_returned_as_is(self):
+        self.assertEqual("1.0.0", layout.format_version("1.0.0"))
+
+    def test_commit_is_appended_to_the_version(self):
+        self.assertEqual("1.0.0+a1b2c3d", layout.format_version("1.0.0", "a1b2c3d"))
+
+    def test_missing_version_is_a_dash(self):
+        self.assertEqual("-", layout.format_version(None, "a1b2c3d"))
+
+    def test_blank_commit_is_ignored(self):
+        self.assertEqual("1.0.0", layout.format_version("1.0.0", ""))
+
+
+class UpdatedAtTest(unittest.TestCase):
+    def setUp(self):
+        self.config = config.Config()
+        self.moment = datetime(2026, 8, 24, 9, 5)
+
+    def test_the_time_is_formatted_without_the_year(self):
+        self.assertEqual("08/24 09:05", layout.format_updated_at(self.moment))
+
+    def test_the_row_is_appended_last(self):
+        state = layout.build_state(self.config, "192.168.11.20", True, "1.0.0", True)
+
+        updated = layout.with_updated_at(state, self.moment)
+
+        self.assertEqual("UPDATED", updated.rows[-1].label)
+        self.assertEqual("08/24 09:05", updated.rows[-1].text)
+
+    def test_the_original_state_is_left_untouched(self):
+        state = layout.build_state(self.config, "192.168.11.20", True, "1.0.0", True)
+
+        layout.with_updated_at(state, self.moment)
+
+        self.assertEqual(["API", "VER", "PRINTER"], [row.label for row in state.rows])
+
+    def test_states_stay_comparable_when_only_the_time_differs(self):
+        state = layout.build_state(self.config, "192.168.11.20", True, "1.0.0", True)
+        later = datetime(2026, 8, 24, 9, 6)
+
+        self.assertNotEqual(
+            layout.with_updated_at(state, self.moment),
+            layout.with_updated_at(state, later),
+        )
+        self.assertEqual(state, layout.build_state(self.config, "192.168.11.20", True, "1.0.0", True))
 
 
 class BuildRowsTest(unittest.TestCase):
@@ -32,6 +81,11 @@ class BuildRowsTest(unittest.TestCase):
 
         self.assertIsNone(rows[0].mark)
         self.assertIsNone(rows[2].mark)
+
+    def test_commit_is_shown_next_to_the_version(self):
+        rows = layout.build_rows(True, "1.0.0", True, (), "a1b2c3d")
+
+        self.assertEqual("1.0.0+a1b2c3d", rows[1].text)
 
     def test_extra_rows_are_appended(self):
         extra = (layout.Row("DEVICE-A", mark=False),)
@@ -112,6 +166,9 @@ class PositionTest(unittest.TestCase):
 class FitsVerticallyTest(unittest.TestCase):
     def test_the_three_default_rows_fit(self):
         self.assertTrue(layout.fits_vertically(3, 122))
+
+    def test_the_updated_row_still_fits(self):
+        self.assertTrue(layout.fits_vertically(4, 122))
 
     def test_two_extra_rows_still_fit(self):
         self.assertTrue(layout.fits_vertically(5, 122))

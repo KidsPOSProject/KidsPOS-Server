@@ -9,6 +9,7 @@ import os
 import signal
 import threading
 import time
+from datetime import datetime
 from typing import Callable, Dict, Optional, Tuple
 
 import config as config_module
@@ -29,6 +30,7 @@ class Monitor:
         self._api = health.Debouncer(config.fail_threshold, config.ok_threshold)
         self._printer = health.Debouncer(config.fail_threshold, config.ok_threshold)
         self._version: Optional[str] = None
+        self._commit: Optional[str] = None
 
     def poll(self, observation: Optional[dict] = None) -> layout.DisplayState:
         if observation is None:
@@ -39,6 +41,7 @@ class Monitor:
         printer_ok = self._printer.update(status.printer_ok)
         if status.version:
             self._version = status.version
+            self._commit = status.commit
 
         return layout.build_state(
             self._config,
@@ -47,6 +50,7 @@ class Monitor:
             self._version,
             printer_ok,
             self._config.extra_rows,
+            self._commit,
         )
 
 
@@ -60,11 +64,13 @@ class Runner:
         render: Callable,
         clock: Callable[[], float] = time.monotonic,
         sleeper: Optional[Callable[[float], bool]] = None,
+        now: Callable[[], datetime] = datetime.now,
     ) -> None:
         self._config = config
         self._device = device
         self._render = render
         self._clock = clock
+        self._now = now
         self._monitor = Monitor(config)
         self._stop = threading.Event()
         self._sleeper = sleeper or self._stop.wait
@@ -116,7 +122,7 @@ class Runner:
             return state
 
         try:
-            self._device.show(self._render(state, self._config))
+            self._device.show(self._render(layout.with_updated_at(state, self._now()), self._config))
         except Exception as exc:
             self._note_failure(STAGE_DRAW, exc)
             return state

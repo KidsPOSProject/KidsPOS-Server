@@ -85,9 +85,26 @@ compileTestKotlin {
     }
 }
 
+// version は手で上げる運用のため、同じ version でもビルドを識別できるよう commit を添える
+def resolveGitCommit = {
+    try {
+        def process = new ProcessBuilder('git', 'rev-parse', '--short', 'HEAD')
+            .directory(project.rootDir)
+            .redirectErrorStream(true)
+            .start()
+        def output = process.inputStream.text.trim()
+        return process.waitFor() == 0 && !output.isEmpty() ? output : 'unknown'
+    } catch (Exception ignored) {
+        return 'unknown'
+    }
+}
+
 springBoot {
     buildInfo {
         excludes = ['time']
+        properties {
+            additional = [commit: resolveGitCommit()]
+        }
     }
 }
 

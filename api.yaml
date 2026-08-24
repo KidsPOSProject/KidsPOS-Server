@@ -1524,6 +1524,11 @@ components:
           type: string
           description: アプリケーションバージョン（semver）
           example: "1.0.0"
+        commit:
+          type: string
+          nullable: true
+          description: ビルド元の Git コミット（短縮ハッシュ）。取得できなかった場合は null
+          example: "a1b2c3d"
         apiVersion:
           type: integer
           description: API互換バージョン。クライアント側で対応バージョンと比較する

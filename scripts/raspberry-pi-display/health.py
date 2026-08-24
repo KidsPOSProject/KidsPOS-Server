@@ -20,6 +20,7 @@ LOOPBACK_PREFIX = "127."
 class ServerStatus:
     reachable: bool
     version: Optional[str] = None
+    commit: Optional[str] = None
     api_version: Optional[str] = None
     printer_configured: Optional[bool] = None
     printer_reachable: Optional[bool] = None
@@ -91,6 +92,7 @@ def parse_status(payload: Any) -> ServerStatus:
     return ServerStatus(
         reachable=True,
         version=_as_text(payload.get("version")),
+        commit=_as_text(payload.get("commit")),
         api_version=_as_text(payload.get("apiVersion")),
         printer_configured=configured,
         printer_reachable=reachable,

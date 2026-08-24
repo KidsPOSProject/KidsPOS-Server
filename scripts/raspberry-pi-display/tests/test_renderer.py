@@ -2,6 +2,7 @@ import dataclasses
 import os
 import sys
 import unittest
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -213,8 +214,34 @@ class RenderTest(unittest.TestCase):
     def setUp(self):
         self.config = config_module.Config()
 
-    def _state(self, ip="192.168.11.20", api_ok=True, version="1.0.0", printer_ok=True, extra=()):
-        return layout.build_state(self.config, ip, api_ok, version, printer_ok, extra)
+    def _state(
+        self,
+        ip="192.168.11.20",
+        api_ok=True,
+        version="1.0.0",
+        printer_ok=True,
+        extra=(),
+        commit=None,
+    ):
+        return layout.build_state(self.config, ip, api_ok, version, printer_ok, extra, commit)
+
+    def _live_state(self):
+        state = self._state(commit="a1b2c3d")
+        return layout.with_updated_at(state, datetime(2026, 8, 24, 9, 5))
+
+    def test_the_live_layout_stays_inside_the_panel(self):
+        image = renderer.render(self._live_state(), self.config)
+
+        self.assertEqual(0, black_pixels(image, (250 - layout.MARGIN, 0, 250, 122)))
+
+    def test_the_live_layout_draws_every_row(self):
+        with self.assertNoLogs(renderer.logger, level="WARNING"):
+            image = renderer.render(self._live_state(), self.config)
+
+        rows_top = layout.MARGIN + layout.IP_LINE_HEIGHT + layout.PORT_LINE_HEIGHT
+        updated_top = rows_top + layout.ROW_HEIGHT * 3
+
+        self.assertGreater(black_pixels(image, (125, updated_top, 250, updated_top + layout.ROW_HEIGHT)), 0)
 
     def test_the_image_matches_the_panel(self):
         image = renderer.render(self._state(), self.config)
