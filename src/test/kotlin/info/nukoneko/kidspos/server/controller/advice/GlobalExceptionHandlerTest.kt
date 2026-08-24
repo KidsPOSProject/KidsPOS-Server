@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import info.nukoneko.kidspos.server.controller.api.ItemApiController
 import info.nukoneko.kidspos.server.controller.dto.request.CreateItemRequest
 import info.nukoneko.kidspos.server.domain.exception.ItemNotFoundException
+import info.nukoneko.kidspos.server.service.BarcodePdfService
 import info.nukoneko.kidspos.server.service.BarcodeService
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
@@ -53,6 +54,9 @@ class GlobalExceptionHandlerTest {
 
     @MockBean
     private lateinit var barcodeService: BarcodeService
+
+    @MockBean
+    private lateinit var barcodePdfService: BarcodePdfService
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper

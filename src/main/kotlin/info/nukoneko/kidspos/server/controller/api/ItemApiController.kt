@@ -6,6 +6,7 @@ import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
 import info.nukoneko.kidspos.server.domain.exception.InvalidBarcodeException
 import info.nukoneko.kidspos.server.domain.exception.ItemNotFoundException
+import info.nukoneko.kidspos.server.service.BarcodePdfService
 import info.nukoneko.kidspos.server.service.BarcodeService
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
@@ -20,6 +21,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
+import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -41,6 +43,7 @@ class ItemApiController(
     private val itemMapper: ItemMapper,
     private val validationService: ValidationService,
     private val barcodeService: BarcodeService,
+    private val barcodePdfService: BarcodePdfService,
 ) {
     private val logger = LoggerFactory.getLogger(ItemApiController::class.java)
 
@@ -213,24 +216,34 @@ class ItemApiController(
         description = "PDF generated successfully",
         content = [Content(mediaType = "application/pdf")],
     )
-    fun generateBarcodePdf(): ResponseEntity<ByteArray> {
-        logger.info("Generating barcode PDF for all items")
+    fun generateBarcodePdf(
+        @RequestParam(defaultValue = "false") showBorders: Boolean,
+    ): ResponseEntity<ByteArray> {
+        logger.info("Serving barcode PDF for all items (showBorders={})", showBorders)
 
-        val items = itemService.findAll()
-        val pdfBytes = barcodeService.generateBarcodePdf(items)
+        val pdfBytes = barcodePdfService.getAllItemsPdf(showBorders)
 
-        val headers =
-            HttpHeaders().apply {
-                contentType = MediaType.APPLICATION_PDF
-                setContentDispositionFormData("attachment", "barcodes.pdf")
-            }
-
-        logger.info("Barcode PDF generated successfully with {} items", items.size)
         return ResponseEntity
             .ok()
-            .headers(headers)
+            .headers(pdfHeaders("barcodes.pdf"))
             .body(pdfBytes)
     }
+
+    @GetMapping("/barcode-pdf/selected", produces = ["application/pdf"])
+    @Operation(
+        summary = "Generate barcode PDF for selected items",
+        description = "Generate a PDF document containing barcodes for the given item IDs",
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "PDF generated successfully",
+        content = [Content(mediaType = "application/pdf")],
+    )
+    fun downloadSelectedBarcodePdf(
+        @Parameter(description = "Comma separated item IDs", required = true, example = "1,2,3")
+        @RequestParam ids: List<Int>,
+        @RequestParam(defaultValue = "false") showBorders: Boolean,
+    ): ResponseEntity<ByteArray> = buildSelectedBarcodePdf(ids, showBorders)
 
     @PostMapping("/barcode-pdf/selected", produces = ["application/pdf"])
     @Operation(
@@ -245,6 +258,11 @@ class ItemApiController(
     fun generateSelectedBarcodePdf(
         @RequestBody itemIds: List<Int>,
         @RequestParam(defaultValue = "false") showBorders: Boolean,
+    ): ResponseEntity<ByteArray> = buildSelectedBarcodePdf(itemIds, showBorders)
+
+    private fun buildSelectedBarcodePdf(
+        itemIds: List<Int>,
+        showBorders: Boolean,
     ): ResponseEntity<ByteArray> {
         logger.info("Generating barcode PDF for {} selected items", itemIds.size)
 
@@ -263,19 +281,23 @@ class ItemApiController(
 
         val pdfBytes = barcodeService.generateBarcodePdf(items, showBorders)
 
-        val headers =
-            HttpHeaders().apply {
-                contentType = MediaType.APPLICATION_PDF
-                setContentDispositionFormData("attachment", "selected_barcodes.pdf")
-            }
-
         logger.info("Selected barcode PDF generated successfully with {} items", items.size)
 
         return ResponseEntity
             .ok()
-            .headers(headers)
+            .headers(pdfHeaders("selected_barcodes.pdf"))
             .body(pdfBytes)
     }
+
+    private fun pdfHeaders(fileName: String): HttpHeaders =
+        HttpHeaders().apply {
+            contentType = MediaType.APPLICATION_PDF
+            contentDisposition =
+                ContentDisposition
+                    .attachment()
+                    .filename(fileName)
+                    .build()
+        }
 
     @DeleteMapping("/{id}")
     fun delete(

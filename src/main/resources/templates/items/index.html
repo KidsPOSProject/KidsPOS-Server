@@ -38,12 +38,14 @@
                                 <!-- Action Bar -->
                                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3 p-3 bg-light rounded">
                                     <div class="d-flex gap-2 flex-wrap">
-                                        <button id="printSelected" class="btn btn-success btn-sm" disabled>
+                                        <a id="printSelected" class="btn btn-success btn-sm disabled" role="button"
+                                           aria-disabled="true" href="/api/item/barcode-pdf/selected">
                                             <i class="fas fa-print"></i> 選択印刷
-                                        </button>
-                                        <button id="downloadPdf" class="btn btn-info btn-sm">
+                                        </a>
+                                        <a id="downloadPdf" class="btn btn-info btn-sm" role="button"
+                                           href="/api/item/barcode-pdf?showBorders=false">
                                             <i class="fas fa-file-pdf"></i> PDF出力
-                                        </button>
+                                        </a>
                                     </div>
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="form-check mb-0">
@@ -116,25 +118,26 @@
         document.addEventListener('DOMContentLoaded', function () {
             const selectAllCheckbox = document.getElementById('selectAll');
             const itemCheckboxes = document.getElementsByClassName('item-checkbox');
-            const printButton = document.getElementById('printSelected');
+            const printLink = document.getElementById('printSelected');
+            const downloadPdfLink = document.getElementById('downloadPdf');
+            const showBordersCheckbox = document.getElementById('showBorders');
 
-            // 全選択/全解除
             selectAllCheckbox.addEventListener('change', function () {
                 for (let checkbox of itemCheckboxes) {
                     checkbox.checked = this.checked;
                 }
-                updatePrintButton();
+                updateLinks();
             });
 
-            // 個別チェックボックスの変更
             for (let checkbox of itemCheckboxes) {
                 checkbox.addEventListener('change', function () {
                     updateSelectAll();
-                    updatePrintButton();
+                    updateLinks();
                 });
             }
 
-            // 全選択チェックボックスの状態を更新
+            showBordersCheckbox.addEventListener('change', updateLinks);
+
             function updateSelectAll() {
                 let allChecked = true;
                 let anyChecked = false;
@@ -149,95 +152,42 @@
                 selectAllCheckbox.indeterminate = !allChecked && anyChecked;
             }
 
-            // 印刷ボタンの有効/無効を更新
-            function updatePrintButton() {
-                let anyChecked = false;
+            function selectedIds() {
+                const ids = [];
                 for (let checkbox of itemCheckboxes) {
                     if (checkbox.checked) {
-                        anyChecked = true;
-                        break;
+                        ids.push(checkbox.dataset.id);
                     }
                 }
-                printButton.disabled = !anyChecked;
+                return ids;
             }
 
-            // PDF出力ボタン
-            const downloadPdfButton = document.getElementById('downloadPdf');
-            downloadPdfButton.addEventListener('click', function () {
-                fetch('/api/item/barcode-pdf')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('PDF生成に失敗しました');
-                        }
-                        return response.blob();
-                    })
-                    .then(blob => {
-                        // PDFをダウンロード
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'barcodes.pdf';
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        document.body.removeChild(a);
-                    })
-                    .catch(error => {
-                        if (window.Swal) {
-                            Swal.fire('エラー', error.message, 'error');
-                        } else {
-                            alert('エラー: ' + error.message);
-                        }
-                    });
-            });
+            // iOS Safari では blob URL と download 属性が働かないため、
+            // PDF は常に通常のリンク遷移でサーバーから直接受け取る
+            function updateLinks() {
+                const showBorders = showBordersCheckbox.checked;
+                downloadPdfLink.href = '/api/item/barcode-pdf?showBorders=' + showBorders;
 
-            // 選択した商品を印刷
-            printButton.addEventListener('click', function () {
-                const selectedIds = [];
-                for (let checkbox of itemCheckboxes) {
-                    if (checkbox.checked) {
-                        selectedIds.push(checkbox.dataset.id);
-                    }
+                const ids = selectedIds();
+                if (ids.length > 0) {
+                    printLink.href = '/api/item/barcode-pdf/selected?showBorders=' + showBorders +
+                        '&ids=' + ids.join(',');
+                    printLink.classList.remove('disabled');
+                    printLink.setAttribute('aria-disabled', 'false');
+                } else {
+                    printLink.removeAttribute('href');
+                    printLink.classList.add('disabled');
+                    printLink.setAttribute('aria-disabled', 'true');
                 }
+            }
 
-                if (selectedIds.length > 0) {
-                    const showBorders = document.getElementById('showBorders').checked;
-                    const url = `/api/item/barcode-pdf/selected?showBorders=${showBorders}`;
-
-                    // POSTでIDリストを送信してPDFを取得
-                    fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(selectedIds)
-                    })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('PDF生成に失敗しました');
-                            }
-                            return response.blob();
-                        })
-                        .then(blob => {
-                            // PDFをダウンロード
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'selected_barcodes.pdf';
-                            document.body.appendChild(a);
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                            document.body.removeChild(a);
-                        })
-                        .catch(error => {
-                            if (window.Swal) {
-                                Swal.fire('エラー', error.message, 'error');
-                            } else {
-                                alert('エラー: ' + error.message);
-                            }
-                        });
+            printLink.addEventListener('click', function (event) {
+                if (selectedIds().length === 0) {
+                    event.preventDefault();
                 }
             });
+
+            updateLinks();
         });
 /*]]>*/
 </script>

@@ -5,6 +5,7 @@ import info.nukoneko.kidspos.server.controller.dto.request.CreateItemRequest
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
 import info.nukoneko.kidspos.server.entity.ItemEntity
+import info.nukoneko.kidspos.server.service.BarcodePdfService
 import info.nukoneko.kidspos.server.service.BarcodeService
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
@@ -50,6 +51,9 @@ class ItemApiControllerTest {
 
     @MockBean
     private lateinit var barcodeService: BarcodeService
+
+    @MockBean
+    private lateinit var barcodePdfService: BarcodePdfService
 
     private lateinit var testItem: ItemEntity
     private lateinit var testItemResponse: ItemResponse
@@ -339,5 +343,52 @@ class ItemApiControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{invalid json"),
             ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `should serve cached barcode pdf as attachment`() {
+        `when`(barcodePdfService.getAllItemsPdf(false)).thenReturn(byteArrayOf(1, 2, 3))
+
+        mockMvc
+            .perform(get("/api/item/barcode-pdf"))
+            .andExpect(status().isOk)
+            .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+            .andExpect(header().string("Content-Disposition", "attachment; filename=\"barcodes.pdf\""))
+
+        verify(barcodePdfService).getAllItemsPdf(false)
+    }
+
+    @Test
+    fun `should pass showBorders to barcode pdf service`() {
+        `when`(barcodePdfService.getAllItemsPdf(true)).thenReturn(byteArrayOf(1))
+
+        mockMvc
+            .perform(get("/api/item/barcode-pdf").param("showBorders", "true"))
+            .andExpect(status().isOk)
+
+        verify(barcodePdfService).getAllItemsPdf(true)
+    }
+
+    @Test
+    fun `should generate selected barcode pdf via get request`() {
+        `when`(itemService.findItem(1)).thenReturn(testItem)
+        `when`(barcodeService.generateBarcodePdf(listOf(testItem), false)).thenReturn(byteArrayOf(9))
+
+        mockMvc
+            .perform(get("/api/item/barcode-pdf/selected").param("ids", "1"))
+            .andExpect(status().isOk)
+            .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+            .andExpect(header().string("Content-Disposition", "attachment; filename=\"selected_barcodes.pdf\""))
+
+        verify(barcodeService).generateBarcodePdf(listOf(testItem), false)
+    }
+
+    @Test
+    fun `should return not found when selected items do not exist`() {
+        `when`(itemService.findItem(999)).thenReturn(null)
+
+        mockMvc
+            .perform(get("/api/item/barcode-pdf/selected").param("ids", "999"))
+            .andExpect(status().isNotFound)
     }
 }

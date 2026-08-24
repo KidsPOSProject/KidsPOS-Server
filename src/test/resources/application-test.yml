@@ -28,3 +28,4 @@ app:
   barcode:
     pdf:
       enabled: false
+      warmup-on-startup: false

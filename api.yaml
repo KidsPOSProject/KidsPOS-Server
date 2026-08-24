@@ -223,8 +223,15 @@ paths:
       tags:
         - Items
       summary: バーコードPDF生成
-      description: 全商品のバーコードをPDF形式で生成します
+      description: 全商品のバーコードをPDF形式で生成します。生成結果は商品一覧が変わるまで再利用されます
       operationId: generateBarcodePdf
+      parameters:
+        - name: showBorders
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Success
@@ -233,6 +240,76 @@ paths:
               schema:
                 type: string
                 format: binary
+
+  /api/item/barcode-pdf/selected:
+    get:
+      tags:
+        - Items
+      summary: 選択商品のバーコードPDF生成
+      description: 指定した商品IDのバーコードをPDF形式で生成します
+      operationId: downloadSelectedBarcodePdf
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+          style: form
+          explode: false
+        - name: showBorders
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Success
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: No items selected
+        '404':
+          description: Item not found
+
+    post:
+      tags:
+        - Items
+      summary: 選択商品のバーコードPDF生成
+      description: リクエストボディで渡した商品IDのバーコードをPDF形式で生成します
+      operationId: generateSelectedBarcodePdf
+      parameters:
+        - name: showBorders
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: No items selected
+        '404':
+          description: Item not found
 
   # Sales
   /api/sales:

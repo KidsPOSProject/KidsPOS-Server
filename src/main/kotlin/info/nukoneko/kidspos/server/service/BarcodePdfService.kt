@@ -1,0 +1,99 @@
+package info.nukoneko.kidspos.server.service
+
+import info.nukoneko.kidspos.server.entity.ItemEntity
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.context.event.ApplicationReadyEvent
+import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Service
+import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.thread
+
+/**
+ * 全商品のバーコードPDFを保持するサービス
+ *
+ * 商品一覧が変わらない限り生成済みのバイト列を返す。
+ * 起動直後にバックグラウンドで生成しておくことで、
+ * 端末側のリクエストがタイムアウトする事態を避ける。
+ */
+@Service
+class BarcodePdfService(
+    private val itemService: ItemService,
+    private val barcodeService: BarcodeService,
+    @Value("\${app.barcode.pdf.warmup-on-startup:true}")
+    private val warmUpOnStartup: Boolean = true,
+) {
+    private val logger = LoggerFactory.getLogger(BarcodePdfService::class.java)
+    private val cache = ConcurrentHashMap<Boolean, CachedPdf>()
+    private val locks = ConcurrentHashMap<Boolean, Any>()
+
+    fun getAllItemsPdf(showBorders: Boolean = false): ByteArray {
+        val items = itemService.findAll()
+        val signature = signatureOf(items, showBorders)
+
+        cache[showBorders]?.let { cached ->
+            if (cached.signature == signature) {
+                logger.debug("Reusing cached barcode PDF (showBorders={})", showBorders)
+                return cached.bytes
+            }
+        }
+
+        return synchronized(locks.computeIfAbsent(showBorders) { Any() }) {
+            cache[showBorders]?.let { cached ->
+                if (cached.signature == signature) {
+                    return@synchronized cached.bytes
+                }
+            }
+
+            val startedAt = System.currentTimeMillis()
+            val bytes = barcodeService.generateBarcodePdf(items, showBorders)
+            cache[showBorders] = CachedPdf(signature, bytes)
+            logger.info(
+                "Generated barcode PDF for {} items in {} ms (showBorders={})",
+                items.size,
+                System.currentTimeMillis() - startedAt,
+                showBorders,
+            )
+            bytes
+        }
+    }
+
+    fun isCached(showBorders: Boolean = false): Boolean = cache.containsKey(showBorders)
+
+    fun warmUp() {
+        try {
+            getAllItemsPdf(false)
+        } catch (e: Exception) {
+            logger.warn("Failed to warm up barcode PDF cache: {}", e.message)
+        }
+    }
+
+    @EventListener(ApplicationReadyEvent::class)
+    fun warmUpInBackground() {
+        if (!warmUpOnStartup) {
+            logger.debug("Barcode PDF warm-up on startup is disabled")
+            return
+        }
+        thread(start = true, isDaemon = true, name = "barcode-pdf-warmup") {
+            warmUp()
+        }
+    }
+
+    private fun signatureOf(
+        items: List<ItemEntity>,
+        showBorders: Boolean,
+    ): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        digest.update(if (showBorders) 1 else 0)
+        items.forEach { item ->
+            digest.update("${item.id}\u0000${item.barcode}\u0000${item.name}\u0000${item.price}\u0000".toByteArray())
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    private class CachedPdf(
+        val signature: String,
+        val bytes: ByteArray,
+    )
+}

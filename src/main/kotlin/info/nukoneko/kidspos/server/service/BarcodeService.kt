@@ -12,6 +12,7 @@ import com.itextpdf.kernel.font.PdfFontFactory
 import com.itextpdf.kernel.geom.PageSize
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
+import com.itextpdf.kernel.pdf.xobject.PdfImageXObject
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
@@ -122,10 +123,16 @@ class BarcodeService {
                     .setWidth(tableWidth)
                     .setFixedLayout()
 
+            // 44枚のラベルは同じ画像を指すため、XObject を1つだけ作って使い回す
+            val barcodeXObject =
+                generateCode39(item.barcode)
+                    ?.let { PdfImageXObject(ImageDataFactory.create(it)) }
+                    ?.apply { makeIndirect(pdf) }
+
             // 4列×11行 = 44枚のラベルを同じ商品で埋める
             for (row in 0 until LABEL_ROWS) {
                 for (col in 0 until LABEL_COLUMNS) {
-                    table.addCell(createBarcodeCell(item, showBorders, font))
+                    table.addCell(createBarcodeCell(item, showBorders, font, barcodeXObject))
                 }
             }
 
@@ -145,6 +152,7 @@ class BarcodeService {
         item: ItemEntity,
         showBorders: Boolean = false,
         font: PdfFont,
+        barcodeXObject: PdfImageXObject?,
     ): com.itextpdf.layout.element.Cell {
         val cellWidthPt = CELL_WIDTH * 2.835f // 48.3mm → ポイント
         val cellHeightPt = CELL_HEIGHT * 2.835f // 25.4mm → ポイント
@@ -186,13 +194,12 @@ class BarcodeService {
         )
 
         // バーコード画像（中央配置）
-        val barcodeImage = generateCode39(item.barcode)
-        if (barcodeImage != null) {
+        if (barcodeXObject != null) {
             // 元の仕様書の比率を適用
             val originalWidth = 300f
             val originalHeight = 100f
             val image =
-                Image(ImageDataFactory.create(barcodeImage))
+                Image(barcodeXObject)
                     .setWidth(originalWidth * 0.4f) // 横幅を拡大
                     .setHeight(originalHeight * 0.25f) // 縦幅を拡大
                     .setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.CENTER)
