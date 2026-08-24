@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.ApplicationEventPublisher
 import java.util.*
 
 @SpringBootTest
@@ -20,11 +21,14 @@ class ItemServiceTest {
     @MockBean
     private lateinit var idGenerationService: IdGenerationService
 
+    private lateinit var eventPublisher: ApplicationEventPublisher
+
     private lateinit var itemService: ItemService
 
     @BeforeEach
     fun setup() {
-        itemService = ItemService(itemRepository, idGenerationService)
+        eventPublisher = mock(ApplicationEventPublisher::class.java)
+        itemService = ItemService(itemRepository, idGenerationService, eventPublisher)
     }
 
     @Test

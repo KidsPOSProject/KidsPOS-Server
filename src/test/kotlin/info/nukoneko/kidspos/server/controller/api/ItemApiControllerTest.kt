@@ -6,7 +6,6 @@ import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
 import info.nukoneko.kidspos.server.entity.ItemEntity
 import info.nukoneko.kidspos.server.service.BarcodePdfService
-import info.nukoneko.kidspos.server.service.BarcodeService
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
 import info.nukoneko.kidspos.server.service.mapper.ItemMapper
@@ -48,9 +47,6 @@ class ItemApiControllerTest {
 
     @MockBean
     private lateinit var validationService: ValidationService
-
-    @MockBean
-    private lateinit var barcodeService: BarcodeService
 
     @MockBean
     private lateinit var barcodePdfService: BarcodePdfService
@@ -372,7 +368,7 @@ class ItemApiControllerTest {
     @Test
     fun `should generate selected barcode pdf via get request`() {
         `when`(itemService.findItem(1)).thenReturn(testItem)
-        `when`(barcodeService.generateBarcodePdf(listOf(testItem), false)).thenReturn(byteArrayOf(9))
+        `when`(barcodePdfService.getSelectedItemsPdf(listOf(testItem), false)).thenReturn(byteArrayOf(9))
 
         mockMvc
             .perform(get("/api/item/barcode-pdf/selected").param("ids", "1"))
@@ -380,7 +376,7 @@ class ItemApiControllerTest {
             .andExpect(content().contentType(MediaType.APPLICATION_PDF))
             .andExpect(header().string("Content-Disposition", "attachment; filename=\"selected_barcodes.pdf\""))
 
-        verify(barcodeService).generateBarcodePdf(listOf(testItem), false)
+        verify(barcodePdfService).getSelectedItemsPdf(listOf(testItem), false)
     }
 
     @Test

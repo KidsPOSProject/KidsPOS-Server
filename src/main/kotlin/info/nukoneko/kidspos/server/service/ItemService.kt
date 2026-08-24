@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.cache.annotation.Caching
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -39,12 +40,14 @@ import org.springframework.transaction.annotation.Transactional
  * @constructor Creates ItemService with required dependencies
  * @param repository Repository for item data access
  * @param idGenerationService Service for generating unique item IDs
+ * @param eventPublisher Publisher used to notify listeners about item changes
  */
 @Service
 @Transactional
 class ItemService(
     private val repository: ItemRepository,
     private val idGenerationService: IdGenerationService,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(ItemService::class.java)
 
@@ -95,6 +98,7 @@ class ItemService(
         val item = ItemEntity(generatedId, finalBarcode, itemBean.name, itemBean.price)
         val savedItem = repository.save(item)
         logger.info("Item created successfully with ID: {}, barcode: {}", savedItem.id, savedItem.barcode)
+        eventPublisher.publishEvent(ItemsChangedEvent(savedItem.id))
         return savedItem
     }
 
@@ -110,6 +114,7 @@ class ItemService(
         if (item != null) {
             repository.delete(item)
             logger.info("Item deleted successfully with ID: {}", id)
+            eventPublisher.publishEvent(ItemsChangedEvent(id))
         }
     }
 }
