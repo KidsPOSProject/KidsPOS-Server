@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,6 +19,7 @@ def observation(ip="192.168.11.20", **status):
     defaults = {
         "reachable": True,
         "version": "1.0.0",
+        "commit": "a1b2c3d",
         "api_version": "1",
         "printer_configured": True,
         "printer_reachable": True,
@@ -58,7 +60,15 @@ class MonitorTest(unittest.TestCase):
 
         self.assertEqual("192.168.11.20", state.ip)
         self.assertEqual("http://192.168.11.20:8080/", state.url)
-        self.assertEqual([True, "1.0.0", True], [state.rows[0].mark, state.rows[1].text, state.rows[2].mark])
+        self.assertEqual(
+            [True, "1.0.0+a1b2c3d", True],
+            [state.rows[0].mark, state.rows[1].text, state.rows[2].mark],
+        )
+
+    def test_a_missing_commit_leaves_the_version_alone(self):
+        state = app.Monitor(self.config).poll(observation(commit=None))
+
+        self.assertEqual("1.0.0", state.rows[1].text)
 
     def test_unreachable_api_shows_unknown_printer(self):
         monitor = app.Monitor(self.config)
@@ -82,7 +92,15 @@ class MonitorTest(unittest.TestCase):
 
         state = monitor.poll({"ip": "192.168.11.20", "status": health.UNREACHABLE})
 
-        self.assertEqual("1.0.0", state.rows[1].text)
+        self.assertEqual("1.0.0+a1b2c3d", state.rows[1].text)
+
+    def test_a_redeploy_replaces_the_commit(self):
+        monitor = app.Monitor(self.config)
+        monitor.poll(observation())
+
+        state = monitor.poll(observation(commit="9f8e7d6"))
+
+        self.assertEqual("1.0.0+9f8e7d6", state.rows[1].text)
 
     def test_api_recovers_only_after_the_ok_threshold(self):
         config = dataclasses.replace(self.config, fail_threshold=2, ok_threshold=2)
@@ -122,13 +140,14 @@ class RunnerTest(unittest.TestCase):
     def setUp(self):
         self.config = dataclasses.replace(config_module.Config(), poll_interval=1, refresh_interval=1000)
 
-    def _runner(self, device, observations, clock=None):
+    def _runner(self, device, observations, clock=None, now=None):
         runner = app.Runner(
             self.config,
             device,
             lambda state, cfg: state,
             clock or (lambda: 0.0),
             sleeper=lambda _: False,
+            now=now or (lambda: datetime(2026, 8, 24, 9, 5)),
         )
         runner._monitor = _ScriptedMonitor(self.config, observations)
         return runner
@@ -140,6 +159,47 @@ class RunnerTest(unittest.TestCase):
         runner.tick()
 
         self.assertEqual(1, len(device.images))
+
+    def test_the_drawn_state_carries_the_updated_row(self):
+        device = RecordingDevice()
+        runner = self._runner(device, [observation()])
+
+        runner.tick()
+
+        drawn = device.images[0]
+        self.assertEqual("UPDATED", drawn.rows[-1].label)
+        self.assertEqual("08/24 09:05", drawn.rows[-1].text)
+
+    def test_the_remembered_state_has_no_updated_row(self):
+        device = RecordingDevice()
+        runner = self._runner(device, [observation()])
+
+        runner.tick()
+
+        self.assertEqual(["API", "VER", "PRINTER"], [row.label for row in runner.previous.rows])
+
+    def test_a_new_minute_alone_does_not_redraw(self):
+        device = RecordingDevice()
+        clock = _Clock([0.0, 60.0])
+        moments = iter([datetime(2026, 8, 24, 9, 5), datetime(2026, 8, 24, 9, 6)])
+        runner = self._runner(device, [observation(), observation()], clock, lambda: next(moments))
+
+        runner.tick()
+        runner.tick()
+
+        self.assertEqual(1, len(device.images))
+
+    def test_the_refresh_redraw_shows_the_new_time(self):
+        device = RecordingDevice()
+        clock = _Clock([0.0, 1000.0])
+        start = datetime(2026, 8, 24, 9, 5)
+        moments = iter([start, start + timedelta(minutes=17)])
+        runner = self._runner(device, [observation(), observation()], clock, lambda: next(moments))
+
+        runner.tick()
+        runner.tick()
+
+        self.assertEqual(["08/24 09:05", "08/24 09:22"], [image.rows[-1].text for image in device.images])
 
     def test_an_unchanged_state_is_not_redrawn(self):
         device = RecordingDevice()

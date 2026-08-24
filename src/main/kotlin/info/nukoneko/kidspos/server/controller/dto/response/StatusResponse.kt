@@ -6,6 +6,7 @@ package info.nukoneko.kidspos.server.controller.dto.response
 data class StatusResponse(
     val status: String,
     val version: String,
+    val commit: String? = null,
     val apiVersion: Int,
     val printer: PrinterStatusResponse? = null,
 )

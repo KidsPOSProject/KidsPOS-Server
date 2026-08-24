@@ -5,7 +5,8 @@ Pillow や qrcode に依存しないため、描画環境がなくても検証�
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import datetime
 from typing import List, Optional, Sequence, Tuple
 
 MARGIN = 3
@@ -14,6 +15,9 @@ IP_LINE_HEIGHT = 18
 PORT_LINE_HEIGHT = 14
 ROW_HEIGHT = 15
 NO_NETWORK_TEXT = "NO NETWORK"
+UPDATED_LABEL = "UPDATED"
+UPDATED_FORMAT = "%m/%d %H:%M"
+UNKNOWN_TEXT = "-"
 
 
 @dataclass(frozen=True)
@@ -35,15 +39,29 @@ class DisplayState:
     rows: Tuple[Row, ...]
 
 
+def format_version(version: Optional[str], commit: Optional[str] = None) -> str:
+    """version だけでは同じ値のまま更新されることがあるため commit を添える."""
+    if not version:
+        return UNKNOWN_TEXT
+    if not commit:
+        return version
+    return "{}+{}".format(version, commit)
+
+
+def format_updated_at(moment: datetime) -> str:
+    return moment.strftime(UPDATED_FORMAT)
+
+
 def build_rows(
     api_ok: Optional[bool],
     version: Optional[str],
     printer_ok: Optional[bool],
     extra: Sequence[Row] = (),
+    commit: Optional[str] = None,
 ) -> Tuple[Row, ...]:
     rows = [
         Row("API", mark=api_ok),
-        Row("VER", text=version or "-"),
+        Row("VER", text=format_version(version, commit)),
         Row("PRINTER", mark=printer_ok),
     ]
     rows.extend(extra)
@@ -57,13 +75,24 @@ def build_state(
     version: Optional[str],
     printer_ok: Optional[bool],
     extra: Sequence[Row] = (),
+    commit: Optional[str] = None,
 ) -> DisplayState:
     return DisplayState(
         ip=ip,
         port=config.web_port,
         url=config.web_url(ip) if ip else None,
-        rows=build_rows(api_ok, version, printer_ok, extra),
+        rows=build_rows(api_ok, version, printer_ok, extra, commit),
     )
+
+
+def with_updated_at(state: DisplayState, moment: datetime) -> DisplayState:
+    """描画直前に最終更新行を足す.
+
+    再描画するかどうかは更新行を持たない state 同士で判定する。時刻を state 側に
+    持たせるとポーリングのたびに別物になり、20 秒ごとに e-Paper を焼くことになる。
+    """
+    row = Row(UPDATED_LABEL, text=format_updated_at(moment))
+    return replace(state, rows=state.rows + (row,))
 
 
 def choose_qr_box_size(

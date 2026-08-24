@@ -17,6 +17,7 @@ def status_payload(**overrides):
     payload = {
         "status": "OK",
         "version": "1.0.0",
+        "commit": "a1b2c3d",
         "apiVersion": 1,
         "printer": {"configured": True, "reachable": True, "total": 1, "reachableCount": 1},
     }
@@ -30,6 +31,7 @@ class ParseStatusTest(unittest.TestCase):
 
         self.assertTrue(status.reachable)
         self.assertEqual("1.0.0", status.version)
+        self.assertEqual("a1b2c3d", status.commit)
         self.assertEqual("1", status.api_version)
         self.assertTrue(status.printer_configured)
         self.assertTrue(status.printer_reachable)
@@ -65,6 +67,15 @@ class ParseStatusTest(unittest.TestCase):
 
     def test_blank_version_is_none(self):
         self.assertIsNone(health.parse_status(status_payload(version="   ")).version)
+
+    def test_missing_commit_is_none(self):
+        payload = status_payload()
+        del payload["commit"]
+
+        self.assertIsNone(health.parse_status(payload).commit)
+
+    def test_null_commit_is_none(self):
+        self.assertIsNone(health.parse_status(status_payload(commit=None)).commit)
 
     def test_non_dict_payload_is_unreachable(self):
         with self.assertLogs(health.logger, level="WARNING"):

@@ -13,17 +13,21 @@ class StatusService(
     private val buildProperties: ObjectProvider<BuildProperties>,
     private val printerStatusService: PrinterStatusService,
 ) {
-    fun getStatus(): StatusResponse =
-        StatusResponse(
+    fun getStatus(): StatusResponse {
+        val build = buildProperties.ifAvailable
+        return StatusResponse(
             status = STATUS_OK,
-            version = buildProperties.ifAvailable?.version ?: UNKNOWN_VERSION,
+            version = build?.version ?: UNKNOWN_VERSION,
+            commit = build?.get(COMMIT_KEY)?.takeIf { it.isNotBlank() && it != UNKNOWN_VERSION },
             apiVersion = API_VERSION,
             printer = printerStatusService.getStatus(),
         )
+    }
 
     companion object {
         const val API_VERSION = 1
         const val STATUS_OK = "OK"
         const val UNKNOWN_VERSION = "unknown"
+        const val COMMIT_KEY = "commit"
     }
 }
