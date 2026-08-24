@@ -35,7 +35,7 @@ test-uploads/
 ## heroku
 app.jar
 
-logs/
+/logs/
 *.log
 migration-plan.md
 

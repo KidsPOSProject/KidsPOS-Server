@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout::base_header('ログ')}"></head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-store"></i> KidsPOS
+        </a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/">
+                <i class="fas fa-home"></i> ダッシュボード
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="main-container">
+    <div class="container-wrapper">
+        <div class="content-area">
+            <div class="container-fluid mt-3">
+                <div class="card-modern">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <h4 class="mb-0">
+                                <i class="fas fa-clipboard-list text-primary me-2"></i>
+                                サーバーログ
+                            </h4>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">
+                                    保持件数上限: <span th:text="${capacity}">500</span>
+                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="clearButton">
+                                    <i class="fas fa-trash me-1"></i>表示中のログを消去
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 align-items-end mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1" for="levelSelect">最低レベル</label>
+                                <select class="form-select form-select-sm" id="levelSelect">
+                                    <option value="">すべて</option>
+                                    <option th:each="level : ${levels}"
+                                            th:value="${level}"
+                                            th:text="${level}"
+                                            th:selected="${level == 'WARN'}"></option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small mb-1" for="keywordInput">キーワード</label>
+                                <input type="search" class="form-control form-control-sm" id="keywordInput"
+                                       placeholder="メッセージ・ロガー名で絞り込み">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small mb-1" for="limitSelect">表示件数</label>
+                                <select class="form-select form-select-sm" id="limitSelect">
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="200" selected>200</option>
+                                    <option value="500">500</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check form-switch mt-3">
+                                    <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                                    <label class="form-check-label small" for="autoRefresh">5秒ごとに自動更新</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mb-3" id="levelCounts"></div>
+
+                        <div class="table-responsive log-table-wrapper">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead>
+                                <tr>
+                                    <th style="width: 170px;">日時</th>
+                                    <th style="width: 80px;">レベル</th>
+                                    <th style="width: 220px;">ロガー</th>
+                                    <th>メッセージ</th>
+                                </tr>
+                                </thead>
+                                <tbody id="logTableBody"></tbody>
+                            </table>
+                        </div>
+
+                        <p class="text-muted small mt-3 mb-0" id="statusText">読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout::footer}"></div>
+
+<style>
+    .log-table-wrapper {
+        max-height: 65vh;
+        overflow-y: auto;
+    }
+
+    .log-message {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.85rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .log-logger {
+        font-size: 0.8rem;
+        word-break: break-all;
+    }
+
+    .log-stacktrace {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.75rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+        max-height: 320px;
+        overflow-y: auto;
+    }
+</style>
+
+<script>
+/*<![CDATA[*/
+    const LEVEL_BADGE = {
+        ERROR: 'bg-danger',
+        WARN: 'bg-warning text-dark',
+        INFO: 'bg-info text-dark',
+        DEBUG: 'bg-secondary',
+        TRACE: 'bg-light text-dark'
+    };
+
+    const levelSelect = document.getElementById('levelSelect');
+    const keywordInput = document.getElementById('keywordInput');
+    const limitSelect = document.getElementById('limitSelect');
+    const autoRefresh = document.getElementById('autoRefresh');
+    const tableBody = document.getElementById('logTableBody');
+    const levelCounts = document.getElementById('levelCounts');
+    const statusText = document.getElementById('statusText');
+    const clearButton = document.getElementById('clearButton');
+
+    let timerId = null;
+
+    function badgeClass(level) {
+        return LEVEL_BADGE[level] || 'bg-secondary';
+    }
+
+    function renderCounts(counts) {
+        levelCounts.textContent = '';
+        ['ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE'].forEach(function (level) {
+            const count = counts[level] || 0;
+            const badge = document.createElement('span');
+            badge.className = 'badge ' + badgeClass(level);
+            badge.textContent = level + ': ' + count;
+            levelCounts.appendChild(badge);
+        });
+    }
+
+    function renderEntries(entries) {
+        tableBody.textContent = '';
+        entries.forEach(function (entry) {
+            const row = document.createElement('tr');
+
+            const timeCell = document.createElement('td');
+            timeCell.className = 'text-nowrap log-logger';
+            timeCell.textContent = entry.timestamp;
+            row.appendChild(timeCell);
+
+            const levelCell = document.createElement('td');
+            const badge = document.createElement('span');
+            badge.className = 'badge ' + badgeClass(entry.level);
+            badge.textContent = entry.level;
+            levelCell.appendChild(badge);
+            row.appendChild(levelCell);
+
+            const loggerCell = document.createElement('td');
+            loggerCell.className = 'log-logger text-muted';
+            loggerCell.textContent = entry.logger;
+            loggerCell.title = entry.logger + ' [' + entry.thread + ']';
+            row.appendChild(loggerCell);
+
+            const messageCell = document.createElement('td');
+            const message = document.createElement('div');
+            message.className = 'log-message';
+            message.textContent = entry.message;
+            messageCell.appendChild(message);
+
+            if (entry.stackTrace) {
+                const details = document.createElement('details');
+                const summary = document.createElement('summary');
+                summary.className = 'small text-danger';
+                summary.textContent = 'スタックトレースを表示';
+                const trace = document.createElement('div');
+                trace.className = 'log-stacktrace';
+                trace.textContent = entry.stackTrace;
+                details.appendChild(summary);
+                details.appendChild(trace);
+                messageCell.appendChild(details);
+            }
+
+            row.appendChild(messageCell);
+            tableBody.appendChild(row);
+        });
+
+        if (entries.length === 0) {
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 4;
+            cell.className = 'text-center text-muted py-4';
+            cell.textContent = '条件に一致するログはありません';
+            row.appendChild(cell);
+            tableBody.appendChild(row);
+        }
+    }
+
+    function buildQuery() {
+        const params = new URLSearchParams();
+        if (levelSelect.value) {
+            params.set('level', levelSelect.value);
+        }
+        if (keywordInput.value.trim()) {
+            params.set('keyword', keywordInput.value.trim());
+        }
+        params.set('limit', limitSelect.value);
+        return params.toString();
+    }
+
+    function loadLogs() {
+        fetch('/api/logs?' + buildQuery(), {headers: {'Accept': 'application/json'}})
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.json();
+            })
+            .then(function (data) {
+                renderEntries(data.entries);
+                renderCounts(data.counts);
+                statusText.textContent = '表示 ' + data.entries.length + ' 件 / 保持 ' + data.total
+                    + ' 件（上限 ' + data.capacity + ' 件） 最終更新 ' + new Date().toLocaleTimeString('ja-JP');
+            })
+            .catch(function (error) {
+                statusText.textContent = 'ログの取得に失敗しました: ' + error.message;
+            });
+    }
+
+    function applyAutoRefresh() {
+        if (timerId !== null) {
+            clearInterval(timerId);
+            timerId = null;
+        }
+        if (autoRefresh.checked) {
+            timerId = setInterval(loadLogs, 5000);
+        }
+    }
+
+    levelSelect.addEventListener('change', loadLogs);
+    limitSelect.addEventListener('change', loadLogs);
+    keywordInput.addEventListener('input', function () {
+        clearTimeout(keywordInput.dataset.timer);
+        keywordInput.dataset.timer = setTimeout(loadLogs, 300);
+    });
+    autoRefresh.addEventListener('change', applyAutoRefresh);
+
+    clearButton.addEventListener('click', function () {
+        if (!confirm('メモリ上に保持しているログを消去しますか。ログファイルは残ります。')) {
+            return;
+        }
+        fetch('/api/logs', {method: 'DELETE'})
+            .then(loadLogs)
+            .catch(function (error) {
+                statusText.textContent = 'ログの消去に失敗しました: ' + error.message;
+            });
+    });
+
+    loadLogs();
+    applyAutoRefresh();
+/*]]>*/
+</script>
+</body>
+</html>
