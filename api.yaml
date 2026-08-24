@@ -28,6 +28,8 @@ tags:
     description: Androidアプリ配信
   - name: Reports
     description: 売上レポート
+  - name: Logs
+    description: サーバーログ
 
 paths:
   # Status
@@ -1275,6 +1277,54 @@ paths:
                 type: string
                 format: binary
 
+  # Logs
+  /api/logs:
+    get:
+      tags:
+        - Logs
+      summary: 直近のサーバーログ取得
+      description: メモリ上に保持している直近のログを新しい順に返す
+      operationId: getLogs
+      parameters:
+        - name: level
+          in: query
+          required: false
+          description: 指定したレベル以上のログのみを返す
+          schema:
+            type: string
+            enum: [TRACE, DEBUG, INFO, WARN, ERROR]
+        - name: keyword
+          in: query
+          required: false
+          description: メッセージ・ロガー名・スタックトレースの部分一致で絞り込む
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: 最大取得件数
+          schema:
+            type: integer
+            default: 200
+            minimum: 1
+            maximum: 1000
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogListResponse'
+    delete:
+      tags:
+        - Logs
+      summary: メモリ上のログ消去
+      description: メモリ上に保持しているログを消去する。ログファイルは削除しない
+      operationId: clearLogs
+      responses:
+        '204':
+          description: No Content
+
 
 components:
   schemas:
@@ -1733,6 +1783,58 @@ components:
         - salesCount
         - itemCount
         - amount
+
+    LogEntryResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          example: "2026-08-24 12:34:56.789"
+        level:
+          type: string
+          example: "ERROR"
+        logger:
+          type: string
+          example: "info.nukoneko.kidspos.server.service.SaleService"
+        thread:
+          type: string
+          example: "http-nio-8080-exec-1"
+        message:
+          type: string
+          example: "Failed to save sale"
+        stackTrace:
+          type: string
+          nullable: true
+      required:
+        - timestamp
+        - level
+        - logger
+        - thread
+        - message
+
+    LogListResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntryResponse'
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: レベルごとの保持件数
+        total:
+          type: integer
+          description: 保持しているログの総件数
+        capacity:
+          type: integer
+          description: 保持件数の上限
+      required:
+        - entries
+        - counts
+        - total
+        - capacity
 
   securitySchemes:
     bearerAuth:
