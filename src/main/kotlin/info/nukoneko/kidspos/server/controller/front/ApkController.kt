@@ -25,6 +25,7 @@ class ApkController(
 
         model.addAttribute("versions", versions)
         model.addAttribute("latestVersion", latestVersion)
+        model.addAttribute("versionOrderConflicts", apkVersionService.detectVersionOrderConflicts(versions))
         model.addAttribute("title", "APKバージョン管理")
 
         return "apk/index"

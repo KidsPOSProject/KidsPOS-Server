@@ -31,6 +31,21 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
 
+                    <div th:if="${not #lists.isEmpty(versionOrderConflicts)}" class="alert alert-warning">
+                        <h5 class="alert-heading">バージョン番号の並びが逆転しています</h5>
+                        <p>最新バージョンはバージョンコードの大きい順に決まります。次の組み合わせはバージョン名の新しさと逆になっているため、アプリに古いAPKが配信されます。誤って登録されたバージョンコードを削除してください。</p>
+                        <ul class="mb-0">
+                            <li th:each="conflict : ${versionOrderConflicts}">
+                                <strong th:text="${conflict.newerName.version}"></strong>
+                                (コード <span th:text="${conflict.newerName.versionCode}"></span>)
+                                のほうが新しいバージョン名ですが、
+                                <strong th:text="${conflict.higherCode.version}"></strong>
+                                (コード <span th:text="${conflict.higherCode.versionCode}"></span>)
+                                のバージョンコードが大きいため最新として扱われます。
+                            </li>
+                        </ul>
+                    </div>
+
                     <div th:if="${latestVersion}" class="alert alert-info">
                         <h5 class="alert-heading">最新バージョン</h5>
                         <p class="mb-0">
