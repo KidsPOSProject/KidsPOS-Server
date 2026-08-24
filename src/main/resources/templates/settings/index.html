@@ -124,6 +124,50 @@
                                     </div>
                                 </div>
 
+                                <!-- Danger Zone パスワードセクション -->
+                                <div class="card mt-4 border-danger">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-lock text-danger me-2"></i>
+                                            Danger Zone パスワード
+                                        </h5>
+                                        <p class="card-text text-muted">
+                                            レジアプリの Danger Zone（サーバーアドレス変更などの危険な操作）を開くためのパスワードです。ここで設定した内容はハッシュ化して保存され、画面には表示されません。
+                                        </p>
+                                        <div class="mb-3">
+                                            <span class="text-muted small me-2">状態</span>
+                                            <span class="badge bg-secondary" id="dangerZoneStatus">確認中...</span>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-4" id="currentPasswordField" style="display: none;">
+                                                <label for="dangerZoneCurrentPassword" class="form-label">現在のパスワード</label>
+                                                <input type="password" class="form-control" id="dangerZoneCurrentPassword"
+                                                       autocomplete="current-password">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="dangerZoneNewPassword" class="form-label">新しいパスワード</label>
+                                                <input type="password" class="form-control" id="dangerZoneNewPassword"
+                                                       autocomplete="new-password">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="dangerZoneConfirmPassword" class="form-label">新しいパスワード（確認）</label>
+                                                <input type="password" class="form-control" id="dangerZoneConfirmPassword"
+                                                       autocomplete="new-password">
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button type="button" class="btn btn-danger" id="saveDangerZoneBtn" onclick="saveDangerZonePassword()">
+                                                <i class="fas fa-save me-2"></i>パスワードを保存
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger ms-2" id="clearDangerZoneBtn"
+                                                    onclick="clearDangerZonePassword()" style="display: none;">
+                                                <i class="fas fa-unlock me-2"></i>パスワードを解除
+                                            </button>
+                                        </div>
+                                        <div id="dangerZoneResult" class="mt-3" style="display: none;"></div>
+                                    </div>
+                                </div>
+
                                 <div class="mt-3">
                                     <a class="btn btn-secondary" href="/">
                                         <i class="fas fa-arrow-left"></i> 戻る
@@ -155,6 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     loadSystemTime();
+    loadDangerZoneStatus();
 });
 
 function padZero(value) {
@@ -242,6 +287,105 @@ function syncSystemTime() {
 
 function showTimeResult(type, message) {
     const resultDiv = document.getElementById('timeResult');
+    resultDiv.style.display = 'block';
+    resultDiv.className = `alert alert-${type}`;
+    resultDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}`;
+}
+
+function applyDangerZoneStatus(configured) {
+    const badge = document.getElementById('dangerZoneStatus');
+    badge.textContent = configured ? '設定済み' : '未設定';
+    badge.className = configured ? 'badge bg-success' : 'badge bg-warning text-dark';
+    document.getElementById('currentPasswordField').style.display = configured ? 'block' : 'none';
+    document.getElementById('clearDangerZoneBtn').style.display = configured ? 'inline-block' : 'none';
+}
+
+function loadDangerZoneStatus() {
+    const badge = document.getElementById('dangerZoneStatus');
+    if (!badge) {
+        return;
+    }
+
+    fetch('/api/setting/danger-zone/status')
+        .then(response => response.json())
+        .then(data => applyDangerZoneStatus(data.configured))
+        .catch(() => {
+            badge.textContent = '取得できませんでした';
+            badge.className = 'badge bg-secondary';
+        });
+}
+
+function postDangerZone(path, payload, button) {
+    const originalButtonContent = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>送信中...';
+
+    return fetch(path, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json().then(data => ({ ok: response.ok, data })))
+    .then(({ ok, data }) => {
+        const succeeded = ok && data.success;
+        showDangerZoneResult(succeeded ? 'success' : 'danger', data.message || '処理に失敗しました');
+        if (succeeded) {
+            document.getElementById('dangerZoneCurrentPassword').value = '';
+            document.getElementById('dangerZoneNewPassword').value = '';
+            document.getElementById('dangerZoneConfirmPassword').value = '';
+            applyDangerZoneStatus(data.configured);
+        }
+    })
+    .catch(error => {
+        showDangerZoneResult('danger', 'リクエストの送信に失敗しました: ' + error.message);
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalButtonContent;
+    });
+}
+
+function saveDangerZonePassword() {
+    const currentPassword = document.getElementById('dangerZoneCurrentPassword').value;
+    const newPassword = document.getElementById('dangerZoneNewPassword').value;
+    const confirmPassword = document.getElementById('dangerZoneConfirmPassword').value;
+
+    if (newPassword.length < 4) {
+        showDangerZoneResult('danger', 'パスワードは4文字以上で設定してください');
+        return;
+    }
+    if (newPassword !== confirmPassword) {
+        showDangerZoneResult('danger', '確認用パスワードが一致しません');
+        return;
+    }
+
+    const payload = { newPassword: newPassword };
+    if (currentPassword) {
+        payload.currentPassword = currentPassword;
+    }
+    postDangerZone('/api/setting/danger-zone/password', payload, document.getElementById('saveDangerZoneBtn'));
+}
+
+function clearDangerZonePassword() {
+    const currentPassword = document.getElementById('dangerZoneCurrentPassword').value;
+    if (!currentPassword) {
+        showDangerZoneResult('danger', '解除するには現在のパスワードを入力してください');
+        return;
+    }
+    if (!window.confirm('Danger Zone パスワードを解除します。よろしいですか？')) {
+        return;
+    }
+    postDangerZone(
+        '/api/setting/danger-zone/password/clear',
+        { currentPassword: currentPassword },
+        document.getElementById('clearDangerZoneBtn')
+    );
+}
+
+function showDangerZoneResult(type, message) {
+    const resultDiv = document.getElementById('dangerZoneResult');
     resultDiv.style.display = 'block';
     resultDiv.className = `alert alert-${type}`;
     resultDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}`;
