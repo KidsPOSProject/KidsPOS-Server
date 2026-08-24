@@ -85,6 +85,8 @@ Type=simple
 User=pi
 WorkingDirectory=/opt/kidspos
 ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -jar /opt/kidspos/app.jar
+AmbientCapabilities=CAP_SYS_TIME
+CapabilityBoundingSet=CAP_SYS_TIME
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -94,6 +96,8 @@ SyslogIdentifier=kidspos-server
 [Install]
 WantedBy=multi-user.target
 ```
+
+AmbientCapabilities=CAP_SYS_TIME は設定画面のサーバー時刻同期に必要です。イントラネットでは時刻同期サーバーに到達できずサーバーの時計がずれるため、管理画面から手元の端末の時刻を反映できるようにしています。この権限がないと同期は失敗し、画面に権限不足の旨が表示されます。
 
 標準出力と標準エラーは journal に送られます。あわせてアプリ自身が logback で /opt/kidspos/logs/kidspos.log に書き出し、日付ごとに 30 日分ローテーションします。
 
