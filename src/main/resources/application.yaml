@@ -55,6 +55,7 @@ app:
     pdf:
       margin: ${PDF_MARGIN:20}
       image-size: ${PDF_IMAGE_SIZE:100}
+      warmup-on-startup: ${PDF_WARMUP_ON_STARTUP:true}
   network:
     allowed-ip-prefix: ${ALLOWED_IP_PREFIX:192.168.}
   security:

@@ -195,6 +195,50 @@ class BarcodeServiceTest {
         }
 
         @Test
+        @DisplayName("Should embed one shared barcode image per item")
+        fun shouldEmbedOneImagePerItem() {
+            // Given
+            val items =
+                listOf(
+                    ItemEntity(id = 1, barcode = "1234567890", name = "Item 1", price = 100),
+                    ItemEntity(id = 2, barcode = "0987654321", name = "Item 2", price = 200),
+                )
+
+            // When
+            val pdfBytes = barcodeService.generateBarcodePdf(items)
+
+            // Then
+            val pdfDocument = PdfDocument(PdfReader(ByteArrayInputStream(pdfBytes)))
+            val imageObjects =
+                (1..pdfDocument.numberOfPages).sumOf { pageNumber ->
+                    val resources = pdfDocument.getPage(pageNumber).resources
+                    resources.resourceNames.count { name ->
+                        resources.getImage(name) != null
+                    }
+                }
+
+            assertEquals(items.size, imageObjects, "44枚のラベルは1商品につき1つの画像を共有する")
+
+            pdfDocument.close()
+        }
+
+        @Test
+        @DisplayName("Should generate smaller PDF than a naive per-cell rendering")
+        fun shouldKeepPdfSizeSmall() {
+            // Given
+            val items = listOf(ItemEntity(id = 1, barcode = "1234567890", name = "Item 1", price = 100))
+
+            // When
+            val pdfBytes = barcodeService.generateBarcodePdf(items)
+
+            // Then
+            assertTrue(
+                pdfBytes.size < 200_000,
+                "1商品あたりのPDFサイズが想定より大きい: ${pdfBytes.size} bytes",
+            )
+        }
+
+        @Test
         @DisplayName("Should handle very long item names")
         fun shouldHandleVeryLongItemNames() {
             // Given
