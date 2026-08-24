@@ -51,7 +51,7 @@ class SaleApiController(
             when (val result = saleProcessingService.processSaleWithValidation(saleBean, items)) {
                 is SaleResult.Success -> {
                     // Print receipt
-                    receiptService.printReceipt(
+                    receiptService.printReceiptAsync(
                         request.storeId,
                         items,
                         request.deposit,
@@ -106,7 +106,7 @@ class SaleApiController(
             when (val result = saleProcessingService.processSaleWithValidation(saleBean, items)) {
                 is SaleResult.Success -> {
                     // Print receipt
-                    receiptService.printReceipt(
+                    receiptService.printReceiptAsync(
                         saleBean.storeId,
                         items,
                         saleBean.deposit,

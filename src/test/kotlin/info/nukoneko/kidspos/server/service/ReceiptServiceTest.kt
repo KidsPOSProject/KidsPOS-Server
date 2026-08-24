@@ -10,6 +10,9 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import java.net.ServerSocket
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.TimeUnit
 
 @SpringBootTest
 class ReceiptServiceTest {
@@ -156,5 +159,90 @@ class ReceiptServiceTest {
         assertTrue(result.contains("Deposit: 100リバー"))
         assertTrue(result.contains("Change: 100リバー"))
         verify(storeService).findStore(storeId)
+    }
+
+    @Test
+    fun `should not request printing when printer is not configured`() {
+        val storeId = 1
+        `when`(storeService.findStore(storeId)).thenReturn(StoreEntity(storeId, "Test Store", ""))
+
+        val service = receiptServiceWith(port = 9100)
+
+        assertFalse(service.printReceiptAsync(storeId, printableItems, 1000))
+    }
+
+    @Test
+    fun `should not request printing when store does not exist`() {
+        val storeId = 999
+        `when`(storeService.findStore(storeId)).thenReturn(null)
+
+        val service = receiptServiceWith(port = 9100)
+
+        assertFalse(service.printReceiptAsync(storeId, printableItems, 1000))
+    }
+
+    @Test
+    fun `should send receipt to printer in background`() {
+        val storeId = 1
+        val received = ArrayBlockingQueue<ByteArray>(1)
+
+        ServerSocket(0).use { server ->
+            Thread {
+                server.accept().use { socket ->
+                    received.put(socket.getInputStream().readBytes())
+                }
+            }.apply { isDaemon = true }.start()
+
+            `when`(storeService.findStore(storeId)).thenReturn(StoreEntity(storeId, "Test Store", "127.0.0.1"))
+            val service = receiptServiceWith(port = server.localPort)
+
+            assertTrue(service.printReceiptAsync(storeId, printableItems, 1000))
+
+            val bytes = received.poll(WAIT_LIMIT_MILLIS, TimeUnit.MILLISECONDS)
+            assertTrue(bytes != null && bytes.isNotEmpty(), "印字データが送信される")
+        }
+    }
+
+    @Test
+    fun `should return immediately when printer is unreachable`() {
+        val storeId = 1
+        `when`(storeService.findStore(storeId)).thenReturn(StoreEntity(storeId, "Test Store", UNROUTABLE_HOST))
+
+        val service = receiptServiceWith(port = 9100, connectTimeoutMillis = CONNECT_TIMEOUT_MILLIS)
+
+        val startedAt = System.nanoTime()
+        assertTrue(service.printReceiptAsync(storeId, printableItems, 1000))
+        val elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)
+
+        assertTrue(elapsedMillis < CONNECT_TIMEOUT_MILLIS, "接続を待たずに返る: ${elapsedMillis}ms")
+    }
+
+    private fun receiptServiceWith(
+        port: Int,
+        connectTimeoutMillis: Int = CONNECT_TIMEOUT_MILLIS,
+    ): ReceiptService {
+        val properties =
+            AppProperties(
+                receipt =
+                    AppProperties.ReceiptProperties(
+                        printer =
+                            AppProperties.ReceiptProperties.PrinterProperties(
+                                port = port,
+                                connectTimeoutMillis = connectTimeoutMillis,
+                            ),
+                    ),
+            )
+        return ReceiptService(storeService, properties)
+    }
+
+    companion object {
+        private const val UNROUTABLE_HOST = "192.0.2.1"
+        private const val CONNECT_TIMEOUT_MILLIS = 3_000
+        private const val WAIT_LIMIT_MILLIS = 5_000L
+        private val printableItems =
+            listOf(
+                ItemBean(1, "0123456789", "あめ", 100),
+                ItemBean(2, "9876543210", "ガム", 200),
+            )
     }
 }

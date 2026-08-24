@@ -87,7 +87,7 @@ class SaleApiControllerUnitTest {
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(expectedSaleBean, testItems))
             .thenReturn(SaleResult.Success(testSale, summary))
-        `when`(receiptService.printReceipt(1, testItems, 400)).thenReturn(true)
+        `when`(receiptService.printReceiptAsync(1, testItems, 400)).thenReturn(true)
 
         // When
         val result = controller.createSale(request)
@@ -105,7 +105,7 @@ class SaleApiControllerUnitTest {
 
         verify(itemParsingService).parseItemsFromIds("1,2")
         verify(saleProcessingService).processSaleWithValidation(expectedSaleBean, testItems)
-        verify(receiptService).printReceipt(1, testItems, 400)
+        verify(receiptService).printReceiptAsync(1, testItems, 400)
     }
 
     @Test
