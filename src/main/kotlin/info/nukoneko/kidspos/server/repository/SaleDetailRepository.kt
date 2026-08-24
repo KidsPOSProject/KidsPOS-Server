@@ -16,4 +16,6 @@ interface SaleDetailRepository : JpaRepository<SaleDetailEntity, Int> {
     fun getLastId(): Int
 
     fun findBySaleId(saleId: Int): List<SaleDetailEntity>
+
+    fun findBySaleIdIn(saleIds: Collection<Int>): List<SaleDetailEntity>
 }

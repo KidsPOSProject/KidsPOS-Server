@@ -12,25 +12,20 @@ import com.itextpdf.layout.properties.TextAlignment
 import com.itextpdf.layout.properties.UnitValue
 import com.itextpdf.layout.properties.VerticalAlignment
 import info.nukoneko.kidspos.server.controller.dto.response.SaleReportData
-import info.nukoneko.kidspos.server.controller.dto.response.SaleReportDetailData
 import info.nukoneko.kidspos.server.controller.dto.response.SaleReportSummary
-import info.nukoneko.kidspos.server.entity.SaleEntity
-import info.nukoneko.kidspos.server.repository.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.ByteArrayOutputStream
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 @Service
 @Transactional(readOnly = true)
 class SaleReportService(
-    private val saleRepository: SaleRepository,
-    private val saleDetailRepository: SaleDetailRepository,
-    private val itemRepository: ItemRepository,
-    private val storeRepository: StoreRepository,
+    private val saleAggregationService: SaleAggregationService,
 ) {
     private val logger = LoggerFactory.getLogger(SaleReportService::class.java)
     private val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm")
@@ -42,11 +37,8 @@ class SaleReportService(
     ): ByteArray {
         logger.info("Generating sales report from {} to {}", startDate, endDate)
 
-        val sales = saleRepository.findByDateRange(startDate, endDate)
-        val reportData = prepareSalesReportData(sales)
-        val summary = calculateSummary(reportData, startDate, endDate)
-
-        return createPdfReport(reportData, summary)
+        val aggregation = saleAggregationService.aggregate(startDate, endDate)
+        return createPdfReport(aggregation.sales, aggregation.summary)
     }
 
     fun generateSalesReportByStore(
@@ -56,58 +48,8 @@ class SaleReportService(
     ): ByteArray {
         logger.info("Generating sales report for store {} from {} to {}", storeId, startDate, endDate)
 
-        val sales =
-            saleRepository
-                .findByDateRange(startDate, endDate)
-                .filter { it.storeId == storeId }
-        val reportData = prepareSalesReportData(sales)
-        val summary = calculateSummary(reportData, startDate, endDate)
-
-        return createPdfReport(reportData, summary)
-    }
-
-    private fun prepareSalesReportData(sales: List<SaleEntity>): List<SaleReportData> =
-        sales.map { sale ->
-            val store = storeRepository.findById(sale.storeId).orElse(null)
-            val details =
-                saleDetailRepository.findBySaleId(sale.id).map { detail ->
-                    val item = itemRepository.findById(detail.itemId).orElse(null)
-                    SaleReportDetailData(
-                        itemId = detail.itemId,
-                        itemName = item?.name ?: "不明な商品",
-                        price = detail.price,
-                        quantity = detail.quantity,
-                        subtotal = detail.price * detail.quantity,
-                    )
-                }
-
-            SaleReportData(
-                saleId = sale.id,
-                storeId = sale.storeId,
-                storeName = store?.name ?: "不明な店舗",
-                quantity = sale.quantity,
-                amount = sale.amount,
-                createdAt = sale.createdAt,
-                details = details,
-            )
-        }
-
-    private fun calculateSummary(
-        reportData: List<SaleReportData>,
-        startDate: Date,
-        endDate: Date,
-    ): SaleReportSummary {
-        val totalSales = reportData.size
-        val totalAmount = reportData.sumOf { it.amount }
-        val averageAmount = if (totalSales > 0) totalAmount.toDouble() / totalSales else 0.0
-
-        return SaleReportSummary(
-            totalSales = totalSales,
-            totalAmount = totalAmount,
-            averageAmount = averageAmount,
-            startDate = startDate,
-            endDate = endDate,
-        )
+        val aggregation = saleAggregationService.aggregate(startDate, endDate, storeId)
+        return createPdfReport(aggregation.sales, aggregation.summary)
     }
 
     private fun createPdfReport(
@@ -118,15 +60,12 @@ class SaleReportService(
         val writer = PdfWriter(outputStream)
         val pdf = PdfDocument(writer)
         val document = Document(pdf, PageSize.A4)
+        document.setFont(JapanesePdfFont.create())
 
         try {
-            // ヘッダー
             addHeader(document, summary)
-
-            // サマリー
             addSummary(document, summary)
-
-            // 売上明細テーブル
+            addItemSummaryTable(document, reportData)
             addSalesTable(document, reportData)
 
             document.close()
@@ -164,12 +103,11 @@ class SaleReportService(
         document: Document,
         summary: SaleReportSummary,
     ) {
-        val summaryTitle =
+        document.add(
             Paragraph("集計結果")
                 .setFontSize(16f)
-                .setBold()
-
-        document.add(summaryTitle)
+                .setBold(),
+        )
 
         val summaryTable =
             Table(UnitValue.createPercentArray(floatArrayOf(50f, 50f)))
@@ -177,6 +115,9 @@ class SaleReportService(
 
         summaryTable.addCell(createCell("総売上件数:", false))
         summaryTable.addCell(createCell("${numberFormat.format(summary.totalSales)} 件", true))
+
+        summaryTable.addCell(createCell("総販売点数:", false))
+        summaryTable.addCell(createCell("${numberFormat.format(summary.totalItemCount)} 点", true))
 
         summaryTable.addCell(createCell("総売上金額:", false))
         summaryTable.addCell(createCell("¥${numberFormat.format(summary.totalAmount)}", true))
@@ -188,22 +129,69 @@ class SaleReportService(
         document.add(Paragraph("\n"))
     }
 
+    private fun addItemSummaryTable(
+        document: Document,
+        reportData: List<SaleReportData>,
+    ) {
+        val items =
+            reportData
+                .flatMap { it.details }
+                .groupBy { it.itemId }
+                .map { (_, group) ->
+                    Triple(
+                        group.first().itemName,
+                        group.sumOf { it.quantity },
+                        group.sumOf { it.subtotal },
+                    )
+                }.sortedByDescending { it.third }
+
+        if (items.isEmpty()) {
+            return
+        }
+
+        document.add(
+            Paragraph("商品別集計")
+                .setFontSize(16f)
+                .setBold(),
+        )
+
+        val table =
+            Table(UnitValue.createPercentArray(floatArrayOf(50f, 20f, 30f)))
+                .useAllAvailableWidth()
+
+        table.addHeaderCell(createHeaderCell("商品名"))
+        table.addHeaderCell(createHeaderCell("販売数"))
+        table.addHeaderCell(createHeaderCell("売上金額"))
+
+        items.forEach { (name, quantity, amount) ->
+            table.addCell(createDataCell(name))
+            table.addCell(createDataCell("${numberFormat.format(quantity)} 点"))
+            table.addCell(createDataCell("¥${numberFormat.format(amount)}"))
+        }
+
+        document.add(table)
+        document.add(Paragraph("\n"))
+    }
+
     private fun addSalesTable(
         document: Document,
         reportData: List<SaleReportData>,
     ) {
-        val tableTitle =
+        document.add(
             Paragraph("売上明細")
                 .setFontSize(16f)
-                .setBold()
+                .setBold(),
+        )
 
-        document.add(tableTitle)
+        if (reportData.isEmpty()) {
+            document.add(Paragraph("対象期間の売上はありません").setFontSize(12f))
+            return
+        }
 
         val table =
             Table(UnitValue.createPercentArray(floatArrayOf(10f, 20f, 20f, 15f, 15f, 20f)))
                 .useAllAvailableWidth()
 
-        // ヘッダー行
         table.addHeaderCell(createHeaderCell("売上ID"))
         table.addHeaderCell(createHeaderCell("日時"))
         table.addHeaderCell(createHeaderCell("店舗"))
@@ -211,15 +199,13 @@ class SaleReportService(
         table.addHeaderCell(createHeaderCell("金額"))
         table.addHeaderCell(createHeaderCell("詳細"))
 
-        // データ行
         reportData.forEach { sale ->
             table.addCell(createDataCell(sale.saleId.toString()))
             table.addCell(createDataCell(dateFormat.format(sale.createdAt)))
             table.addCell(createDataCell(sale.storeName))
-            table.addCell(createDataCell(sale.quantity.toString()))
+            table.addCell(createDataCell(sale.details.sumOf { it.quantity }.toString()))
             table.addCell(createDataCell("¥${numberFormat.format(sale.amount)}"))
 
-            // 詳細セル
             val detailText =
                 if (sale.details.isNotEmpty()) {
                     sale.details.joinToString("\n") { detail ->

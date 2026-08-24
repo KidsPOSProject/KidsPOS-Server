@@ -1,11 +1,11 @@
 package info.nukoneko.kidspos.server.service
 
 import info.nukoneko.kidspos.server.controller.dto.response.SaleReportData
-import info.nukoneko.kidspos.server.controller.dto.response.SaleReportDetailData
 import info.nukoneko.kidspos.server.controller.dto.response.SaleReportSummary
-import info.nukoneko.kidspos.server.entity.SaleEntity
-import info.nukoneko.kidspos.server.repository.*
-import org.apache.poi.ss.usermodel.*
+import org.apache.poi.ss.usermodel.BorderStyle
+import org.apache.poi.ss.usermodel.FillPatternType
+import org.apache.poi.ss.usermodel.HorizontalAlignment
+import org.apache.poi.ss.usermodel.IndexedColors
 import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel.XSSFCellStyle
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -13,21 +13,16 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.ByteArrayOutputStream
-import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
 
 @Service
 @Transactional(readOnly = true)
 class SaleExcelReportService(
-    private val saleRepository: SaleRepository,
-    private val saleDetailRepository: SaleDetailRepository,
-    private val itemRepository: ItemRepository,
-    private val storeRepository: StoreRepository,
+    private val saleAggregationService: SaleAggregationService,
 ) {
     private val logger = LoggerFactory.getLogger(SaleExcelReportService::class.java)
     private val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm")
-    private val numberFormat = NumberFormat.getInstance(Locale.JAPAN)
 
     fun generateSalesExcelReport(
         startDate: Date,
@@ -35,11 +30,8 @@ class SaleExcelReportService(
     ): ByteArray {
         logger.info("Generating sales Excel report from {} to {}", startDate, endDate)
 
-        val sales = saleRepository.findByDateRange(startDate, endDate)
-        val reportData = prepareSalesReportData(sales)
-        val summary = calculateSummary(reportData, startDate, endDate)
-
-        return createExcelReport(reportData, summary)
+        val aggregation = saleAggregationService.aggregate(startDate, endDate)
+        return createExcelReport(aggregation.sales, aggregation.summary)
     }
 
     fun generateSalesExcelReportByStore(
@@ -49,58 +41,8 @@ class SaleExcelReportService(
     ): ByteArray {
         logger.info("Generating sales Excel report for store {} from {} to {}", storeId, startDate, endDate)
 
-        val sales =
-            saleRepository
-                .findByDateRange(startDate, endDate)
-                .filter { it.storeId == storeId }
-        val reportData = prepareSalesReportData(sales)
-        val summary = calculateSummary(reportData, startDate, endDate)
-
-        return createExcelReport(reportData, summary)
-    }
-
-    private fun prepareSalesReportData(sales: List<SaleEntity>): List<SaleReportData> =
-        sales.map { sale ->
-            val store = storeRepository.findById(sale.storeId).orElse(null)
-            val details =
-                saleDetailRepository.findBySaleId(sale.id).map { detail ->
-                    val item = itemRepository.findById(detail.itemId).orElse(null)
-                    SaleReportDetailData(
-                        itemId = detail.itemId,
-                        itemName = item?.name ?: "不明な商品",
-                        price = detail.price,
-                        quantity = detail.quantity,
-                        subtotal = detail.price * detail.quantity,
-                    )
-                }
-
-            SaleReportData(
-                saleId = sale.id,
-                storeId = sale.storeId,
-                storeName = store?.name ?: "不明な店舗",
-                quantity = sale.quantity,
-                amount = sale.amount,
-                createdAt = sale.createdAt,
-                details = details,
-            )
-        }
-
-    private fun calculateSummary(
-        reportData: List<SaleReportData>,
-        startDate: Date,
-        endDate: Date,
-    ): SaleReportSummary {
-        val totalSales = reportData.size
-        val totalAmount = reportData.sumOf { it.amount }
-        val averageAmount = if (totalSales > 0) totalAmount.toDouble() / totalSales else 0.0
-
-        return SaleReportSummary(
-            totalSales = totalSales,
-            totalAmount = totalAmount,
-            averageAmount = averageAmount,
-            startDate = startDate,
-            endDate = endDate,
-        )
+        val aggregation = saleAggregationService.aggregate(startDate, endDate, storeId)
+        return createExcelReport(aggregation.sales, aggregation.summary)
     }
 
     private fun createExcelReport(
@@ -110,16 +52,11 @@ class SaleExcelReportService(
         val workbook = XSSFWorkbook()
 
         try {
-            // サマリーシート
             createSummarySheet(workbook, summary)
-
-            // 売上明細シート
             createSalesDetailSheet(workbook, reportData)
-
-            // 商品別集計シート
             createItemSummarySheet(workbook, reportData)
+            createDailySummarySheet(workbook, reportData)
 
-            // バイト配列に変換
             val outputStream = ByteArrayOutputStream()
             workbook.write(outputStream)
             workbook.close()
@@ -139,62 +76,58 @@ class SaleExcelReportService(
     ) {
         val sheet = workbook.createSheet("サマリー")
 
-        // スタイルの作成
         val headerStyle = createHeaderStyle(workbook)
         val titleStyle = createTitleStyle(workbook)
         val currencyStyle = createCurrencyStyle(workbook)
+        val countStyle = createCountStyle(workbook)
 
         var rowNum = 0
 
-        // タイトル
         val titleRow = sheet.createRow(rowNum++)
         val titleCell = titleRow.createCell(0)
         titleCell.setCellValue("売上レポート")
         titleCell.cellStyle = titleStyle
         sheet.addMergedRegion(CellRangeAddress(0, 0, 0, 3))
 
-        // 期間
         val periodRow = sheet.createRow(rowNum++)
         periodRow.createCell(0).setCellValue("期間:")
         periodRow.createCell(1).setCellValue("${dateFormat.format(summary.startDate)} ～ ${dateFormat.format(summary.endDate)}")
         sheet.addMergedRegion(CellRangeAddress(1, 1, 1, 3))
 
-        // 空白行
         rowNum++
 
-        // サマリーヘッダー
         val summaryHeaderRow = sheet.createRow(rowNum++)
         val summaryHeader = summaryHeaderRow.createCell(0)
         summaryHeader.setCellValue("集計結果")
         summaryHeader.cellStyle = headerStyle
         sheet.addMergedRegion(CellRangeAddress(rowNum - 1, rowNum - 1, 0, 3))
 
-        // 総売上件数
         val countRow = sheet.createRow(rowNum++)
         countRow.createCell(0).setCellValue("総売上件数")
         val countCell = countRow.createCell(1)
         countCell.setCellValue(summary.totalSales.toDouble())
-        countCell.cellStyle =
-            workbook.createCellStyle().apply {
-                dataFormat = workbook.createDataFormat().getFormat("#,##0")
-            }
+        countCell.cellStyle = countStyle
         countRow.createCell(2).setCellValue("件")
 
-        // 総売上金額
+        val itemCountRow = sheet.createRow(rowNum++)
+        itemCountRow.createCell(0).setCellValue("総販売点数")
+        val itemCountCell = itemCountRow.createCell(1)
+        itemCountCell.setCellValue(summary.totalItemCount.toDouble())
+        itemCountCell.cellStyle = countStyle
+        itemCountRow.createCell(2).setCellValue("点")
+
         val amountRow = sheet.createRow(rowNum++)
         amountRow.createCell(0).setCellValue("総売上金額")
         val amountCell = amountRow.createCell(1)
         amountCell.setCellValue(summary.totalAmount.toDouble())
         amountCell.cellStyle = currencyStyle
 
-        // 平均売上金額
         val avgRow = sheet.createRow(rowNum++)
         avgRow.createCell(0).setCellValue("平均売上金額")
         val avgCell = avgRow.createCell(1)
         avgCell.setCellValue(summary.averageAmount)
         avgCell.cellStyle = currencyStyle
 
-        // 列幅の自動調整
         for (i in 0..3) {
             sheet.autoSizeColumn(i)
         }
@@ -206,14 +139,12 @@ class SaleExcelReportService(
     ) {
         val sheet = workbook.createSheet("売上明細")
 
-        // スタイルの作成
         val headerStyle = createHeaderStyle(workbook)
         val currencyStyle = createCurrencyStyle(workbook)
         val dateStyle = createDateStyle(workbook)
 
         var rowNum = 0
 
-        // ヘッダー行
         val headerRow = sheet.createRow(rowNum++)
         val headers = listOf("売上ID", "日時", "店舗名", "商品数", "金額", "商品明細")
         headers.forEachIndexed { index, header ->
@@ -222,7 +153,6 @@ class SaleExcelReportService(
             cell.cellStyle = headerStyle
         }
 
-        // データ行
         reportData.forEach { sale ->
             val row = sheet.createRow(rowNum++)
             row.createCell(0).setCellValue(sale.saleId.toDouble())
@@ -232,7 +162,7 @@ class SaleExcelReportService(
             dateCell.cellStyle = dateStyle
 
             row.createCell(2).setCellValue(sale.storeName)
-            row.createCell(3).setCellValue(sale.quantity.toDouble())
+            row.createCell(3).setCellValue(sale.details.sumOf { it.quantity }.toDouble())
 
             val amountCell = row.createCell(4)
             amountCell.setCellValue(sale.amount.toDouble())
@@ -249,14 +179,13 @@ class SaleExcelReportService(
             row.createCell(5).setCellValue(detailText)
         }
 
-        // 合計行
         val totalRow = sheet.createRow(rowNum++)
         totalRow.createCell(2).setCellValue("合計")
+        totalRow.createCell(3).setCellValue(reportData.sumOf { sale -> sale.details.sumOf { it.quantity } }.toDouble())
         val totalCell = totalRow.createCell(4)
         totalCell.setCellValue(reportData.sumOf { it.amount }.toDouble())
         totalCell.cellStyle = currencyStyle
 
-        // 列幅の自動調整
         for (i in 0..5) {
             sheet.autoSizeColumn(i)
         }
@@ -268,32 +197,24 @@ class SaleExcelReportService(
     ) {
         val sheet = workbook.createSheet("商品別集計")
 
-        // スタイルの作成
         val headerStyle = createHeaderStyle(workbook)
         val currencyStyle = createCurrencyStyle(workbook)
 
-        // 商品別に集計
-        val itemSummary = mutableMapOf<String, ItemSummaryData>()
-        reportData.forEach { sale ->
-            sale.details.forEach { detail ->
-                val existing =
-                    itemSummary.getOrDefault(
-                        detail.itemName,
-                        ItemSummaryData(detail.itemName, 0, 0, detail.price),
-                    )
-                itemSummary[detail.itemName] =
+        val itemSummary =
+            reportData
+                .flatMap { it.details }
+                .groupBy { it.itemId }
+                .map { (_, group) ->
                     ItemSummaryData(
-                        itemName = existing.itemName,
-                        totalQuantity = existing.totalQuantity + detail.quantity,
-                        totalAmount = existing.totalAmount + detail.subtotal,
-                        unitPrice = detail.price,
+                        itemName = group.first().itemName,
+                        totalQuantity = group.sumOf { it.quantity },
+                        totalAmount = group.sumOf { it.subtotal },
+                        unitPrice = group.first().price,
                     )
-            }
-        }
+                }.sortedByDescending { it.totalAmount }
 
         var rowNum = 0
 
-        // ヘッダー行
         val headerRow = sheet.createRow(rowNum++)
         val headers = listOf("商品名", "単価", "販売数", "売上金額")
         headers.forEachIndexed { index, header ->
@@ -302,8 +223,7 @@ class SaleExcelReportService(
             cell.cellStyle = headerStyle
         }
 
-        // データ行（売上金額の降順でソート）
-        itemSummary.values.sortedByDescending { it.totalAmount }.forEach { item ->
+        itemSummary.forEach { item ->
             val row = sheet.createRow(rowNum++)
             row.createCell(0).setCellValue(item.itemName)
 
@@ -318,15 +238,52 @@ class SaleExcelReportService(
             amountCell.cellStyle = currencyStyle
         }
 
-        // 合計行
         val totalRow = sheet.createRow(rowNum++)
         totalRow.createCell(0).setCellValue("合計")
-        totalRow.createCell(2).setCellValue(itemSummary.values.sumOf { it.totalQuantity }.toDouble())
+        totalRow.createCell(2).setCellValue(itemSummary.sumOf { it.totalQuantity }.toDouble())
         val totalCell = totalRow.createCell(3)
-        totalCell.setCellValue(itemSummary.values.sumOf { it.totalAmount }.toDouble())
+        totalCell.setCellValue(itemSummary.sumOf { it.totalAmount }.toDouble())
         totalCell.cellStyle = currencyStyle
 
-        // 列幅の自動調整
+        for (i in 0..3) {
+            sheet.autoSizeColumn(i)
+        }
+    }
+
+    private fun createDailySummarySheet(
+        workbook: XSSFWorkbook,
+        reportData: List<SaleReportData>,
+    ) {
+        val sheet = workbook.createSheet("日別集計")
+
+        val headerStyle = createHeaderStyle(workbook)
+        val currencyStyle = createCurrencyStyle(workbook)
+        val dayFormat = SimpleDateFormat("yyyy/MM/dd")
+
+        var rowNum = 0
+
+        val headerRow = sheet.createRow(rowNum++)
+        val headers = listOf("日付", "売上件数", "販売点数", "売上金額")
+        headers.forEachIndexed { index, header ->
+            val cell = headerRow.createCell(index)
+            cell.setCellValue(header)
+            cell.cellStyle = headerStyle
+        }
+
+        reportData
+            .groupBy { dayFormat.format(it.createdAt) }
+            .toSortedMap()
+            .forEach { (date, group) ->
+                val row = sheet.createRow(rowNum++)
+                row.createCell(0).setCellValue(date)
+                row.createCell(1).setCellValue(group.size.toDouble())
+                row.createCell(2).setCellValue(group.sumOf { sale -> sale.details.sumOf { it.quantity } }.toDouble())
+
+                val amountCell = row.createCell(3)
+                amountCell.setCellValue(group.sumOf { it.amount }.toDouble())
+                amountCell.cellStyle = currencyStyle
+            }
+
         for (i in 0..3) {
             sheet.autoSizeColumn(i)
         }
@@ -358,6 +315,11 @@ class SaleExcelReportService(
     private fun createCurrencyStyle(workbook: XSSFWorkbook): XSSFCellStyle =
         workbook.createCellStyle().apply {
             dataFormat = workbook.createDataFormat().getFormat("¥#,##0")
+        }
+
+    private fun createCountStyle(workbook: XSSFWorkbook): XSSFCellStyle =
+        workbook.createCellStyle().apply {
+            dataFormat = workbook.createDataFormat().getFormat("#,##0")
         }
 
     private fun createDateStyle(workbook: XSSFWorkbook): XSSFCellStyle =
