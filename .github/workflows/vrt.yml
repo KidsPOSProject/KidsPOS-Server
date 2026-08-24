@@ -2,7 +2,7 @@ name: Visual Regression Testing
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -11,6 +11,7 @@ on:
 jobs:
   vrt:
     name: Visual Regression Tests
+    if: github.event.action != 'labeled'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
