@@ -13,6 +13,9 @@ SERVER_URL="${KIDSPOS_SERVER_URL:-http://localhost:8080}"
 ASSET_NAME="app.jar"
 SCRIPTS_ASSET="kidspos-scripts.tar.gz"
 MANAGED_SCRIPTS="update-app.sh doctor.sh upload-apk.sh"
+DISPLAY_DIR="${KIDSPOS_DISPLAY_DIR:-/opt/kidspos-display}"
+DISPLAY_SERVICE="${KIDSPOS_DISPLAY_SERVICE:-kidspos-display}"
+DISPLAY_FILES="app.py config.py health.py layout.py renderer.py epaper.py"
 
 JAR_PATH="${APP_DIR}/${JAR_NAME}"
 DB_PATH="${APP_DIR}/kidspos.db"
@@ -29,6 +32,7 @@ usage() {
     echo "  sudo $0 --force            同一バージョンでも強制的に再インストール"
     echo "  sudo $0 --skip-apk         サーバーの更新のみ行い、APK の確認は行わない"
     echo "  sudo $0 --skip-self-update スクリプト自身の更新は行わない"
+    echo "  sudo $0 --skip-display     e-Paper 表示サービスの更新は行わない"
     exit 1
 }
 
@@ -38,6 +42,7 @@ fail() { echo "[update-app] ERROR: $*" >&2; exit 1; }
 FORCE=false
 SKIP_APK=false
 SKIP_SELF_UPDATE=false
+SKIP_DISPLAY=false
 LOCAL_JAR=""
 SCRIPTS_URL=""
 for arg in "$@"; do
@@ -45,6 +50,7 @@ for arg in "$@"; do
         --force) FORCE=true ;;
         --skip-apk) SKIP_APK=true ;;
         --skip-self-update) SKIP_SELF_UPDATE=true ;;
+        --skip-display) SKIP_DISPLAY=true ;;
         -h|--help) usage ;;
         -*)
             echo "[update-app] 不明なオプション: $arg" >&2
@@ -53,6 +59,63 @@ for arg in "$@"; do
         *) LOCAL_JAR="$arg" ;;
     esac
 done
+
+# 表示サービスを導入していない Pi もあるため、配置先が無ければ何もしない。
+# 差し替えに失敗した場合は呼び出し元でバージョンを記録させず、次回の更新で再試行させる
+update_display() {
+    if [ "$SKIP_DISPLAY" = true ]; then
+        return 0
+    fi
+    if [ ! -d "$DISPLAY_DIR" ]; then
+        log "表示サービスが導入されていないため更新しません: $DISPLAY_DIR"
+        return 0
+    fi
+
+    local staged="${STAGE_DIR}/raspberry-pi-display"
+    if [ ! -d "$staged" ]; then
+        log "WARN: 配布物に raspberry-pi-display が含まれていません"
+        return 1
+    fi
+
+    local ok=true
+    local module src
+    for module in $DISPLAY_FILES; do
+        src="${staged}/${module}"
+        if [ ! -f "$src" ]; then
+            log "WARN: 配布物に含まれていません: raspberry-pi-display/${module}"
+            ok=false
+            continue
+        fi
+        if ! mv -f "$src" "${DISPLAY_DIR}/${module}"; then
+            log "WARN: 差し替えに失敗しました: ${DISPLAY_DIR}/${module}"
+            ok=false
+            continue
+        fi
+        # install-display.sh がサービス実行ユーザーに所有者を合わせているため、
+        # root で置き直したファイルも配置先ディレクトリと同じ所有者に戻す
+        if ! chown --reference="$DISPLAY_DIR" "${DISPLAY_DIR}/${module}"; then
+            log "WARN: 所有者を合わせられませんでした: ${DISPLAY_DIR}/${module}"
+        fi
+    done
+    if [ -f "${DISPLAY_DIR}/app.py" ]; then
+        chmod +x "${DISPLAY_DIR}/app.py"
+    fi
+
+    if [ "$ok" != true ]; then
+        return 1
+    fi
+
+    log "表示サービスを更新しました: $DISPLAY_DIR"
+    if systemctl is-active --quiet "$DISPLAY_SERVICE"; then
+        if ! sudo systemctl restart "$DISPLAY_SERVICE"; then
+            log "WARN: 表示サービスの再起動に失敗しました: $DISPLAY_SERVICE"
+            return 1
+        fi
+    else
+        log "表示サービスは停止中のため再起動しません: $DISPLAY_SERVICE"
+    fi
+    return 0
+}
 
 # スクリプトの更新に失敗してもサーバーの更新は完了しているため、警告のみで成功扱いにする。
 # 成功した分だけ差し替え、全て成功したときだけバージョンを記録して次回の再試行に備える
@@ -109,6 +172,9 @@ self_update() {
             all_ok=false
         fi
     done
+    if ! update_display; then
+        all_ok=false
+    fi
     rm -rf "$STAGE_DIR"
 
     if [ "$all_ok" = true ]; then

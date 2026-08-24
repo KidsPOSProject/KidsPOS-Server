@@ -7,6 +7,7 @@ UPDATE_SCRIPT="${SCRIPT_DIR}/update-app.sh"
 PASS_COUNT=0
 FAIL_COUNT=0
 CURRENT_TEST=""
+DISPLAY_MODULES="app.py config.py health.py layout.py renderer.py epaper.py"
 
 pass() {
     PASS_COUNT=$((PASS_COUNT + 1))
@@ -48,7 +49,8 @@ setup() {
     WORK=$(mktemp -d)
     APP_DIR="${WORK}/app"
     STUB_DIR="${WORK}/bin"
-    mkdir -p "$APP_DIR" "$STUB_DIR"
+    DISPLAY_DIR="${WORK}/display"
+    mkdir -p "$APP_DIR" "$STUB_DIR" "$DISPLAY_DIR"
 
     export CALL_LOG="${WORK}/calls.log"
     export HEALTH_OK_FILE="${WORK}/health-ok"
@@ -57,7 +59,16 @@ setup() {
     export SCRIPTS_TARBALL_FILE="${WORK}/scripts.tar.gz"
     export SCRIPTS_DOWNLOAD_EXIT=0
     export UPLOAD_APK_EXIT=0
+    export DISPLAY_INACTIVE_FILE="${WORK}/display-inactive"
+    export DISPLAY_RESTART_EXIT=0
     : > "$CALL_LOG"
+
+    DISPLAY_TARBALL_MODULES="$DISPLAY_MODULES"
+
+    local module
+    for module in $DISPLAY_MODULES; do
+        printf '# old-display-marker\n' > "${DISPLAY_DIR}/${module}"
+    done
 
     cat > "${STUB_DIR}/sudo" <<'EOF'
 #!/usr/bin/env bash
@@ -70,6 +81,12 @@ echo "systemctl $*" >> "$CALL_LOG"
 if [ "${1:-}" = "start" ] && [ -f "$FAIL_START_ONCE_FILE" ]; then
     rm -f "$FAIL_START_ONCE_FILE"
     exit 1
+fi
+if [ "${1:-}" = "is-active" ] && [ -f "$DISPLAY_INACTIVE_FILE" ]; then
+    exit 3
+fi
+if [ "${1:-}" = "restart" ]; then
+    exit "${DISPLAY_RESTART_EXIT:-0}"
 fi
 exit 0
 EOF
@@ -164,7 +181,41 @@ EOF
             printf '#!/usr/bin/env bash\n# new-script-marker\n' > "${src}/${name}"
         fi
     done
-    tar -czf "$SCRIPTS_TARBALL_FILE" -C "${WORK}/scripts-src" raspberry-pi
+
+    local entries=(raspberry-pi)
+    if [ -n "$DISPLAY_TARBALL_MODULES" ]; then
+        local display_src="${WORK}/scripts-src/raspberry-pi-display"
+        mkdir -p "$display_src"
+        local module
+        for module in $DISPLAY_TARBALL_MODULES; do
+            printf '# new-display-marker\n' > "${display_src}/${module}"
+        done
+        entries+=(raspberry-pi-display)
+    fi
+
+    tar -czf "$SCRIPTS_TARBALL_FILE" -C "${WORK}/scripts-src" "${entries[@]}"
+}
+
+assert_display_untouched() {
+    local module
+    for module in $DISPLAY_MODULES; do
+        if grep -q "new-display-marker" "${DISPLAY_DIR}/${module}" 2>/dev/null; then
+            fail_assert "$1"
+            return
+        fi
+    done
+    pass "$1"
+}
+
+assert_display_replaced() {
+    local module
+    for module in $DISPLAY_MODULES; do
+        if ! grep -q "new-display-marker" "${DISPLAY_DIR}/${module}" 2>/dev/null; then
+            fail_assert "$1 (未差し替え: ${module})"
+            return
+        fi
+    done
+    pass "$1"
 }
 
 assert_scripts_untouched() {
@@ -179,6 +230,7 @@ run_update() {
     set +e
     env PATH="${STUB_DIR}:${PATH}" \
         KIDSPOS_APP_DIR="$APP_DIR" \
+        KIDSPOS_DISPLAY_DIR="$DISPLAY_DIR" \
         KIDSPOS_HEALTH_RETRIES=2 \
         bash "$UPDATE_SCRIPT" "$@" > "${WORK}/out.log" 2>&1
     RC=$?
@@ -260,6 +312,7 @@ test_old_backups_are_pruned() {
     set +e
     env PATH="${STUB_DIR}:${PATH}" \
         KIDSPOS_APP_DIR="$APP_DIR" \
+        KIDSPOS_DISPLAY_DIR="$DISPLAY_DIR" \
         KIDSPOS_HEALTH_RETRIES=2 \
         KIDSPOS_BACKUP_KEEP=2 \
         bash "$UPDATE_SCRIPT" "${WORK}/new.jar" > "${WORK}/out.log" 2>&1
@@ -289,6 +342,7 @@ test_health_check_uses_timeout() {
     set +e
     env PATH="${STUB_DIR}:${PATH}" \
         KIDSPOS_APP_DIR="$APP_DIR" \
+        KIDSPOS_DISPLAY_DIR="$DISPLAY_DIR" \
         KIDSPOS_HEALTH_RETRIES=2 \
         KIDSPOS_HEALTH_TIMEOUT=3 \
         bash "$UPDATE_SCRIPT" "${WORK}/new.jar" > "${WORK}/out.log" 2>&1
@@ -478,7 +532,7 @@ test_self_update_when_jar_already_latest() {
     assert_eq 0 "$RC" "終了コードが 0"
     assert_contains "${WORK}/out.log" "すでに最新です" "最新である旨が出力される"
     assert_contains "${APP_DIR}/doctor.sh" "new-script-marker" "doctor.sh が差し替わる"
-    assert_not_contains "$CALL_LOG" "systemctl" "サービスは操作されない"
+    assert_not_contains "$CALL_LOG" "kidspos-server" "サーバーのサービスは操作されない"
     teardown
 }
 
@@ -601,6 +655,146 @@ test_self_update_not_run_when_rolled_back() {
     teardown
 }
 
+test_display_update_replaces_modules() {
+    setup "リリースに同梱された表示サービスのコードが差し替えられる"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_display_replaced "表示サービスのコードが差し替わる"
+    assert_contains "${WORK}/out.log" "表示サービスを更新しました" "更新した旨が出力される"
+    assert_contains "$CALL_LOG" "systemctl restart kidspos-display" "表示サービスが再起動される"
+    assert_eq "v9.9.9" "$(cat "${APP_DIR}/.installed-scripts-version")" "スクリプトのバージョンが記録される"
+    if [ -x "${DISPLAY_DIR}/app.py" ]; then
+        pass "app.py に実行権限が付く"
+    else
+        fail_assert "app.py に実行権限が付く"
+    fi
+    teardown
+}
+
+test_display_restarts_only_when_active() {
+    setup "表示サービスが停止中なら再起動しない"
+    touch "$HEALTH_OK_FILE"
+    touch "$DISPLAY_INACTIVE_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_display_replaced "表示サービスのコードが差し替わる"
+    assert_contains "${WORK}/out.log" "表示サービスは停止中のため再起動しません" "停止中である旨が出力される"
+    assert_not_contains "$CALL_LOG" "systemctl restart kidspos-display" "再起動は呼ばれない"
+    assert_eq "v9.9.9" "$(cat "${APP_DIR}/.installed-scripts-version")" "スクリプトのバージョンが記録される"
+    teardown
+}
+
+test_display_skipped_when_dir_missing() {
+    setup "表示サービスが導入されていなければ何もしない"
+    touch "$HEALTH_OK_FILE"
+    rm -rf "$DISPLAY_DIR"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "表示サービスが導入されていないため更新しません" "スキップした旨が出力される"
+    assert_not_contains "$CALL_LOG" "systemctl restart kidspos-display" "再起動は呼ばれない"
+    assert_eq "v9.9.9" "$(cat "${APP_DIR}/.installed-scripts-version")" "スクリプトのバージョンが記録される"
+    if [ -d "$DISPLAY_DIR" ]; then
+        fail_assert "配置先は作成されない"
+    else
+        pass "配置先は作成されない"
+    fi
+    teardown
+}
+
+test_display_skipped_with_flag() {
+    setup "--skip-display を付けると表示サービスは差し替えられない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    run_update --skip-display
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_display_untouched "表示サービスのコードは差し替わらない"
+    assert_contains "${APP_DIR}/doctor.sh" "new-script-marker" "スクリプトは差し替わる"
+    assert_not_contains "$CALL_LOG" "systemctl restart kidspos-display" "再起動は呼ばれない"
+    assert_eq "v9.9.9" "$(cat "${APP_DIR}/.installed-scripts-version")" "スクリプトのバージョンが記録される"
+    teardown
+}
+
+test_display_partial_tarball_is_not_recorded() {
+    setup "配布物に足りない表示モジュールがあればバージョンを記録しない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    DISPLAY_TARBALL_MODULES="app.py config.py health.py renderer.py epaper.py"
+    make_scripts_tarball
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "配布物に含まれていません: raspberry-pi-display/layout.py" "不足が警告される"
+    assert_contains "${DISPLAY_DIR}/app.py" "new-display-marker" "含まれている分は差し替わる"
+    if [ -e "${APP_DIR}/.installed-scripts-version" ]; then
+        fail_assert "スクリプトのバージョンは記録されない"
+    else
+        pass "スクリプトのバージョンは記録されない"
+    fi
+    teardown
+}
+
+test_display_missing_in_tarball() {
+    setup "配布物に表示サービスが無ければバージョンを記録しない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    DISPLAY_TARBALL_MODULES=""
+    make_scripts_tarball
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "配布物に raspberry-pi-display が含まれていません" "不足が警告される"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "サーバーの更新は完了扱いになる"
+    assert_display_untouched "表示サービスのコードは差し替わらない"
+    if [ -e "${APP_DIR}/.installed-scripts-version" ]; then
+        fail_assert "スクリプトのバージョンは記録されない"
+    else
+        pass "スクリプトのバージョンは記録されない"
+    fi
+    teardown
+}
+
+test_display_restart_failure_does_not_fail_update() {
+    setup "表示サービスの再起動に失敗してもサーバーの更新は成功扱いになる"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    export DISPLAY_RESTART_EXIT=1
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "表示サービスの再起動に失敗しました" "警告が出力される"
+    assert_contains "${WORK}/out.log" "更新が完了しました" "サーバーの更新は完了扱いになる"
+    if [ -e "${APP_DIR}/.installed-scripts-version" ]; then
+        fail_assert "スクリプトのバージョンは記録されない"
+    else
+        pass "スクリプトのバージョンは記録されない"
+    fi
+    teardown
+}
+
+test_display_not_updated_for_local_jar() {
+    setup "持ち込んだ jar での更新では表示サービスは差し替えられない"
+    touch "$HEALTH_OK_FILE"
+    run_update "${WORK}/new.jar"
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_display_untouched "表示サービスのコードは差し替わらない"
+    assert_not_contains "$CALL_LOG" "systemctl restart kidspos-display" "再起動は呼ばれない"
+    teardown
+}
+
 test_success_path
 test_health_check_failure_rolls_back
 test_start_failure_rolls_back
@@ -628,6 +822,14 @@ test_self_update_extract_failure_does_not_fail_update
 test_self_update_partial_tarball_is_not_recorded
 test_self_update_skipped_for_local_jar
 test_self_update_not_run_when_rolled_back
+test_display_update_replaces_modules
+test_display_restarts_only_when_active
+test_display_skipped_when_dir_missing
+test_display_skipped_with_flag
+test_display_partial_tarball_is_not_recorded
+test_display_missing_in_tarball
+test_display_restart_failure_does_not_fail_update
+test_display_not_updated_for_local_jar
 
 echo ""
 echo "passed: $PASS_COUNT, failed: $FAIL_COUNT"
