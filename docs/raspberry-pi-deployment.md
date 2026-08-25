@@ -314,4 +314,4 @@ ssh-copy-id pi@kidspos-server.local
 
 - [運用スクリプトの説明](../scripts/raspberry-pi/README.md)
 - [セットアップガイド](RASPBERRY_PI_SETUP.md)
-- [GitHub Actions - Release Build](../.github/workflows/release-build.yml)
+- [GitHub Actions - Release Server](../.github/workflows/release-server.yml)
