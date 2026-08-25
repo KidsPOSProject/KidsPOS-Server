@@ -1,13 +1,52 @@
 import { test, expect, Page } from '@playwright/test';
 
-async function pinSalesReportDates(page: Page) {
+const SALES_SUMMARY_FIXTURE = {
+  startDate: '2025-10-01T00:00:00.000+00:00',
+  endDate: '2025-10-03T00:00:00.000+00:00',
+  totalSales: 25,
+  totalItemCount: 48,
+  totalAmount: 12500,
+  averageAmount: 500,
+  stores: [
+    { storeId: 1, storeName: 'サンプル店舗', salesCount: 25, itemCount: 48, amount: 12500 },
+  ],
+  items: [
+    { itemId: 1, itemName: 'サンプル商品A', unitPrice: 100, quantity: 30, amount: 3000 },
+    { itemId: 2, itemName: 'サンプル商品B', unitPrice: 500, quantity: 18, amount: 9000 },
+  ],
+  daily: [
+    { date: '2025-10-01', salesCount: 8, itemCount: 15, amount: 4000 },
+    { date: '2025-10-02', salesCount: 9, itemCount: 18, amount: 4500 },
+    { date: '2025-10-03', salesCount: 8, itemCount: 15, amount: 4000 },
+  ],
+};
+
+// 売上レポート画面は開いた時点の日付で集計 API を呼ぶため、固定しないと日が変わるたびに
+// スクリーンショットが変わる。集計結果を固定値に差し替えたうえで期間を入れ直し、
+// 描画が終わるまで待ってからスクリーンショットを撮る。
+async function openSalesReport(page: Page) {
+  await page.route('**/api/reports/sales/summary*', (route) =>
+    route.fulfill({ json: SALES_SUMMARY_FIXTURE }),
+  );
+
+  await page.goto('/reports/sales');
+  await page.waitForSelector('h1');
+  await page.waitForSelector('#storeId option', { state: 'attached' });
+
   await page.evaluate(() => {
-    (document.getElementById('startDate') as HTMLInputElement).value = '2025-10-01';
-    (document.getElementById('endDate') as HTMLInputElement).value = '2025-10-03';
+    const startDate = document.getElementById('startDate') as HTMLInputElement;
+    const endDate = document.getElementById('endDate') as HTMLInputElement;
+    startDate.value = '2025-10-01';
+    endDate.value = '2025-10-03';
     const year = document.getElementById('year') as HTMLSelectElement;
     year.innerHTML = '<option value="2025" selected>2025年</option>';
     (document.getElementById('month') as HTMLSelectElement).value = '10';
+    endDate.dispatchEvent(new Event('change'));
   });
+
+  await expect(page.locator('#summaryBody')).toBeVisible();
+  await expect(page.locator('#summaryPeriod')).toHaveText('2025-10-01 ～ 2025-10-03');
+  await expect(page.locator('#statTotalAmount')).toHaveText('¥12,500');
 }
 
 test.describe('Visual Regression Tests', () => {
@@ -48,12 +87,7 @@ test.describe('Visual Regression Tests', () => {
 
 
   test('Sales Report Page', async ({ page }) => {
-    await page.goto('/reports/sales');
-    await page.waitForSelector('h1');
-
-    // Wait for store dropdown to be populated
-    await page.waitForSelector('#storeId option', { state: 'attached' });
-    await pinSalesReportDates(page);
+    await openSalesReport(page);
 
     await expect(page).toHaveScreenshot('sales-report-page.png', {
       fullPage: true,
@@ -89,10 +123,7 @@ test.describe('Mobile Visual Regression Tests', () => {
   });
 
   test('Mobile Sales Report Page', async ({ page }) => {
-    await page.goto('/reports/sales');
-    await page.waitForSelector('h1');
-    await page.waitForSelector('#storeId option', { state: 'attached' });
-    await pinSalesReportDates(page);
+    await openSalesReport(page);
 
     await expect(page).toHaveScreenshot('mobile-sales-report.png', {
       fullPage: true,
