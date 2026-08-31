@@ -181,6 +181,7 @@ jobs:
 
       - name: Create pull request on client repository
         if: env.SKIP_PR != 'true'
+        id: create-pr
         env:
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
@@ -199,9 +200,47 @@ jobs:
             --arg base "$DEFAULT_BRANCH" \
             --arg body "$PR_BODY" \
             '{title: $title, head: $head, base: $base, body: $body}')
-          PR_URL=$(curl -sSf -X POST \
+          PR_RESPONSE=$(curl -sSf -X POST \
             -H "Authorization: Bearer ${APP_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -d "$PR_JSON" \
-            "${GITHUB_API_URL}/repos/${CLIENT_REPO_OWNER}/${CLIENT_REPO_NAME}/pulls" | jq -r '.html_url')
+            "${GITHUB_API_URL}/repos/${CLIENT_REPO_OWNER}/${CLIENT_REPO_NAME}/pulls")
+          PR_NUMBER=$(echo "$PR_RESPONSE" | jq -r '.number')
+          PR_URL=$(echo "$PR_RESPONSE" | jq -r '.html_url')
+          echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           echo "::notice::クライアント PR を作成しました: $PR_URL"
+
+      # api.yaml は差分ではなく全文を置き換えるため、新しい PR が古い PR の内容を必ず含む。
+      # 放置すると同じファイルを奪い合うコンフリクト済みの PR が走った回数だけ積み上がる。
+      - name: Close superseded client pull requests
+        if: env.SKIP_PR != 'true'
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          NEW_PR_NUMBER: ${{ steps.create-pr.outputs.PR_NUMBER }}
+        run: |
+          OPEN_PRS=$(curl -sSf \
+            -H "Authorization: Bearer ${APP_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${CLIENT_REPO_OWNER}/${CLIENT_REPO_NAME}/pulls?state=open&per_page=100")
+          COMMENT_JSON=$(jq -n \
+            --arg body "API 仕様を更新する新しい PR #${NEW_PR_NUMBER} が作成されたためクローズします。api.yaml は全文を置き換えるため、この PR の内容は新しい PR に含まれています。" \
+            '{body: $body}')
+          echo "$OPEN_PRS" | jq -r --argjson new "$NEW_PR_NUMBER" \
+            '.[] | select(.head.ref | startswith("update-api-spec-")) | select(.number != $new) | "\(.number) \(.head.ref)"' \
+          | while read -r NUMBER REF; do
+              curl -sS -X POST \
+                -H "Authorization: Bearer ${APP_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                -d "$COMMENT_JSON" \
+                "${GITHUB_API_URL}/repos/${CLIENT_REPO_OWNER}/${CLIENT_REPO_NAME}/issues/${NUMBER}/comments" > /dev/null
+              curl -sS -X PATCH \
+                -H "Authorization: Bearer ${APP_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                -d '{"state":"closed"}' \
+                "${GITHUB_API_URL}/repos/${CLIENT_REPO_OWNER}/${CLIENT_REPO_NAME}/pulls/${NUMBER}" > /dev/null
+              curl -sS -X DELETE \
+                -H "Authorization: Bearer ${APP_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "${GITHUB_API_URL}/repos/${CLIENT_REPO_OWNER}/${CLIENT_REPO_NAME}/git/refs/heads/${REF}" > /dev/null
+              echo "::notice::旧 PR #${NUMBER} をクローズしました"
+            done
