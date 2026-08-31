@@ -98,7 +98,21 @@ SyslogIdentifier=kidspos-server
 WantedBy=multi-user.target
 ```
 
-AmbientCapabilities=CAP_SYS_TIME は設定画面のサーバー時刻同期に必要です。イントラネットでは時刻同期サーバーに到達できずサーバーの時計がずれるため、管理画面から手元の端末の時刻を反映できるようにしています。この権限がないと同期は失敗し、画面に権限不足の旨が表示されます。
+AmbientCapabilities=CAP_SYS_TIME はサーバーの時刻同期に必要です。イントラネットでは時刻同期サーバーに到達できず、Raspberry Pi は RTC を持たないため電源を入れるたびに時刻が巻き戻ります。この権限がないと同期は失敗し、画面に権限不足の旨が表示されます。
+
+すでに稼働している Pi でこの権限が付いていない場合は update-app.sh を実行してください。update-app.sh は配布物の systemd ユニットと実機のユニットを毎回突き合わせ、差があれば入れ替えて daemon-reload と再起動まで行います。新しいユニットで起動できなかった場合は元のユニットに戻します。Pi 上の update-app.sh 自体が古い場合は、1 回目でスクリプトが新しくなり 2 回目でユニットが更新されるため、2 回実行してください。
+
+### 時刻の合わせ方
+
+管理画面の設定ページにある同期ボタンのほかに、クライアントが申告した時刻で自動的に合わせます。管理画面とレジアプリはすべてのリクエストに X-Client-Time ヘッダー（UNIX エポックミリ秒）を付けて送り、サーバーはずれが閾値を超えたときだけクールダウンを挟んで時刻を合わせます。管理画面を開くかレジが通信するだけで時刻が揃うため、電源投入後の手作業は不要です。
+
+| 設定キー | 既定値 | 内容 |
+| --- | --- | --- |
+| app.system-time.auto-sync-enabled | true | 自動同期の有効・無効 |
+| app.system-time.auto-sync-threshold-millis | 30000 | この値を超えてずれていたら同期する |
+| app.system-time.auto-sync-cooldown-millis | 60000 | 同期を試みる間隔の下限 |
+
+RTC が無いため、同期した時刻は fake-hwclock が保存した内容から次回起動時に復元されます。サーバーは時刻を変更した直後に fake-hwclock save を実行するので、同期後すぐ電源を落としても巻き戻りません。fake-hwclock が入っていない場合は sudo apt install -y fake-hwclock を実行してください（doctor.sh でも警告されます）。
 
 標準出力と標準エラーは journal に送られます。あわせてアプリ自身が logback で /opt/kidspos/logs/kidspos.log に書き出し、日付ごとに 30 日分ローテーションします。
 

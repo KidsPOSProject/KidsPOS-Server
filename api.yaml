@@ -1,7 +1,16 @@
 openapi: 3.0.3
 info:
   title: KidsPOS API
-  description: 子供向けPOSシステムのREST API
+  description: |
+    子供向けPOSシステムのREST API
+
+    ## X-Client-Time ヘッダー
+
+    すべてのリクエストで X-Client-Time ヘッダー（クライアント時刻のUNIXエポックミリ秒）を送れる。
+    サーバーはイントラネットに閉じていて時刻同期サーバーに到達できず、Raspberry Pi は RTC を
+    持たないため電源を入れるたびに時刻が巻き戻る。サーバーは受け取った時刻とのずれが
+    閾値を超えたときだけ、クールダウンを挟んでシステム時刻を合わせる。
+    ヘッダーが無い場合や値が不正な場合は無視され、リクエストの処理は変わらない。
   version: 1.0.0
   contact:
     name: KidsPOS Team

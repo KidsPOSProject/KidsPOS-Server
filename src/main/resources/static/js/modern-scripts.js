@@ -289,3 +289,37 @@ window.kidsPOS = {
     formatDate,
     confirmAction
 };
+
+// サーバーはイントラネットに閉じていて NTP に届かず、Raspberry Pi は RTC を持たないため
+// 電源を入れるたびに時刻が巻き戻る。管理画面を開くだけで時刻が合うよう、
+// ブラウザの時刻を全リクエストで申告する
+(function reportClientTime() {
+    const HEADER = 'X-Client-Time';
+
+    const originalFetch = window.fetch;
+    if (typeof originalFetch === 'function') {
+        window.fetch = function (input, init) {
+            try {
+                const request = new Request(input, init);
+                request.headers.set(HEADER, String(Date.now()));
+                return originalFetch.call(this, request);
+            } catch (e) {
+                return originalFetch.call(this, input, init);
+            }
+        };
+    }
+
+    const originalSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function (body) {
+        try {
+            this.setRequestHeader(HEADER, String(Date.now()));
+        } catch (e) {
+            // 送信直前でヘッダーを足せない状態なら申告を諦めて通常どおり送る
+        }
+        return originalSend.call(this, body);
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/api/system/time', { headers: { 'X-Client-Time': String(Date.now()) } }).catch(function () {});
+    });
+})();

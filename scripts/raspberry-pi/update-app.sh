@@ -7,12 +7,15 @@ JAR_NAME="${KIDSPOS_JAR_NAME:-app.jar}"
 SERVICE="${KIDSPOS_SERVICE:-kidspos-server}"
 HEALTH_URL="${KIDSPOS_HEALTH_URL:-http://localhost:8080/api/status}"
 HEALTH_RETRIES="${KIDSPOS_HEALTH_RETRIES:-600}"
+UNIT_HEALTH_RETRIES="${KIDSPOS_UNIT_HEALTH_RETRIES:-150}"
 HEALTH_TIMEOUT="${KIDSPOS_HEALTH_TIMEOUT:-10}"
 BACKUP_KEEP="${KIDSPOS_BACKUP_KEEP:-5}"
 SERVER_URL="${KIDSPOS_SERVER_URL:-http://localhost:8080}"
 ASSET_NAME="app.jar"
 SCRIPTS_ASSET="kidspos-scripts.tar.gz"
 MANAGED_SCRIPTS="update-app.sh doctor.sh upload-apk.sh"
+UNIT_DIR="${KIDSPOS_UNIT_DIR:-/etc/systemd/system}"
+UNIT_NAME="kidspos-server.service"
 DISPLAY_DIR="${KIDSPOS_DISPLAY_DIR:-/opt/kidspos-display}"
 DISPLAY_SERVICE="${KIDSPOS_DISPLAY_SERVICE:-kidspos-display}"
 DISPLAY_FILES="app.py config.py health.py layout.py renderer.py epaper.py"
@@ -20,6 +23,7 @@ DISPLAY_FILES="app.py config.py health.py layout.py renderer.py epaper.py"
 JAR_PATH="${APP_DIR}/${JAR_NAME}"
 DB_PATH="${APP_DIR}/kidspos.db"
 BACKUP_DIR="${APP_DIR}/backup"
+UNIT_PATH="${UNIT_DIR}/${SERVICE}.service"
 VERSION_FILE="${APP_DIR}/.installed-version"
 SCRIPTS_VERSION_FILE="${APP_DIR}/.installed-scripts-version"
 STAGE_DIR="${APP_DIR}/.scripts-update"
@@ -31,7 +35,7 @@ usage() {
     echo "  sudo $0 <path/to/jar>      手元に持ち込んだ jar ファイルで更新（オフライン運用）"
     echo "  sudo $0 --force            同一バージョンでも強制的に再インストール"
     echo "  sudo $0 --skip-apk         サーバーの更新のみ行い、APK の確認は行わない"
-    echo "  sudo $0 --skip-self-update スクリプト自身の更新は行わない"
+    echo "  sudo $0 --skip-self-update スクリプトと systemd ユニットの更新は行わない"
     echo "  sudo $0 --skip-display     e-Paper 表示サービスの更新は行わない"
     exit 1
 }
@@ -59,6 +63,74 @@ for arg in "$@"; do
         *) LOCAL_JAR="$arg" ;;
     esac
 done
+
+wait_for_health() {
+    local retries="${1:-$HEALTH_RETRIES}"
+    for _ in $(seq 1 "$retries"); do
+        if curl -fsS --max-time "$HEALTH_TIMEOUT" -o /dev/null "$HEALTH_URL"; then
+            return 0
+        fi
+        sleep 2
+    done
+    return 1
+}
+
+# systemd ユニットは install.sh でしか配置されないため、実行権限や起動オプションを足しても
+# 稼働中の Pi には届かない。配布物のユニットを毎回突き合わせ、変わっていれば入れ替える。
+# 新しいユニットで起動できなかった場合は元のユニットに戻して稼働を優先する
+update_unit() {
+    local staged="${STAGE_DIR}/raspberry-pi/${UNIT_NAME}"
+    if [ ! -f "$staged" ]; then
+        log "WARN: 配布物に含まれていません: $UNIT_NAME"
+        return 1
+    fi
+    if [ ! -f "$UNIT_PATH" ]; then
+        log "systemd ユニットが未配置のため更新しません: $UNIT_PATH"
+        return 0
+    fi
+
+    # install.sh が実行ユーザーを差し替えている場合があるため、配置済みユニットの値を引き継ぐ
+    local service_user
+    service_user=$(sed -n 's/^User=//p' "$UNIT_PATH" | head -n 1)
+    [ -n "$service_user" ] || service_user="${KIDSPOS_SERVICE_USER:-pi}"
+
+    local rendered="${STAGE_DIR}/rendered-unit"
+    if ! sed -e "s#/opt/kidspos/app\.jar#${JAR_PATH}#g" \
+        -e "s#/opt/kidspos#${APP_DIR}#g" \
+        -e "s#^User=pi\$#User=${service_user}#" \
+        -e "s#^SyslogIdentifier=kidspos-server\$#SyslogIdentifier=${SERVICE}#" \
+        "$staged" > "$rendered"; then
+        log "WARN: systemd ユニットを生成できませんでした"
+        return 1
+    fi
+
+    if cmp -s "$rendered" "$UNIT_PATH"; then
+        return 0
+    fi
+
+    local backup="${STAGE_DIR}/previous-unit"
+    if ! cp "$UNIT_PATH" "$backup"; then
+        log "WARN: 既存の systemd ユニットを退避できませんでした: $UNIT_PATH"
+        return 1
+    fi
+    if ! cp "$rendered" "$UNIT_PATH"; then
+        log "WARN: systemd ユニットを配置できませんでした: $UNIT_PATH"
+        return 1
+    fi
+    log "systemd ユニットを更新しました: $UNIT_PATH"
+
+    sudo systemctl daemon-reload || true
+    if sudo systemctl restart "$SERVICE" && wait_for_health "$UNIT_HEALTH_RETRIES"; then
+        log "新しいユニットでサービスが起動しました: $SERVICE"
+        return 0
+    fi
+
+    log "WARN: 新しいユニットで起動できなかったため元のユニットに戻します"
+    cp "$backup" "$UNIT_PATH" || true
+    sudo systemctl daemon-reload || true
+    sudo systemctl restart "$SERVICE" || true
+    return 1
+}
 
 # 表示サービスを導入していない Pi もあるため、配置先が無ければ何もしない。
 # 差し替えに失敗した場合は呼び出し元でバージョンを記録させず、次回の更新で再試行させる
@@ -130,13 +202,9 @@ self_update() {
         log "リリースに ${SCRIPTS_ASSET} が無いためスクリプトの更新は行いません"
         return 0
     fi
-    local current
-    current=$(cat "$SCRIPTS_VERSION_FILE" 2>/dev/null || echo "none")
-    if [ "$current" = "$NEW_VERSION" ] && [ "$FORCE" = false ]; then
-        return 0
-    fi
-
-    log "スクリプトを更新します: $NEW_VERSION"
+    # バージョンが同じでも配布物と突き合わせる。記録済みバージョンで打ち切ると、
+    # 実機のスクリプトや systemd ユニットがずれたまま二度と直らなくなる
+    log "スクリプトと systemd ユニットを配布物と突き合わせます: $NEW_VERSION"
     rm -rf "$STAGE_DIR"
     if ! mkdir -p "$STAGE_DIR"; then
         log "WARN: スクリプト更新用ディレクトリを作成できません: $STAGE_DIR"
@@ -172,6 +240,9 @@ self_update() {
             all_ok=false
         fi
     done
+    if ! update_unit; then
+        all_ok=false
+    fi
     if ! update_display; then
         all_ok=false
     fi
@@ -295,15 +366,7 @@ log "サービスを起動します（Flyway マイグレーションが自動�
 sudo systemctl start "$SERVICE"
 
 log "ヘルスチェック中: $HEALTH_URL"
-HEALTHY=false
-for _ in $(seq 1 "$HEALTH_RETRIES"); do
-    if curl -fsS --max-time "$HEALTH_TIMEOUT" -o /dev/null "$HEALTH_URL"; then
-        HEALTHY=true
-        break
-    fi
-    sleep 2
-done
-[ "$HEALTHY" = true ] || rollback
+wait_for_health || rollback
 
 trap - ERR
 
