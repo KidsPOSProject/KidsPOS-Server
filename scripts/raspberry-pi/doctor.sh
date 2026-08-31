@@ -10,6 +10,7 @@ REQUIRED_JAVA_MAJOR="${KIDSPOS_REQUIRED_JAVA_MAJOR:-21}"
 DISK_WARN_MB="${KIDSPOS_DISK_WARN_MB:-500}"
 DISK_NG_MB="${KIDSPOS_DISK_NG_MB:-100}"
 UNIT_DIR="${KIDSPOS_UNIT_DIR:-/etc/systemd/system}"
+FAKE_HWCLOCK_DATA="${KIDSPOS_FAKE_HWCLOCK_DATA:-/etc/fake-hwclock.data}"
 LOG_LINES="${KIDSPOS_LOG_LINES:-500}"
 ASSET_NAME="app.jar"
 
@@ -233,8 +234,31 @@ if command -v timedatectl >/dev/null; then
     if [ "$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" = "yes" ]; then
         ok "時刻が同期されています"
     else
-        warn "時刻が同期されていません（売上の記録時刻がずれます）" "sudo timedatectl set-ntp true、オフライン運用なら sudo date -s 'YYYY-MM-DD HH:MM:SS'"
+        info "時刻同期サーバーに同期していません（イントラネット運用では正常です）"
     fi
+fi
+
+# サービスに CAP_SYS_TIME が無いと、レジアプリや管理画面から時刻を送っても
+# date -s が権限不足で失敗し、時刻がずれたまま売上が記録される
+if command -v systemctl >/dev/null; then
+    AMBIENT=$(systemctl show -p AmbientCapabilities --value "$SERVICE" 2>/dev/null || echo "")
+    if echo "$AMBIENT" | grep -qi "cap_sys_time"; then
+        ok "サービスに時刻変更の権限があります"
+    else
+        ng "サービスに時刻変更の権限がありません（管理画面からの時刻同期が失敗します）" "sudo ${APP_DIR}/update-app.sh で systemd ユニットを更新してください"
+    fi
+fi
+
+# Raspberry Pi には RTC が無く、起動直後の時刻は fake-hwclock の記録から復元される。
+# 未導入だと電源を入れるたびに大きく巻き戻る
+if command -v fake-hwclock >/dev/null || [ -x /sbin/fake-hwclock ] || [ -x /usr/sbin/fake-hwclock ]; then
+    if [ -f "$FAKE_HWCLOCK_DATA" ]; then
+        ok "fake-hwclock が時刻を記録しています（$(cat "$FAKE_HWCLOCK_DATA")）"
+    else
+        warn "fake-hwclock の記録がありません" "sudo fake-hwclock save で現在時刻を記録できます"
+    fi
+else
+    warn "fake-hwclock がありません（電源投入のたびに時刻が大きく巻き戻ります）" "sudo apt install -y fake-hwclock"
 fi
 
 echo ""

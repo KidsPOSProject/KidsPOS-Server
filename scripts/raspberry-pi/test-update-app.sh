@@ -43,6 +43,21 @@ assert_not_contains() {
     fi
 }
 
+render_unit_template() {
+    sed -e "s#/opt/kidspos/app\.jar#${APP_DIR}/app.jar#g" \
+        -e "s#/opt/kidspos#${APP_DIR}#g" \
+        "${SCRIPT_DIR}/kidspos-server.service"
+}
+
+# CAP_SYS_TIME を持たない旧世代のユニット。install.sh 実行時のまま取り残された Pi を再現する
+write_installed_unit() {
+    render_unit_template | grep -v "^AmbientCapabilities=" | grep -v "^CapabilityBoundingSet=" > "$UNIT_PATH"
+}
+
+write_current_unit() {
+    render_unit_template > "$UNIT_PATH"
+}
+
 setup() {
     CURRENT_TEST="$1"
     echo "test: $CURRENT_TEST"
@@ -50,11 +65,15 @@ setup() {
     APP_DIR="${WORK}/app"
     STUB_DIR="${WORK}/bin"
     DISPLAY_DIR="${WORK}/display"
-    mkdir -p "$APP_DIR" "$STUB_DIR" "$DISPLAY_DIR"
+    UNIT_DIR="${WORK}/systemd"
+    UNIT_PATH="${UNIT_DIR}/kidspos-server.service"
+    mkdir -p "$APP_DIR" "$STUB_DIR" "$DISPLAY_DIR" "$UNIT_DIR"
+    write_installed_unit
 
     export CALL_LOG="${WORK}/calls.log"
     export HEALTH_OK_FILE="${WORK}/health-ok"
     export FAIL_START_ONCE_FILE="${WORK}/fail-start-once"
+    export FAIL_RESTART_ONCE_FILE="${WORK}/fail-restart-once"
     export RELEASE_JSON_FILE="${WORK}/release.json"
     export SCRIPTS_TARBALL_FILE="${WORK}/scripts.tar.gz"
     export SCRIPTS_DOWNLOAD_EXIT=0
@@ -64,6 +83,7 @@ setup() {
     : > "$CALL_LOG"
 
     DISPLAY_TARBALL_MODULES="$DISPLAY_MODULES"
+    UNIT_IN_TARBALL=true
 
     local module
     for module in $DISPLAY_MODULES; do
@@ -86,6 +106,13 @@ if [ "${1:-}" = "is-active" ] && [ -f "$DISPLAY_INACTIVE_FILE" ]; then
     exit 3
 fi
 if [ "${1:-}" = "restart" ]; then
+    if [ "${2:-}" = "kidspos-server" ]; then
+        if [ -f "$FAIL_RESTART_ONCE_FILE" ]; then
+            rm -f "$FAIL_RESTART_ONCE_FILE"
+            exit 1
+        fi
+        exit 0
+    fi
     exit "${DISPLAY_RESTART_EXIT:-0}"
 fi
 exit 0
@@ -182,6 +209,10 @@ EOF
         fi
     done
 
+    if [ "$UNIT_IN_TARBALL" = true ]; then
+        cp "${SCRIPT_DIR}/kidspos-server.service" "${src}/kidspos-server.service"
+    fi
+
     local entries=(raspberry-pi)
     if [ -n "$DISPLAY_TARBALL_MODULES" ]; then
         local display_src="${WORK}/scripts-src/raspberry-pi-display"
@@ -231,7 +262,9 @@ run_update() {
     env PATH="${STUB_DIR}:${PATH}" \
         KIDSPOS_APP_DIR="$APP_DIR" \
         KIDSPOS_DISPLAY_DIR="$DISPLAY_DIR" \
+        KIDSPOS_UNIT_DIR="$UNIT_DIR" \
         KIDSPOS_HEALTH_RETRIES=2 \
+        KIDSPOS_UNIT_HEALTH_RETRIES=2 \
         bash "$UPDATE_SCRIPT" "$@" > "${WORK}/out.log" 2>&1
     RC=$?
     set -e
@@ -526,6 +559,7 @@ test_self_update_when_jar_already_latest() {
     write_release_json_with_scripts "v9.9.9"
     make_scripts_tarball
     install_upload_apk_stub
+    write_current_unit
     echo "v9.9.9" > "${APP_DIR}/.installed-version"
     run_update
 
@@ -536,8 +570,8 @@ test_self_update_when_jar_already_latest() {
     teardown
 }
 
-test_self_update_skipped_when_scripts_version_matches() {
-    setup "スクリプトが同じバージョンなら再取得しない"
+test_self_update_runs_even_when_scripts_version_matches() {
+    setup "スクリプトが同じバージョンでも配布物と突き合わせる"
     touch "$HEALTH_OK_FILE"
     write_release_json_with_scripts "v9.9.9"
     make_scripts_tarball
@@ -547,8 +581,114 @@ test_self_update_skipped_when_scripts_version_matches() {
     run_update
 
     assert_eq 0 "$RC" "終了コードが 0"
-    assert_not_contains "$CALL_LOG" "kidspos-scripts.tar.gz" "スクリプトはダウンロードされない"
-    assert_contains "$CALL_LOG" "upload-apk --server http://localhost:8080" "既存の APK 登録スクリプトが呼ばれる"
+    assert_contains "$CALL_LOG" "kidspos-scripts.tar.gz" "スクリプトはダウンロードされる"
+    assert_contains "${APP_DIR}/doctor.sh" "new-script-marker" "doctor.sh が差し替わる"
+    assert_contains "$UNIT_PATH" "AmbientCapabilities=CAP_SYS_TIME" "取り残された systemd ユニットが差し替わる"
+    teardown
+}
+
+test_unit_is_replaced_and_service_restarted() {
+    setup "取り残された systemd ユニットが差し替えられ再起動される"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "$UNIT_PATH" "AmbientCapabilities=CAP_SYS_TIME" "時刻変更の権限が付与される"
+    assert_contains "$UNIT_PATH" "WorkingDirectory=${APP_DIR}" "配置先に合わせて書き換えられる"
+    assert_contains "${WORK}/out.log" "systemd ユニットを更新しました" "更新した旨が出力される"
+    assert_contains "$CALL_LOG" "systemctl daemon-reload" "daemon-reload が呼ばれる"
+    assert_contains "$CALL_LOG" "systemctl restart kidspos-server" "サーバーが再起動される"
+    assert_eq "v9.9.9" "$(cat "${APP_DIR}/.installed-scripts-version")" "スクリプトのバージョンが記録される"
+    teardown
+}
+
+test_unit_keeps_service_user() {
+    setup "ユニットの実行ユーザーは配置済みの値を引き継ぐ"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    sed -i "s/^User=pi\$/User=kidspos/" "$UNIT_PATH"
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "$UNIT_PATH" "^User=kidspos\$" "実行ユーザーが維持される"
+    assert_not_contains "$UNIT_PATH" "^User=pi\$" "既定のユーザーで上書きされない"
+    teardown
+}
+
+test_unit_untouched_when_identical() {
+    setup "ユニットが最新と同じなら触らない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    write_current_unit
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_not_contains "${WORK}/out.log" "systemd ユニットを更新しました" "更新ログは出ない"
+    assert_not_contains "$CALL_LOG" "systemctl daemon-reload" "daemon-reload は呼ばれない"
+    assert_eq "v9.9.9" "$(cat "${APP_DIR}/.installed-scripts-version")" "スクリプトのバージョンが記録される"
+    teardown
+}
+
+test_unit_rolls_back_when_service_fails_to_start() {
+    setup "新しいユニットで起動できなければ元のユニットに戻す"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    local before
+    before=$(cat "$UNIT_PATH")
+    touch "$FAIL_RESTART_ONCE_FILE"
+    run_update
+
+    assert_eq 0 "$RC" "サーバーの更新は成功扱いになる"
+    assert_contains "${WORK}/out.log" "元のユニットに戻します" "巻き戻した旨が出力される"
+    assert_eq "$before" "$(cat "$UNIT_PATH")" "ユニットが元に戻る"
+    if [ -e "${APP_DIR}/.installed-scripts-version" ]; then
+        fail_assert "スクリプトのバージョンは記録されない"
+    else
+        pass "スクリプトのバージョンは記録されない"
+    fi
+    teardown
+}
+
+test_unit_missing_in_tarball_is_not_recorded() {
+    setup "配布物に systemd ユニットが無ければバージョンを記録しない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    UNIT_IN_TARBALL=false
+    make_scripts_tarball
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "配布物に含まれていません: kidspos-server.service" "不足が警告される"
+    assert_contains "${APP_DIR}/doctor.sh" "new-script-marker" "スクリプトは差し替わる"
+    if [ -e "${APP_DIR}/.installed-scripts-version" ]; then
+        fail_assert "スクリプトのバージョンは記録されない"
+    else
+        pass "スクリプトのバージョンは記録されない"
+    fi
+    teardown
+}
+
+test_unit_not_created_when_absent() {
+    setup "ユニットが未配置の Pi には新規作成しない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    rm -f "$UNIT_PATH"
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "systemd ユニットが未配置のため更新しません" "スキップした旨が出力される"
+    if [ -e "$UNIT_PATH" ]; then
+        fail_assert "ユニットは作成されない"
+    else
+        pass "ユニットは作成されない"
+    fi
+    assert_eq "v9.9.9" "$(cat "${APP_DIR}/.installed-scripts-version")" "スクリプトのバージョンが記録される"
     teardown
 }
 
@@ -814,7 +954,13 @@ test_apk_sync_not_run_when_rolled_back
 test_self_update_replaces_scripts
 test_self_update_runs_before_apk_sync
 test_self_update_when_jar_already_latest
-test_self_update_skipped_when_scripts_version_matches
+test_self_update_runs_even_when_scripts_version_matches
+test_unit_is_replaced_and_service_restarted
+test_unit_keeps_service_user
+test_unit_untouched_when_identical
+test_unit_rolls_back_when_service_fails_to_start
+test_unit_missing_in_tarball_is_not_recorded
+test_unit_not_created_when_absent
 test_self_update_skipped_with_flag
 test_self_update_skipped_when_asset_missing
 test_self_update_download_failure_does_not_fail_update

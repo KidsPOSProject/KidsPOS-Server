@@ -54,6 +54,7 @@ setup() {
     echo "enabled" > "${STATE_DIR}/is-enabled"
     echo "0" > "${STATE_DIR}/nrestarts"
     echo "yes" > "${STATE_DIR}/ntp"
+    echo "cap_sys_time" > "${STATE_DIR}/ambient-capabilities"
     echo "21.0.8" > "${STATE_DIR}/java-version"
     touch "${STATE_DIR}/active"
     touch "${STATE_DIR}/health-ok"
@@ -75,6 +76,7 @@ case "$1" in
             -p) case "$3" in
                     NRestarts) cat "${STATE_DIR}/nrestarts" ;;
                     User) id -un ;;
+                    AmbientCapabilities) cat "${STATE_DIR}/ambient-capabilities" ;;
                 esac ;;
         esac
         ;;
@@ -113,6 +115,11 @@ cat "${STATE_DIR}/ntp"
 exit 0
 EOF
 
+    cat > "${STUB_DIR}/fake-hwclock" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+
     cat > "${STUB_DIR}/journalctl" <<'EOF'
 #!/usr/bin/env bash
 [ -f "${STATE_DIR}/journal" ] && cat "${STATE_DIR}/journal"
@@ -126,6 +133,9 @@ EOF
     printf 'v1.0.0' > "${APP_DIR}/.installed-version"
     printf 'PK-old' > "${APP_DIR}/backup/kidspos.db.20260101000000"
     write_unit "${UNIT_DIR}/kidspos-server.service"
+
+    FAKE_HWCLOCK_DATA="${WORK}/fake-hwclock.data"
+    printf 'Sat Aug 22 10:00:00 UTC 2026\n' > "$FAKE_HWCLOCK_DATA"
 }
 
 write_unit() {
@@ -154,6 +164,7 @@ run_doctor() {
     env PATH="${STUB_DIR}:${PATH}" \
         KIDSPOS_APP_DIR="$APP_DIR" \
         KIDSPOS_UNIT_DIR="$UNIT_DIR" \
+        KIDSPOS_FAKE_HWCLOCK_DATA="$FAKE_HWCLOCK_DATA" \
         bash "$DOCTOR_SCRIPT" > "${WORK}/out.log" 2>&1
     RC=$?
     set -e
@@ -240,13 +251,63 @@ test_restart_loop_is_warning() {
     teardown
 }
 
-test_unsynced_clock_is_warning() {
-    setup "時刻未同期は注意になる"
+test_unsynced_clock_is_not_a_failure() {
+    setup "時刻同期サーバー未同期はイントラネット運用では失敗にしない"
     echo "no" > "${STATE_DIR}/ntp"
     run_doctor
 
     assert_eq 0 "$RC" "終了コードが 0"
-    assert_contains "${WORK}/out.log" "時刻が同期されていません" "時刻ずれが報告される"
+    assert_contains "${WORK}/out.log" "イントラネット運用では正常です" "オフライン運用の説明が出る"
+    assert_not_contains "${WORK}/out.log" "\[注意\] 時刻" "注意としては報告されない"
+    teardown
+}
+
+test_missing_time_capability_is_ng() {
+    setup "サービスに時刻変更の権限が無ければ NG になる"
+    echo "" > "${STATE_DIR}/ambient-capabilities"
+    run_doctor
+
+    assert_eq 1 "$RC" "終了コードが 1"
+    assert_contains "${WORK}/out.log" "サービスに時刻変更の権限がありません" "権限不足が報告される"
+    assert_contains "${WORK}/out.log" "update-app.sh" "対処が示される"
+    teardown
+}
+
+test_time_capability_is_ok() {
+    setup "サービスに時刻変更の権限があれば OK になる"
+    run_doctor
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "サービスに時刻変更の権限があります" "権限があると報告される"
+    teardown
+}
+
+test_missing_fake_hwclock_is_warning() {
+    setup "fake-hwclock が無ければ注意になる"
+    rm "${STUB_DIR}/fake-hwclock"
+    run_doctor
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "fake-hwclock がありません" "未導入が報告される"
+    teardown
+}
+
+test_missing_fake_hwclock_data_is_warning() {
+    setup "fake-hwclock の記録が無ければ注意になる"
+    rm "$FAKE_HWCLOCK_DATA"
+    run_doctor
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "fake-hwclock の記録がありません" "記録欠落が報告される"
+    teardown
+}
+
+test_fake_hwclock_data_is_reported() {
+    setup "fake-hwclock の記録があれば内容が表示される"
+    run_doctor
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_contains "${WORK}/out.log" "Sat Aug 22 10:00:00 UTC 2026" "記録された時刻が表示される"
     teardown
 }
 
@@ -366,7 +427,12 @@ test_broken_jar_is_ng
 test_stopped_service_is_ng
 test_disabled_autostart_is_warning
 test_restart_loop_is_warning
-test_unsynced_clock_is_warning
+test_unsynced_clock_is_not_a_failure
+test_missing_time_capability_is_ng
+test_time_capability_is_ok
+test_missing_fake_hwclock_is_warning
+test_missing_fake_hwclock_data_is_warning
+test_fake_hwclock_data_is_reported
 test_missing_version_file_is_warning
 test_newer_release_is_warning
 test_same_release_is_ok
