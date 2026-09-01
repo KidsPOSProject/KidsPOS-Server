@@ -36,10 +36,9 @@ class SaleRepositoryTest {
         entityManager.flush()
         entityManager.clear()
 
-        // Create test data with unique IDs (SaleEntity は採番を持たないため明示的に割り当てる)
+        // Create test data
         testSale1 =
             SaleEntity(
-                id = 3001,
                 storeId = 1,
                 quantity = 2,
                 amount = 300,
@@ -48,7 +47,6 @@ class SaleRepositoryTest {
             )
         testSale2 =
             SaleEntity(
-                id = 3002,
                 storeId = 1,
                 quantity = 3,
                 amount = 500,
@@ -57,7 +55,6 @@ class SaleRepositoryTest {
             )
         testSale3 =
             SaleEntity(
-                id = 3003,
                 storeId = 2,
                 quantity = 1,
                 amount = 200,
@@ -87,7 +84,6 @@ class SaleRepositoryTest {
         // Given
         val newSale =
             SaleEntity(
-                id = 3004,
                 storeId = 3,
                 quantity = 4,
                 amount = 600,
@@ -100,7 +96,7 @@ class SaleRepositoryTest {
 
         // Then
         assertNotNull(savedSale)
-        assertEquals(3004, savedSale.id)
+        assertTrue(savedSale.id > 0)
         assertEquals(3, savedSale.storeId)
         assertEquals(600, savedSale.amount)
 
@@ -201,17 +197,6 @@ class SaleRepositoryTest {
         assertEquals(2, store1Count)
         assertEquals(1, store2Count)
         assertEquals(0, store3Count)
-    }
-
-    @Test
-    fun `should get last ID correctly`() {
-        // When
-        val lastId = saleRepository.getLastId()
-
-        // Then
-        assertTrue(lastId > 0)
-        // Should be one of our test sale IDs
-        assertTrue(lastId == testSale1.id || lastId == testSale2.id || lastId == testSale3.id)
     }
 
     @Test

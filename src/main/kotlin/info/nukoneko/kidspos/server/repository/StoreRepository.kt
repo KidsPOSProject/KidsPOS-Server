@@ -2,7 +2,6 @@ package info.nukoneko.kidspos.server.repository
 
 import info.nukoneko.kidspos.server.entity.StoreEntity
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 
 /**
@@ -11,7 +10,4 @@ import org.springframework.stereotype.Repository
  * 店舗情報の永続化操作を提供
  */
 @Repository
-interface StoreRepository : JpaRepository<StoreEntity, Int> {
-    @Query(value = "SELECT max(store.id) FROM StoreEntity as store")
-    fun getLastId(): Int
-}
+interface StoreRepository : JpaRepository<StoreEntity, Int>

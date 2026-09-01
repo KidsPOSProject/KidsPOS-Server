@@ -12,6 +12,9 @@ spring:
   jpa:
     properties:
       hibernate:
+        # SQLite の JDBC ドライバは getGeneratedKeys を実装していないため last_insert_rowid() で採番値を読む
+        jdbc:
+          use_get_generated_keys: false
         id:
           new_generator_mappings=false: false
         temp:
@@ -61,6 +64,11 @@ app:
     allowed-ip-prefix: ${ALLOWED_IP_PREFIX:192.168.}
   security:
     encryption-key: ${ENCRYPTION_KEY:DefaultKidsPOSKey123!@#}
+  system-time:
+    auto-sync-enabled: ${SYSTEM_TIME_AUTO_SYNC_ENABLED:true}
+    auto-sync-threshold-millis: ${SYSTEM_TIME_AUTO_SYNC_THRESHOLD_MILLIS:30000}
+    auto-sync-cooldown-millis: ${SYSTEM_TIME_AUTO_SYNC_COOLDOWN_MILLIS:60000}
+    backward-sync-window-millis: ${SYSTEM_TIME_BACKWARD_SYNC_WINDOW_MILLIS:300000}
   apk:
     upload-dir: ${APK_UPLOAD_DIR:./uploads/apk}
     max-file-size: ${APK_MAX_FILE_SIZE:104857600}

@@ -66,6 +66,18 @@ class ItemRepositoryTest {
     }
 
     @Test
+    fun `should assign distinct ids to consecutive saves`() {
+        // When
+        val first = itemRepository.save(ItemEntity(barcode = "900000001", name = "First", price = 10))
+        val second = itemRepository.save(ItemEntity(barcode = "900000002", name = "Second", price = 20))
+
+        // Then
+        assertTrue(first.id > 0)
+        assertTrue(second.id > 0)
+        assertNotEquals(first.id, second.id)
+    }
+
+    @Test
     fun `should find item by barcode`() {
         // When
         val foundItem = itemRepository.findByBarcode("123456789")
@@ -106,7 +118,6 @@ class ItemRepositoryTest {
         // Given
         val newItem =
             ItemEntity(
-                id = 2001,
                 barcode = "111222333",
                 name = "New Item",
                 price = 300,
@@ -117,7 +128,7 @@ class ItemRepositoryTest {
 
         // Then
         assertNotNull(savedItem)
-        assertEquals(2001, savedItem.id)
+        assertTrue(savedItem.id > 0)
         assertEquals("111222333", savedItem.barcode)
         assertEquals("New Item", savedItem.name)
         assertEquals(300, savedItem.price)
@@ -236,16 +247,5 @@ class ItemRepositoryTest {
         assertTrue(batchItems.any { it.id == testItem1.id })
         assertTrue(batchItems.any { it.id == testItem3.id })
         assertFalse(batchItems.any { it.id == testItem2.id })
-    }
-
-    @Test
-    fun `should get last ID correctly`() {
-        // When
-        val lastId = itemRepository.getLastId()
-
-        // Then
-        assertTrue(lastId > 0)
-        // Should be the highest ID (testItem3.id = 1003)
-        assertEquals(1003, lastId)
     }
 }

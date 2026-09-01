@@ -1,6 +1,5 @@
 package info.nukoneko.kidspos.server.service
 
-import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.entity.ItemEntity
 import info.nukoneko.kidspos.server.repository.ItemRepository
@@ -18,9 +17,6 @@ class ItemServiceTest {
     @MockBean
     private lateinit var itemRepository: ItemRepository
 
-    @MockBean
-    private lateinit var idGenerationService: IdGenerationService
-
     private lateinit var eventPublisher: ApplicationEventPublisher
 
     private lateinit var itemService: ItemService
@@ -28,7 +24,7 @@ class ItemServiceTest {
     @BeforeEach
     fun setup() {
         eventPublisher = mock(ApplicationEventPublisher::class.java)
-        itemService = ItemService(itemRepository, idGenerationService, eventPublisher)
+        itemService = ItemService(itemRepository, eventPublisher)
     }
 
     @Test
@@ -126,7 +122,6 @@ class ItemServiceTest {
                 name = "New Item",
                 price = 200,
             )
-        `when`(idGenerationService.generateNextId(itemRepository)).thenReturn(1)
         `when`(itemRepository.save(any<ItemEntity>())).thenReturn(expectedItem)
 
         // When
@@ -138,7 +133,6 @@ class ItemServiceTest {
         assertEquals("123456789", result.barcode)
         assertEquals("New Item", result.name)
         assertEquals(200, result.price)
-        verify(idGenerationService).generateNextId(itemRepository)
         verify(itemRepository).save(any<ItemEntity>())
     }
 
@@ -192,6 +186,28 @@ class ItemServiceTest {
         assertEquals("Existing Item", result.name)
         assertEquals(300, result.price)
         verify(itemRepository).save(any<ItemEntity>())
-        verify(idGenerationService, never()).generateNextId(any<ItemRepository>())
+    }
+
+    @Test
+    fun `should build barcode from assigned id when barcode is blank`() {
+        // Given
+        val itemBean =
+            ItemBean(
+                id = null,
+                barcode = null,
+                name = "New Item",
+                price = 200,
+            )
+        `when`(itemRepository.save(any<ItemEntity>())).thenAnswer { invocation ->
+            val entity = invocation.getArgument<ItemEntity>(0)
+            if (entity.id == 0) entity.copy(id = 7) else entity
+        }
+
+        // When
+        val result = itemService.save(itemBean)
+
+        // Then
+        assertEquals(7, result.id)
+        assertEquals("A01000007A", result.barcode)
     }
 }

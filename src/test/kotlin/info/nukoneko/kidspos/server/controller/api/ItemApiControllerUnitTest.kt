@@ -274,6 +274,7 @@ class ItemApiControllerUnitTest {
         assertNull(result.body)
 
         verify(validationService).validateItemExists(1)
+        verify(itemService).delete(1)
     }
 
     @Test

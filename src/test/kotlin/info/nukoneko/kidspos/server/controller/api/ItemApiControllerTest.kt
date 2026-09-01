@@ -317,6 +317,7 @@ class ItemApiControllerTest {
             .andExpect(status().isNoContent)
 
         verify(validationService).validateItemExists(1)
+        verify(itemService).delete(1)
     }
 
     @Test

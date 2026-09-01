@@ -1,6 +1,5 @@
 package info.nukoneko.kidspos.server.service
 
-import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.repository.ItemRepository
 import info.nukoneko.kidspos.server.repository.SaleDetailRepository
 import info.nukoneko.kidspos.server.repository.SaleRepository
@@ -21,11 +20,10 @@ class ConstructorInjectionTest {
     fun `services should use constructor injection`() {
         // Given - Create mocks
         val itemRepository = mock(ItemRepository::class.java)
-        val idGenerationService = mock(IdGenerationService::class.java)
         val eventPublisher = mock(ApplicationEventPublisher::class.java)
 
         // When - Create service with constructor injection
-        val itemService = ItemService(itemRepository, idGenerationService, eventPublisher)
+        val itemService = ItemService(itemRepository, eventPublisher)
 
         // Then - Service should be properly initialized
         assertThat(itemService).isNotNull
@@ -37,7 +35,6 @@ class ConstructorInjectionTest {
         val itemRepository = mock(ItemRepository::class.java)
         val saleRepository = mock(SaleRepository::class.java)
         val saleDetailRepository = mock(SaleDetailRepository::class.java)
-        val idGenerationService = mock(IdGenerationService::class.java)
 
         // When - Create service with constructor injection
         val saleService =
@@ -45,7 +42,6 @@ class ConstructorInjectionTest {
                 itemRepository,
                 saleRepository,
                 saleDetailRepository,
-                idGenerationService,
             )
 
         // Then - Service should be properly initialized

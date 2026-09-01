@@ -49,7 +49,6 @@ class QueryOptimizationTest {
         for (i in 1..50) {
             val item =
                 ItemEntity(
-                    id = i,
                     barcode = "BAR$i",
                     name = "Item $i",
                     price = i * 100,
@@ -74,46 +73,49 @@ class QueryOptimizationTest {
     @Test
     fun `should fetch sale with details in single query to avoid N+1`() {
         // Given - Create test data
-        val store = StoreEntity(id = 1, name = "Test Store", printerUri = "http://printer")
-        entityManager.persist(store)
+        val store =
+            entityManager.persistAndFlush(
+                StoreEntity(name = "Test Store", printerUri = "http://printer"),
+            )
 
         val sale =
-            SaleEntity(
-                id = 1,
-                storeId = 1,
-                quantity = 3,
-                amount = 300,
-                deposit = 500,
-                createdAt = java.util.Date(),
+            entityManager.persistAndFlush(
+                SaleEntity(
+                    storeId = store.id,
+                    quantity = 3,
+                    amount = 300,
+                    deposit = 500,
+                    createdAt = java.util.Date(),
+                ),
             )
-        entityManager.persist(sale)
 
         for (i in 1..3) {
-            val item = ItemEntity(id = i, barcode = "BAR$i", name = "Item $i", price = 100)
-            entityManager.persist(item)
+            val item =
+                entityManager.persistAndFlush(
+                    ItemEntity(barcode = "BAR$i", name = "Item $i", price = 100),
+                )
 
-            val detail =
+            entityManager.persistAndFlush(
                 SaleDetailEntity(
-                    id = i,
-                    saleId = 1,
-                    itemId = i,
+                    saleId = sale.id,
+                    itemId = item.id,
                     price = 100,
                     quantity = 1,
-                )
-            entityManager.persist(detail)
+                ),
+            )
         }
         entityManager.flush()
         entityManager.clear()
 
         // When - Fetch sale with details using optimized query
-        val saleWithDetails = saleRepository.findByIdWithDetails(1)
+        val saleWithDetails = saleRepository.findByIdWithDetails(sale.id)
 
         // Then - Verify data is fetched efficiently
         assertNotNull(saleWithDetails)
-        assertEquals(1, saleWithDetails?.id)
+        assertEquals(sale.id, saleWithDetails?.id)
 
         // Details should be eagerly loaded
-        val details = saleDetailRepository.findBySaleId(1)
+        val details = saleDetailRepository.findBySaleId(sale.id)
         assertEquals(3, details.size)
     }
 
@@ -122,9 +124,11 @@ class QueryOptimizationTest {
         // Given - Create test data
         val itemIds = mutableListOf<Int>()
         for (i in 1..20) {
-            val item = ItemEntity(id = i, barcode = "BAR$i", name = "Item $i", price = i * 10)
-            entityManager.persist(item)
-            itemIds.add(i)
+            val item =
+                entityManager.persistAndFlush(
+                    ItemEntity(barcode = "BAR$i", name = "Item $i", price = i * 10),
+                )
+            itemIds.add(item.id)
         }
         entityManager.flush()
         entityManager.clear()
@@ -143,7 +147,6 @@ class QueryOptimizationTest {
         for (i in 1..10) {
             val item =
                 ItemEntity(
-                    id = i,
                     barcode = "BAR$i",
                     name = "Item $i",
                     price = i * 100,
@@ -170,7 +173,6 @@ class QueryOptimizationTest {
         for (i in 1..100) {
             val item =
                 ItemEntity(
-                    id = i,
                     barcode = String.format("%013d", i),
                     name = "Item $i",
                     price = i * 10,
@@ -185,7 +187,6 @@ class QueryOptimizationTest {
 
         // Then - Should find item quickly using index
         assertNotNull(item)
-        assertEquals(50, item?.id)
         assertEquals("Item 50", item?.name)
     }
 
@@ -195,7 +196,6 @@ class QueryOptimizationTest {
         for (i in 1..100) {
             val item =
                 ItemEntity(
-                    id = i,
                     barcode = "BAR$i",
                     name = "Item $i",
                     price = if (i % 2 == 0) 100 else 200,

@@ -15,9 +15,6 @@ import java.util.*
  */
 @Repository
 interface SaleRepository : JpaRepository<SaleEntity, Int> {
-    @Query(value = "SELECT max(sale.id) FROM SaleEntity as sale")
-    fun getLastId(): Int
-
     /**
      * Find sale with details to avoid N+1 problem
      */

@@ -26,8 +26,15 @@ class ClientClockSynchronizerTest {
         enabled: Boolean = true,
         thresholdMillis: Long = 30_000,
         cooldownMillis: Long = 60_000,
+        backwardWindowMillis: Long = BACKWARD_WINDOW_MILLIS,
     ): ClientClockSynchronizer =
-        ClientClockSynchronizer(systemTimeService, enabled, thresholdMillis, cooldownMillis).apply {
+        ClientClockSynchronizer(
+            systemTimeService,
+            enabled,
+            thresholdMillis,
+            cooldownMillis,
+            backwardWindowMillis,
+        ).apply {
             clock = { currentMillis }
             monotonicNanos = { currentNanos }
             executor = Executor { it.run() }
@@ -67,11 +74,35 @@ class ClientClockSynchronizerTest {
     }
 
     @Test
-    fun `サーバーが進んでいる場合も巻き戻して同期する`() {
+    fun `起動直後はサーバーが進んでいても巻き戻して同期する`() {
         val requested = BASE_MILLIS - 60_000
         whenever(systemTimeService.sync(eq(requested))).thenReturn(syncResult(true))
 
         synchronizer().onClientTime(requested.toString())
+
+        verify(systemTimeService).sync(eq(requested))
+    }
+
+    @Test
+    fun `巻き戻しの猶予を過ぎると過去方向には同期しない`() {
+        val target = synchronizer()
+
+        target.onClientTime(BASE_MILLIS.toString())
+        currentNanos += BACKWARD_WINDOW_MILLIS * NANOS_PER_MILLI
+        target.onClientTime((BASE_MILLIS - 60_000).toString())
+
+        verify(systemTimeService, never()).sync(any())
+    }
+
+    @Test
+    fun `巻き戻しの猶予を過ぎても前進方向には同期する`() {
+        val requested = BASE_MILLIS + 60_000
+        whenever(systemTimeService.sync(eq(requested))).thenReturn(syncResult(true))
+        val target = synchronizer()
+
+        target.onClientTime(BASE_MILLIS.toString())
+        currentNanos += BACKWARD_WINDOW_MILLIS * NANOS_PER_MILLI
+        target.onClientTime(requested.toString())
 
         verify(systemTimeService).sync(eq(requested))
     }
@@ -169,5 +200,6 @@ class ClientClockSynchronizerTest {
     private companion object {
         const val BASE_MILLIS = 1_700_000_000_000L
         const val NANOS_PER_MILLI = 1_000_000L
+        const val BACKWARD_WINDOW_MILLIS = 300_000L
     }
 }

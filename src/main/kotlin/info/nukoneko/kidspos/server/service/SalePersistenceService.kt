@@ -1,6 +1,5 @@
 package info.nukoneko.kidspos.server.service
 
-import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
 import info.nukoneko.kidspos.server.entity.SaleDetailEntity
@@ -21,7 +20,6 @@ import java.util.*
 class SalePersistenceService(
     private val saleRepository: SaleRepository,
     private val saleDetailRepository: SaleDetailRepository,
-    private val idGenerationService: IdGenerationService,
     private val saleCalculationService: SaleCalculationService,
 ) {
     private val logger = LoggerFactory.getLogger(SalePersistenceService::class.java)
@@ -33,13 +31,11 @@ class SalePersistenceService(
         saleBean: SaleBean,
         items: List<ItemBean>,
     ): SaleEntity {
-        val saleId = idGenerationService.generateNextId(saleRepository)
         val totalAmount = saleCalculationService.calculateSaleAmount(items)
         val quantity = saleCalculationService.calculateQuantity(items)
 
         val sale =
             SaleEntity(
-                id = saleId,
                 storeId = saleBean.storeId,
                 quantity = quantity,
                 amount = totalAmount,
@@ -70,13 +66,11 @@ class SalePersistenceService(
         val savedDetails = mutableListOf<SaleDetailEntity>()
 
         groupedItems.forEach { (itemId, itemList) ->
-            val detailId = idGenerationService.generateNextId(saleDetailRepository)
             val quantity = itemList.size
             val unitPrice = itemList.first().price
 
             val saleDetail =
                 SaleDetailEntity(
-                    id = detailId,
                     saleId = saleId,
                     itemId = itemId,
                     price = unitPrice,

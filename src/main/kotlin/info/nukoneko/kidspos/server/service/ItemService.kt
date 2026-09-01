@@ -1,7 +1,6 @@
 package info.nukoneko.kidspos.server.service
 
 import info.nukoneko.kidspos.common.Constants
-import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.config.CacheConfig
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.entity.ItemEntity
@@ -19,34 +18,29 @@ import org.springframework.transaction.annotation.Transactional
  * Service for managing product item operations
  *
  * Handles CRUD operations for product items with comprehensive caching
- * support and automatic ID generation. Provides multiple lookup strategies
- * including by ID and barcode for efficient POS operations. Implements
- * multi-level caching to optimize performance for frequently accessed
- * product data.
+ * support. Provides multiple lookup strategies including by ID and barcode
+ * for efficient POS operations. IDs are assigned by the database.
  *
  * Key responsibilities:
  * - Managing product item data storage and retrieval
  * - Providing cached access with multiple cache levels
  * - Supporting both ID-based and barcode-based lookups
- * - Automatic ID generation for new items
  * - Cache invalidation management for data consistency
  *
  * Caching strategy:
  * - All items cache for bulk operations
  * - Individual item cache by ID
  * - Individual item cache by barcode
- * - Coordinated cache eviction on updates
+ * - Every write clears all item caches
  *
  * @constructor Creates ItemService with required dependencies
  * @param repository Repository for item data access
- * @param idGenerationService Service for generating unique item IDs
  * @param eventPublisher Publisher used to notify listeners about item changes
  */
 @Service
 @Transactional
 class ItemService(
     private val repository: ItemRepository,
-    private val idGenerationService: IdGenerationService,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(ItemService::class.java)
@@ -69,35 +63,27 @@ class ItemService(
         return repository.findByBarcode(barcode)
     }
 
+    // バーコードを変更すると旧バーコードのキーが辿れなくなるため、書き込みでは全件を消す
     @Caching(
         evict = [
             CacheEvict(value = [CacheConfig.ITEMS_CACHE], allEntries = true),
-            CacheEvict(value = [CacheConfig.ITEM_BY_ID_CACHE], key = "#result.id"),
-            CacheEvict(value = [CacheConfig.ITEM_BY_BARCODE_CACHE], key = "#result.barcode"),
+            CacheEvict(value = [CacheConfig.ITEM_BY_ID_CACHE], allEntries = true),
+            CacheEvict(value = [CacheConfig.ITEM_BY_BARCODE_CACHE], allEntries = true),
         ],
     )
     fun save(itemBean: ItemBean): ItemEntity {
-        logger.info("Creating item with barcode: {}, name: {}", itemBean.barcode, itemBean.name)
-        val itemId = itemBean.id
-        val generatedId =
-            if (itemId != null && itemId > 0) {
-                itemId
+        logger.info("Saving item with barcode: {}, name: {}", itemBean.barcode, itemBean.name)
+        val requestedId = itemBean.id?.takeIf { it > 0 } ?: 0
+        val savedItem =
+            if (itemBean.barcode.isNullOrBlank() && requestedId == 0) {
+                // 採番前はIDが決まらずバーコードを組み立てられないため、保存してから付け直す
+                val created = repository.save(ItemEntity(0, "", itemBean.name, itemBean.price))
+                repository.save(created.copy(barcode = buildBarcode(created.id)))
             } else {
-                idGenerationService.generateNextId(repository)
+                val barcode = itemBean.barcode?.takeIf { it.isNotBlank() } ?: buildBarcode(requestedId)
+                repository.save(ItemEntity(requestedId, barcode, itemBean.name, itemBean.price))
             }
-
-        // バーコードが空の場合は自動生成（A + 種別コード01 + ID(6桁) + A）
-        val finalBarcode =
-            if (itemBean.barcode.isNullOrBlank()) {
-                val idPadded = generatedId.toString().padStart(Constants.Barcode.ID_LENGTH, '0')
-                "${Constants.Barcode.PREFIX}${Constants.Barcode.TYPE_ITEM}$idPadded${Constants.Barcode.SUFFIX}"
-            } else {
-                itemBean.barcode
-            }
-
-        val item = ItemEntity(generatedId, finalBarcode, itemBean.name, itemBean.price)
-        val savedItem = repository.save(item)
-        logger.info("Item created successfully with ID: {}, barcode: {}", savedItem.id, savedItem.barcode)
+        logger.info("Item saved successfully with ID: {}, barcode: {}", savedItem.id, savedItem.barcode)
         eventPublisher.publishEvent(ItemsChangedEvent(savedItem.id))
         return savedItem
     }
@@ -105,7 +91,8 @@ class ItemService(
     @Caching(
         evict = [
             CacheEvict(value = [CacheConfig.ITEMS_CACHE], allEntries = true),
-            CacheEvict(value = [CacheConfig.ITEM_BY_ID_CACHE], key = "#id"),
+            CacheEvict(value = [CacheConfig.ITEM_BY_ID_CACHE], allEntries = true),
+            CacheEvict(value = [CacheConfig.ITEM_BY_BARCODE_CACHE], allEntries = true),
         ],
     )
     fun delete(id: Int) {
@@ -116,5 +103,10 @@ class ItemService(
             logger.info("Item deleted successfully with ID: {}", id)
             eventPublisher.publishEvent(ItemsChangedEvent(id))
         }
+    }
+
+    private fun buildBarcode(id: Int): String {
+        val idPadded = id.toString().padStart(Constants.Barcode.ID_LENGTH, '0')
+        return "${Constants.Barcode.PREFIX}${Constants.Barcode.TYPE_ITEM}$idPadded${Constants.Barcode.SUFFIX}"
     }
 }

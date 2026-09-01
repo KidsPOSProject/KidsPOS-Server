@@ -303,11 +303,9 @@ class ItemApiController(
     ): ResponseEntity<Void> {
         logger.info("Deleting item with ID: {}", id)
 
-        // Check if item exists
         validationService.validateItemExists(id)
-
-        // Note: Delete functionality needs to be implemented in service layer
-        logger.warn("Delete functionality not yet implemented for item ID: {}", id)
+        itemService.delete(id)
+        logger.info("Item deleted successfully with ID: {}", id)
 
         return ResponseEntity.noContent().build()
     }

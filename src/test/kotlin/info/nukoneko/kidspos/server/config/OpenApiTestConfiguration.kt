@@ -1,6 +1,5 @@
 package info.nukoneko.kidspos.server.config
 
-import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.service.*
 import info.nukoneko.kidspos.server.service.mapper.ItemMapper
 import info.nukoneko.kidspos.server.service.mapper.SaleMapper
@@ -18,10 +17,6 @@ import org.springframework.context.annotation.Primary
  */
 @TestConfiguration
 class OpenApiTestConfiguration {
-    @Bean
-    @Primary
-    fun idGenerationService(): IdGenerationService = mock(IdGenerationService::class.java)
-
     @Bean
     @Primary
     fun itemService(): ItemService = mock(ItemService::class.java)

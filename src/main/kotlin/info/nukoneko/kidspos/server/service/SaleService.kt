@@ -1,7 +1,6 @@
 package info.nukoneko.kidspos.server.service
 
 import info.nukoneko.kidspos.common.Constants
-import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
 import info.nukoneko.kidspos.server.entity.SaleDetailEntity
@@ -19,11 +18,10 @@ import java.util.*
  * of sales data. This is the legacy service that is being gradually replaced
  * by more specialized services following Single Responsibility Principle.
  *
- * @constructor Creates SaleService with required repositories and services
+ * @constructor Creates SaleService with required repositories
  * @param itemRepository Repository for item data access
  * @param saleRepository Repository for sale data access
  * @param saleDetailRepository Repository for sale detail data access
- * @param idGenerationService Service for generating unique IDs
  */
 @Service
 @Transactional
@@ -31,7 +29,6 @@ class SaleService(
     private val itemRepository: ItemRepository,
     private val saleRepository: SaleRepository,
     private val saleDetailRepository: SaleDetailRepository,
-    private val idGenerationService: IdGenerationService,
 ) {
     private val logger = LoggerFactory.getLogger(SaleService::class.java)
 
@@ -54,7 +51,6 @@ class SaleService(
         items: List<ItemBean>,
     ): SaleEntity {
         logger.info("Creating sale for store: {}, staff barcode: {}", saleBean.storeId, "***")
-        val id = idGenerationService.generateNextId(saleRepository)
 
         // 売り上げを保存
         items.forEach {
@@ -63,13 +59,12 @@ class SaleService(
         val amount = items.sumOf { it.price }
         val sale =
             SaleEntity(
-                id,
-                saleBean.storeId,
-                items.size,
-                amount,
-                saleBean.deposit,
-                Date(),
-                saleBean.deposit - amount,
+                storeId = saleBean.storeId,
+                quantity = items.size,
+                amount = amount,
+                deposit = saleBean.deposit,
+                createdAt = Date(),
+                changeAmount = saleBean.deposit - amount,
             )
 
         val savedSale = saleRepository.save(sale)
@@ -81,15 +76,13 @@ class SaleService(
             .mapNotNull { it.id }
             .distinct()
             .forEach { itemId ->
-                val saleDetailId = idGenerationService.generateNextId(saleDetailRepository)
                 val filteredItems = items.filter { it.id == itemId }
                 saleDetailRepository.save(
                     SaleDetailEntity(
-                        saleDetailId,
-                        id,
-                        itemId,
-                        filteredItems[0].price,
-                        filteredItems.size,
+                        saleId = savedSale.id,
+                        itemId = itemId,
+                        price = filteredItems[0].price,
+                        quantity = filteredItems.size,
                     ),
                 )
             }
