@@ -179,12 +179,11 @@ class ItemApiController(
             itemService.findItem(id)
                 ?: throw ItemNotFoundException(id = id)
 
-        // Apply updates
-        val barcode = updates["barcode"]?.toString() ?: existingItem.barcode
-        val name = updates["name"]?.toString() ?: existingItem.name
+        val barcode = stringUpdate(updates, "barcode", existingItem.barcode)
+        val name = stringUpdate(updates, "name", existingItem.name)
         val price =
             if (updates.containsKey("price")) {
-                updates["price"]?.toString()?.toIntOrNull()
+                (updates["price"] as? Int)
                     ?: throw ValidationException("価格は整数で指定してください")
             } else {
                 existingItem.price
@@ -192,6 +191,9 @@ class ItemApiController(
 
         // Validate if barcode changed
         if (barcode != existingItem.barcode) {
+            if (!barcode.matches(Regex(Constants.Validation.BARCODE_PATTERN))) {
+                throw InvalidBarcodeException(barcode)
+            }
             validationService.validateBarcodeUnique(barcode, id)
         }
         validationService.validatePriceRange(price)
@@ -303,6 +305,21 @@ class ItemApiController(
                     .filename(fileName)
                     .build()
         }
+
+    /**
+     * 部分更新は型が緩いので、文字列以外が来たら弾いて既存値に落とさない
+     */
+    private fun stringUpdate(
+        updates: Map<String, Any>,
+        key: String,
+        current: String,
+    ): String {
+        if (!updates.containsKey(key)) {
+            return current
+        }
+        return updates[key] as? String
+            ?: throw ValidationException("${'$'}key は文字列で指定してください")
+    }
 
     @DeleteMapping("/{id}")
     fun delete(

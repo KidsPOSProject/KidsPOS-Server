@@ -11,6 +11,7 @@ import org.springframework.web.HttpMediaTypeNotAcceptableException
 import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
@@ -349,6 +350,24 @@ class GlobalExceptionHandler {
                             "parameter" to ex.name,
                             "expectedType" to expectedType,
                         ),
+                ),
+            )
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException::class)
+    fun handleMissingRequestParameter(
+        ex: MissingServletRequestParameterException,
+        request: WebRequest,
+    ): ResponseEntity<ErrorResponse> {
+        logger.debug("Missing request parameter '${ex.parameterName}'")
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(
+                ErrorResponse(
+                    code = "MISSING_PARAMETER",
+                    message = "パラメータ '${ex.parameterName}' は必須です",
+                    path = request.getDescription(false),
+                    details = mapOf("parameter" to ex.parameterName),
                 ),
             )
     }

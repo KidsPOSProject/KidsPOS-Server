@@ -114,7 +114,8 @@ class SalePersistenceService(
     fun findAllSales(): List<SaleEntity> = saleRepository.findAll()
 
     /**
-     * Find sale details by sale ID
+     * Find sale details for the given sales at once
      */
-    fun findSaleDetailsBySaleId(saleId: Int): List<SaleDetailEntity> = saleDetailRepository.findBySaleId(saleId)
+    fun findSaleDetails(saleIds: Collection<Int>): List<SaleDetailEntity> =
+        if (saleIds.isEmpty()) emptyList() else saleDetailRepository.findBySaleIdIn(saleIds)
 }

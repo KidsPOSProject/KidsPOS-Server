@@ -83,19 +83,9 @@ class SaleApiControllerTest {
                 deposit = 400,
             )
 
-        val summary =
-            SaleSummary(
-                totalAmount = 300,
-                deposit = 400,
-                change = 100,
-                itemCount = 2,
-                uniqueItems = 2,
-                itemQuantities = mapOf(1 to 1, 2 to 1),
-            )
-
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(any(), any()))
-            .thenReturn(SaleResult.Success(testSale, summary))
+            .thenReturn(SaleResult.Success(testSale))
         `when`(receiptService.printReceiptAsync(any(), any(), any())).thenReturn(true)
 
         // When & Then

@@ -4,32 +4,34 @@ import info.nukoneko.kidspos.server.entity.ItemEntity
 import info.nukoneko.kidspos.server.entity.SaleDetailEntity
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.entity.StoreEntity
-import info.nukoneko.kidspos.server.repository.ItemRepository
-import info.nukoneko.kidspos.server.repository.SaleDetailRepository
-import info.nukoneko.kidspos.server.repository.StoreRepository
+import info.nukoneko.kidspos.server.service.ItemService
+import info.nukoneko.kidspos.server.service.SalePersistenceService
+import info.nukoneko.kidspos.server.service.StoreService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Date
-import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 class SaleMapperTest {
     @Mock
-    private lateinit var storeRepository: StoreRepository
+    private lateinit var storeService: StoreService
 
     @Mock
-    private lateinit var itemRepository: ItemRepository
+    private lateinit var itemService: ItemService
 
     @Mock
-    private lateinit var saleDetailRepository: SaleDetailRepository
+    private lateinit var salePersistenceService: SalePersistenceService
 
     @InjectMocks
     private lateinit var mapper: SaleMapper
@@ -51,10 +53,23 @@ class SaleMapperTest {
             )
     }
 
+    private fun stubStore(vararg stores: StoreEntity) {
+        `when`(storeService.findAll()).thenReturn(stores.toList())
+    }
+
+    private fun stubItems(vararg items: ItemEntity) {
+        `when`(itemService.findAll()).thenReturn(items.toList())
+    }
+
+    private fun stubDetails(vararg details: SaleDetailEntity) {
+        `when`(salePersistenceService.findSaleDetails(any())).thenReturn(details.toList())
+    }
+
     @Test
     fun `saleTime should preserve the exact instant of createdAt`() {
-        `when`(storeRepository.findById(10)).thenReturn(Optional.of(StoreEntity(10, "Store 10")))
-        `when`(saleDetailRepository.findBySaleId(1)).thenReturn(emptyList())
+        stubStore(StoreEntity(10, "Store 10"))
+        stubItems()
+        stubDetails()
 
         val response = mapper.toResponse(sale)
 
@@ -63,8 +78,9 @@ class SaleMapperTest {
 
     @Test
     fun `saleTime should carry the system timezone offset`() {
-        `when`(storeRepository.findById(10)).thenReturn(Optional.of(StoreEntity(10, "Store 10")))
-        `when`(saleDetailRepository.findBySaleId(1)).thenReturn(emptyList())
+        stubStore(StoreEntity(10, "Store 10"))
+        stubItems()
+        stubDetails()
 
         val response = mapper.toResponse(sale)
 
@@ -76,13 +92,9 @@ class SaleMapperTest {
 
     @Test
     fun `should resolve store name and sale items`() {
-        `when`(storeRepository.findById(10)).thenReturn(Optional.of(StoreEntity(10, "Store 10")))
-        `when`(saleDetailRepository.findBySaleId(1)).thenReturn(
-            listOf(SaleDetailEntity(id = 1, saleId = 1, itemId = 100, price = 150, quantity = 2)),
-        )
-        `when`(itemRepository.findById(100)).thenReturn(
-            Optional.of(ItemEntity(100, "A01000100A", "Item 100", 150)),
-        )
+        stubStore(StoreEntity(10, "Store 10"))
+        stubItems(ItemEntity(100, "A01000100A", "Item 100", 150))
+        stubDetails(SaleDetailEntity(id = 1, saleId = 1, itemId = 100, price = 150, quantity = 2))
 
         val response = mapper.toResponse(sale)
 
@@ -97,11 +109,9 @@ class SaleMapperTest {
 
     @Test
     fun `should fall back to placeholders when store and item are missing`() {
-        `when`(storeRepository.findById(10)).thenReturn(Optional.empty())
-        `when`(saleDetailRepository.findBySaleId(1)).thenReturn(
-            listOf(SaleDetailEntity(id = 1, saleId = 1, itemId = 100, price = 150, quantity = 1)),
-        )
-        `when`(itemRepository.findById(100)).thenReturn(Optional.empty())
+        stubStore()
+        stubItems()
+        stubDetails(SaleDetailEntity(id = 1, saleId = 1, itemId = 100, price = 150, quantity = 1))
 
         val response = mapper.toResponse(sale)
 
@@ -112,14 +122,26 @@ class SaleMapperTest {
 
     @Test
     fun `toResponseList should map every entity`() {
-        val other = sale.copy(id = 2, storeId = 10)
-        `when`(storeRepository.findById(10)).thenReturn(Optional.of(StoreEntity(10, "Store 10")))
-        `when`(saleDetailRepository.findBySaleId(1)).thenReturn(emptyList())
-        `when`(saleDetailRepository.findBySaleId(2)).thenReturn(emptyList())
+        stubStore(StoreEntity(10, "Store 10"))
+        stubItems()
+        stubDetails()
 
-        val responses = mapper.toResponseList(listOf(sale, other))
+        val responses = mapper.toResponseList(listOf(sale, sale.copy(id = 2, storeId = 10)))
 
         assertEquals(listOf(1, 2), responses.map { it.id })
         assertEquals(listOf(createdAt, createdAt), responses.map { it.saleTime.toInstant() })
+    }
+
+    @Test
+    fun `toResponseList should fetch each relation only once`() {
+        stubStore(StoreEntity(10, "Store 10"))
+        stubItems()
+        stubDetails()
+
+        mapper.toResponseList(listOf(sale, sale.copy(id = 2), sale.copy(id = 3)))
+
+        verify(salePersistenceService, times(1)).findSaleDetails(any())
+        verify(storeService, times(1)).findAll()
+        verify(itemService, times(1)).findAll()
     }
 }

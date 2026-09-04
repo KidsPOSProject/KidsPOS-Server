@@ -29,7 +29,8 @@ class StoreApiController(
             throw IllegalArgumentException("Store name is required")
         }
 
-        val savedStore = service.save(store)
+        // 登録なので id を受け取っても既存を書き換えず、採番に任せる
+        val savedStore = service.save(store.copy(id = 0))
         return ResponseEntity.status(HttpStatus.CREATED).body(savedStore)
     }
 

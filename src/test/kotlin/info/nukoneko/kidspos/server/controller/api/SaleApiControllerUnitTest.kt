@@ -67,16 +67,6 @@ class SaleApiControllerUnitTest {
                 deposit = 400,
             )
 
-        val summary =
-            SaleSummary(
-                totalAmount = 300,
-                deposit = 400,
-                change = 100,
-                itemCount = 2,
-                uniqueItems = 2,
-                itemQuantities = mapOf(1 to 1, 2 to 1),
-            )
-
         val expectedSaleBean =
             SaleBean(
                 storeId = request.storeId,
@@ -86,7 +76,7 @@ class SaleApiControllerUnitTest {
 
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(expectedSaleBean, testItems))
-            .thenReturn(SaleResult.Success(testSale, summary))
+            .thenReturn(SaleResult.Success(testSale))
         `when`(receiptService.printReceiptAsync(1, testItems, 400)).thenReturn(true)
 
         // When

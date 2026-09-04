@@ -2,6 +2,7 @@ package info.nukoneko.kidspos.server.service
 
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
+import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -12,7 +13,9 @@ import org.springframework.stereotype.Service
  * items, and deposit validation.
  */
 @Service
-class SaleValidationService {
+class SaleValidationService(
+    private val storeRepository: StoreRepository,
+) {
     private val logger = LoggerFactory.getLogger(SaleValidationService::class.java)
 
     /**
@@ -44,6 +47,10 @@ class SaleValidationService {
     private fun validateStoreId(storeId: Int) {
         if (storeId <= 0) {
             throw IllegalArgumentException("Store ID must be positive")
+        }
+        // 外部キーはSQLiteの既定で効かないため、ここで実在を確かめる
+        if (!storeRepository.existsById(storeId)) {
+            throw IllegalArgumentException("Store with ID $storeId does not exist")
         }
     }
 

@@ -10,18 +10,14 @@ import org.springframework.stereotype.Service
  * Main sale processing service that orchestrates the sale creation process
  *
  * This service handles the complete sale transaction workflow by coordinating
- * validation, calculation, and persistence services. It was refactored from
- * the original SaleService to follow Single Responsibility Principle and
- * improve maintainability.
+ * validation and persistence services.
  *
  * @constructor Creates SaleProcessingService with required dependencies
- * @param saleCalculationService Service for sales amount calculations
  * @param saleValidationService Service for sales validation logic
  * @param salePersistenceService Service for sales data persistence
  */
 @Service
 class SaleProcessingService(
-    private val saleCalculationService: SaleCalculationService,
     private val saleValidationService: SaleValidationService,
     private val salePersistenceService: SalePersistenceService,
 ) {
@@ -30,9 +26,9 @@ class SaleProcessingService(
     /**
      * Process a complete sale transaction
      *
-     * Orchestrates the entire sale processing workflow including validation,
-     * persistence of sale record and sale details. Logs the processing progress
-     * and handles transaction boundaries.
+     * Orchestrates the entire sale processing workflow including validation and
+     * persistence of the sale record and its details. The transaction boundary
+     * belongs to the persistence service.
      *
      * @param saleBean Sale request data containing store ID, staff info, and deposit
      * @param items List of items being purchased with their details
@@ -61,34 +57,6 @@ class SaleProcessingService(
     }
 
     /**
-     * Calculate sale summary
-     *
-     * Calculates comprehensive sale summary including total amount, change,
-     * item counts, and quantity distributions for reporting purposes.
-     *
-     * @param items List of items in the sale
-     * @param deposit Customer deposit amount
-     * @return SaleSummary containing calculated totals and statistics
-     */
-    fun calculateSaleSummary(
-        items: List<ItemBean>,
-        deposit: Int,
-    ): SaleSummary {
-        val totalAmount = saleCalculationService.calculateSaleAmount(items)
-        val change = saleCalculationService.calculateChange(totalAmount, deposit)
-        val itemQuantities = saleCalculationService.calculateItemQuantities(items)
-
-        return SaleSummary(
-            totalAmount = totalAmount,
-            deposit = deposit,
-            change = change,
-            itemCount = items.size,
-            uniqueItems = itemQuantities.size,
-            itemQuantities = itemQuantities,
-        )
-    }
-
-    /**
      * Validate and process sale with enhanced error handling
      *
      * Processes a sale with comprehensive error handling and returns structured
@@ -103,10 +71,7 @@ class SaleProcessingService(
         items: List<ItemBean>,
     ): SaleResult =
         try {
-            val sale = processSale(saleBean, items)
-            val summary = calculateSaleSummary(items, saleBean.deposit)
-
-            SaleResult.Success(sale, summary)
+            SaleResult.Success(processSale(saleBean, items))
         } catch (e: IllegalArgumentException) {
             logger.warn("Sale validation failed: {}", e.message)
             SaleResult.ValidationError(e.message ?: "Validation error")
@@ -136,24 +101,11 @@ class SaleProcessingService(
 }
 
 /**
- * Data class for sale summary information
- */
-data class SaleSummary(
-    val totalAmount: Int,
-    val deposit: Int,
-    val change: Int,
-    val itemCount: Int,
-    val uniqueItems: Int,
-    val itemQuantities: Map<Int, Int>,
-)
-
-/**
  * Sealed class for sale processing results
  */
 sealed class SaleResult {
     data class Success(
         val sale: SaleEntity,
-        val summary: SaleSummary,
     ) : SaleResult()
 
     data class ValidationError(
