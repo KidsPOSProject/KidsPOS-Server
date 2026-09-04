@@ -369,7 +369,7 @@ test_health_check_uses_timeout() {
     run_update "${WORK}/new.jar"
 
     assert_eq 0 "$RC" "終了コードが 0"
-    assert_contains "$CALL_LOG" "curl -fsS --max-time 10 -o /dev/null http://localhost:8080/api/status" "既定のタイムアウトが渡される"
+    assert_contains "$CALL_LOG" "curl -fs --max-time 10 -o /dev/null http://localhost:8080/api/status" "既定のタイムアウトが渡される"
 
     : > "$CALL_LOG"
     set +e
@@ -383,7 +383,7 @@ test_health_check_uses_timeout() {
     set -e
 
     assert_eq 0 "$RC" "タイムアウト指定時の終了コードが 0"
-    assert_contains "$CALL_LOG" "curl -fsS --max-time 3 -o /dev/null http://localhost:8080/api/status" "環境変数でタイムアウトを変更できる"
+    assert_contains "$CALL_LOG" "curl -fs --max-time 3 -o /dev/null http://localhost:8080/api/status" "環境変数でタイムアウトを変更できる"
     teardown
 }
 
@@ -392,7 +392,7 @@ test_health_check_timeout_applies_while_retrying() {
     run_update "${WORK}/new.jar"
 
     assert_eq 1 "$RC" "終了コードが 1"
-    assert_eq 2 "$(grep -c "curl -fsS --max-time 10 -o /dev/null http://localhost:8080/api/status" "$CALL_LOG")" "リトライ回数の上限で打ち切られる"
+    assert_eq 2 "$(grep -c "curl -fs --max-time 10 -o /dev/null http://localhost:8080/api/status" "$CALL_LOG")" "リトライ回数の上限で打ち切られる"
     teardown
 }
 
@@ -587,6 +587,21 @@ test_self_update_runs_even_when_scripts_version_matches() {
     teardown
 }
 
+test_self_update_skips_identical_script() {
+    setup "配布物のスクリプトが配置済みのものと同一内容なら更新ログを出さない"
+    touch "$HEALTH_OK_FILE"
+    write_release_json_with_scripts "v9.9.9"
+    make_scripts_tarball
+    cp "${WORK}/scripts-src/raspberry-pi/update-app.sh" "${APP_DIR}/update-app.sh"
+    chmod +x "${APP_DIR}/update-app.sh"
+    run_update
+
+    assert_eq 0 "$RC" "終了コードが 0"
+    assert_not_contains "${WORK}/out.log" "更新しました: ${APP_DIR}/update-app.sh" "同一内容のスクリプトは更新ログを出さない"
+    assert_eq "v9.9.9" "$(cat "${APP_DIR}/.installed-scripts-version")" "スクリプトのバージョンが記録される"
+    teardown
+}
+
 test_unit_is_replaced_and_service_restarted() {
     setup "取り残された systemd ユニットが差し替えられ再起動される"
     touch "$HEALTH_OK_FILE"
@@ -645,6 +660,7 @@ test_unit_rolls_back_when_service_fails_to_start() {
 
     assert_eq 0 "$RC" "サーバーの更新は成功扱いになる"
     assert_contains "${WORK}/out.log" "元のユニットに戻します" "巻き戻した旨が出力される"
+    assert_contains "${WORK}/out.log" "元のユニットでサービスが起動しました" "巻き戻し後の起動確認ログが出力される"
     assert_eq "$before" "$(cat "$UNIT_PATH")" "ユニットが元に戻る"
     if [ -e "${APP_DIR}/.installed-scripts-version" ]; then
         fail_assert "スクリプトのバージョンは記録されない"
@@ -955,6 +971,7 @@ test_self_update_replaces_scripts
 test_self_update_runs_before_apk_sync
 test_self_update_when_jar_already_latest
 test_self_update_runs_even_when_scripts_version_matches
+test_self_update_skips_identical_script
 test_unit_is_replaced_and_service_restarted
 test_unit_keeps_service_user
 test_unit_untouched_when_identical
