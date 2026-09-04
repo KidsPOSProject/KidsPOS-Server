@@ -7,7 +7,7 @@ JAR_NAME="${KIDSPOS_JAR_NAME:-app.jar}"
 SERVICE="${KIDSPOS_SERVICE:-kidspos-server}"
 HEALTH_URL="${KIDSPOS_HEALTH_URL:-http://localhost:8080/api/status}"
 HEALTH_RETRIES="${KIDSPOS_HEALTH_RETRIES:-600}"
-UNIT_HEALTH_RETRIES="${KIDSPOS_UNIT_HEALTH_RETRIES:-150}"
+UNIT_HEALTH_RETRIES="${KIDSPOS_UNIT_HEALTH_RETRIES:-600}"
 HEALTH_TIMEOUT="${KIDSPOS_HEALTH_TIMEOUT:-10}"
 BACKUP_KEEP="${KIDSPOS_BACKUP_KEEP:-5}"
 SERVER_URL="${KIDSPOS_SERVER_URL:-http://localhost:8080}"
@@ -66,8 +66,9 @@ done
 
 wait_for_health() {
     local retries="${1:-$HEALTH_RETRIES}"
+    log "起動を待っています（最大 $((retries * 2 / 60)) 分）: $HEALTH_URL"
     for _ in $(seq 1 "$retries"); do
-        if curl -fsS --max-time "$HEALTH_TIMEOUT" -o /dev/null "$HEALTH_URL"; then
+        if curl -fs --max-time "$HEALTH_TIMEOUT" -o /dev/null "$HEALTH_URL" 2>/dev/null; then
             return 0
         fi
         sleep 2
@@ -125,10 +126,15 @@ update_unit() {
         return 0
     fi
 
-    log "WARN: 新しいユニットで起動できなかったため元のユニットに戻します"
+    log "WARN: 新しいユニットで起動を確認できなかったため元のユニットに戻します"
     cp "$backup" "$UNIT_PATH" || true
     sudo systemctl daemon-reload || true
     sudo systemctl restart "$SERVICE" || true
+    if wait_for_health "$UNIT_HEALTH_RETRIES"; then
+        log "元のユニットでサービスが起動しました: $SERVICE"
+    else
+        log "WARN: 元のユニットでも起動を確認できませんでした: $SERVICE"
+    fi
     return 1
 }
 
@@ -231,6 +237,10 @@ self_update() {
             continue
         fi
         chmod +x "$src"
+        if cmp -s "$src" "${APP_DIR}/${script}"; then
+            rm -f "$src"
+            continue
+        fi
         # 実行中の自分自身を上書きすると bash の読み込みが壊れるため、
         # 同一ファイルシステム上に展開してから mv で差し替える
         if mv -f "$src" "${APP_DIR}/${script}"; then
@@ -365,7 +375,6 @@ cp "$NEW_JAR" "$JAR_PATH"
 log "サービスを起動します（Flyway マイグレーションが自動適用されます）"
 sudo systemctl start "$SERVICE"
 
-log "ヘルスチェック中: $HEALTH_URL"
 wait_for_health || rollback
 
 trap - ERR

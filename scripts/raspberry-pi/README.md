@@ -72,7 +72,7 @@ APK を確認せずサーバーだけ更新したい場合は --skip-apk を付�
 
 同じ配布物には e-Paper 表示サービスのコード（raspberry-pi-display）も含まれており、/opt/kidspos-display が存在すればそちらも同時に差し替え、稼働中なら kidspos-display を再起動します。
 表示サービスを導入していない Pi では何も行いません。差し替えたくない場合は --skip-display を付けてください。
-なお install.sh と install-display.sh と systemd ユニットは daemon-reload を伴うため自動更新の対象外です。変更があった場合はリポジトリを取得し直して各インストールスクリプトを実行してください。
+systemd ユニットも配布物と毎回突き合わせ、差があれば入れ替えて daemon-reload と再起動を行います。新しいユニットで起動を確認できなければ元のユニットに戻します。起動待ちは 2 秒間隔で最大 20 分、KIDSPOS_UNIT_HEALTH_RETRIES で調整できます。install.sh と install-display.sh は自動更新の対象外なので、変更があった場合はリポジトリを取得し直して各インストールスクリプトを実行してください。
 
 ### オフライン時（jar を持ち込む場合）
 
@@ -174,6 +174,7 @@ Flyway は前進専用のため、DB を戻さずに jar だけ旧バージョ�
 | KIDSPOS_UPLOAD_TIMEOUT | 600 | upload-apk |
 | KIDSPOS_REQUIRED_JAVA_MAJOR | 21 | install / doctor |
 | KIDSPOS_HEALTH_RETRIES | update は 600、install は 300 | install / update |
+| KIDSPOS_UNIT_HEALTH_RETRIES | 600 | update |
 | KIDSPOS_HEALTH_TIMEOUT | 10 | install / update |
 | KIDSPOS_BACKUP_KEEP | 5 | update |
 | KIDSPOS_SERVICE_USER | pi | install |
