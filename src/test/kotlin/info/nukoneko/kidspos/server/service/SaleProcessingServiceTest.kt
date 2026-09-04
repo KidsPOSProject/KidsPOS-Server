@@ -100,21 +100,6 @@ class SaleProcessingServiceTest {
         assertEquals(2, result.id)
         verify(salePersistenceService).saveSaleWithDetails(saleBean, items)
     }
-
-    @Test
-    fun `should extract staff ID from barcode correctly`() {
-        // Given
-        val longBarcode = "123456789001"
-        val shortBarcode = "001"
-
-        // When
-        val staffId1 = saleProcessingService.extractStaffId(longBarcode)
-        val staffId2 = saleProcessingService.extractStaffId(shortBarcode)
-
-        // Then
-        assertEquals(1, staffId1)
-        assertEquals(0, staffId2)
-    }
 }
 
 class SaleCalculationServiceTest {

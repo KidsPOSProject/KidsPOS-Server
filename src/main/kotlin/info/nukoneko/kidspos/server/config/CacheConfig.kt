@@ -24,8 +24,6 @@ class CacheConfig : CachingConfigurerSupport() {
         const val ITEM_BY_BARCODE_CACHE = "itemByBarcode"
         const val STORES_CACHE = "stores"
         const val STORE_BY_ID_CACHE = "storeById"
-        const val STAFF_CACHE = "staff"
-        const val STAFF_BY_ID_CACHE = "staffById"
         const val SETTINGS_CACHE = "settings"
         const val NETWORK_HOSTS_CACHE = "networkHosts"
     }
@@ -40,8 +38,6 @@ class CacheConfig : CachingConfigurerSupport() {
             ITEM_BY_BARCODE_CACHE,
             STORES_CACHE,
             STORE_BY_ID_CACHE,
-            STAFF_CACHE,
-            STAFF_BY_ID_CACHE,
             SETTINGS_CACHE,
             NETWORK_HOSTS_CACHE,
         ).apply {
@@ -49,43 +45,5 @@ class CacheConfig : CachingConfigurerSupport() {
             isAllowNullValues = true
             logger.info("Cache manager initialized with {} caches", cacheNames.size)
         }
-    }
-
-    @Bean
-    fun cacheEventLogger(): CacheEventLogger = CacheEventLogger()
-}
-
-/**
- * Logger for cache events (for debugging and monitoring)
- */
-class CacheEventLogger {
-    private val logger = LoggerFactory.getLogger(CacheEventLogger::class.java)
-
-    fun logCacheHit(
-        cacheName: String,
-        key: Any,
-    ) {
-        logger.debug("Cache HIT - Cache: {}, Key: {}", cacheName, key)
-    }
-
-    fun logCacheMiss(
-        cacheName: String,
-        key: Any,
-    ) {
-        logger.debug("Cache MISS - Cache: {}, Key: {}", cacheName, key)
-    }
-
-    fun logCachePut(
-        cacheName: String,
-        key: Any,
-    ) {
-        logger.debug("Cache PUT - Cache: {}, Key: {}", cacheName, key)
-    }
-
-    fun logCacheEvict(
-        cacheName: String,
-        key: Any,
-    ) {
-        logger.debug("Cache EVICT - Cache: {}, Key: {}", cacheName, key)
     }
 }

@@ -9,8 +9,7 @@ import org.springframework.stereotype.Service
  * Service responsible for sale validation
  *
  * Handles all validation logic for sale requests including store ID, staff barcode,
- * items, and deposit validation. Separated from SaleService to follow Single
- * Responsibility Principle and improve maintainability.
+ * items, and deposit validation.
  */
 @Service
 class SaleValidationService {
@@ -98,30 +97,4 @@ class SaleValidationService {
             )
         }
     }
-
-    /**
-     * Validate barcode format
-     *
-     * Validates that barcode contains only digits and has minimum length of 4.
-     *
-     * @param barcode Barcode string to validate
-     * @return True if barcode format is valid, false otherwise
-     */
-    fun validateBarcodeFormat(barcode: String): Boolean = barcode.matches(Regex("^[0-9]{4,}$"))
-
-    /**
-     * Validate price range
-     *
-     * Checks if the given price falls within the acceptable range.
-     *
-     * @param price Price to validate
-     * @param minPrice Minimum allowed price (default: 0)
-     * @param maxPrice Maximum allowed price (default: 1,000,000)
-     * @return True if price is within range, false otherwise
-     */
-    fun validatePriceRange(
-        price: Int,
-        minPrice: Int = 0,
-        maxPrice: Int = 1000000,
-    ): Boolean = price in minPrice..maxPrice
 }

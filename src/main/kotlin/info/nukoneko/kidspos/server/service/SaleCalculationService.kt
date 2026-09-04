@@ -8,8 +8,7 @@ import org.springframework.stereotype.Service
  * Service responsible for sale calculations
  *
  * Handles all calculation logic related to sales including total amounts,
- * change calculations, item quantities, and subtotals. Separated from
- * SaleService to follow Single Responsibility Principle and improve testability.
+ * change calculations, and item quantities.
  */
 @Service
 class SaleCalculationService {
@@ -82,32 +81,4 @@ class SaleCalculationService {
      * @return Map with item ID as key and quantity as value
      */
     fun calculateItemQuantities(items: List<ItemBean>): Map<Int, Int> = groupItemsByType(items).mapValues { it.value.size }
-
-    /**
-     * Calculate subtotal for each unique item
-     *
-     * Calculates the subtotal price for each distinct item type,
-     * accounting for multiple quantities of the same item.
-     *
-     * @param items List of items in the sale
-     * @return Map with item ID as key and subtotal amount as value
-     */
-    fun calculateItemSubtotals(items: List<ItemBean>): Map<Int, Int> =
-        groupItemsByType(items).mapValues { (_, itemList) ->
-            itemList.sumOf { it.price }
-        }
-
-    /**
-     * Validate that deposit covers the total amount
-     *
-     * Checks if the customer's deposit is sufficient to cover the sale amount.
-     *
-     * @param amount Total sale amount
-     * @param deposit Customer deposit amount
-     * @return True if deposit is sufficient, false otherwise
-     */
-    fun isDepositSufficient(
-        amount: Int,
-        deposit: Int,
-    ): Boolean = deposit >= amount
 }

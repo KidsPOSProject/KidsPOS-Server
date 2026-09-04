@@ -1,9 +1,7 @@
 package info.nukoneko.kidspos.server.service
 
-import info.nukoneko.kidspos.common.Constants
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
-import info.nukoneko.kidspos.server.entity.SaleDetailEntity
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -61,24 +59,6 @@ class SaleProcessingService(
 
         return savedSale
     }
-
-    /**
-     * Extract staff ID from staff barcode
-     *
-     * Parses the staff barcode to extract the numeric staff ID from the suffix.
-     * Returns 0 if the barcode is invalid or too short.
-     *
-     * @param staffBarcode The barcode string containing staff information
-     * @return Extracted staff ID as integer, or 0 if extraction fails
-     */
-    fun extractStaffId(staffBarcode: String): Int =
-        if (staffBarcode.length > Constants.Barcode.MIN_LENGTH) {
-            staffBarcode
-                .substring(staffBarcode.length - Constants.Barcode.SUFFIX_LENGTH)
-                .toIntOrNull() ?: 0
-        } else {
-            0
-        }
 
     /**
      * Calculate sale summary
@@ -153,16 +133,6 @@ class SaleProcessingService(
      * @return List of all SaleEntity records
      */
     fun findAllSales(): List<SaleEntity> = salePersistenceService.findAllSales()
-
-    /**
-     * Find sale details by sale ID
-     *
-     * Retrieves all sale detail records for a specific sale.
-     *
-     * @param saleId Sale identifier
-     * @return List of SaleDetailEntity records
-     */
-    fun findSaleDetailsBySaleId(saleId: Int): List<SaleDetailEntity> = salePersistenceService.findSaleDetailsBySaleId(saleId)
 }
 
 /**
@@ -184,10 +154,6 @@ sealed class SaleResult {
     data class Success(
         val sale: SaleEntity,
         val summary: SaleSummary,
-    ) : SaleResult()
-
-    data class Error(
-        val message: String,
     ) : SaleResult()
 
     data class ValidationError(

@@ -73,23 +73,6 @@ class GlobalExceptionHandler {
             )
     }
 
-    @ExceptionHandler(StaffNotFoundException::class)
-    fun handleStaffNotFound(
-        ex: StaffNotFoundException,
-        request: WebRequest,
-    ): ResponseEntity<ErrorResponse> {
-        logger.warn("Staff not found: ${ex.message}")
-        return ResponseEntity
-            .status(HttpStatus.NOT_FOUND)
-            .body(
-                ErrorResponse(
-                    code = "STAFF_NOT_FOUND",
-                    message = ex.message ?: "Staff not found",
-                    path = request.getDescription(false),
-                ),
-            )
-    }
-
     @ExceptionHandler(InvalidBarcodeException::class)
     fun handleInvalidBarcode(
         ex: InvalidBarcodeException,

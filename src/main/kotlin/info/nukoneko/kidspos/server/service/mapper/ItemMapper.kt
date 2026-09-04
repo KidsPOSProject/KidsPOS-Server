@@ -1,6 +1,5 @@
 package info.nukoneko.kidspos.server.service.mapper
 
-import info.nukoneko.kidspos.server.controller.dto.request.CreateItemRequest
 import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
 import info.nukoneko.kidspos.server.entity.ItemEntity
 import org.springframework.stereotype.Component
@@ -13,8 +12,6 @@ import org.springframework.stereotype.Component
  * capabilities for the complete item lifecycle in the Kids POS system.
  *
  * ## Mapping Responsibilities:
- * - **Request to Entity**: Transforms CreateItemRequest DTOs into ItemEntity objects
- *   for database persistence, handling ID assignment and validation
  * - **Entity to Response**: Converts ItemEntity objects into ItemResponse DTOs
  *   for API responses and frontend consumption
  * - **Batch Operations**: Provides efficient list-based transformations for
@@ -22,7 +19,6 @@ import org.springframework.stereotype.Component
  *
  * ## Data Flow Patterns:
  * ```
- * CreateItemRequest -> ItemEntity (for creation/updates)
  * ItemEntity -> ItemResponse (for API responses)
  * List<ItemEntity> -> List<ItemResponse> (for collection endpoints)
  * ```
@@ -33,23 +29,11 @@ import org.springframework.stereotype.Component
  * attributes like barcode, name, and price across all system layers.
  *
  * @see ItemEntity
- * @see CreateItemRequest
  * @see ItemResponse
  * @since 1.0.0
  */
 @Component
 class ItemMapper {
-    fun toEntity(
-        request: CreateItemRequest,
-        id: Int,
-    ): ItemEntity =
-        ItemEntity(
-            id = id,
-            barcode = request.barcode ?: "",
-            name = request.name,
-            price = request.price,
-        )
-
     fun toResponse(entity: ItemEntity): ItemResponse =
         ItemResponse(
             id = entity.id,

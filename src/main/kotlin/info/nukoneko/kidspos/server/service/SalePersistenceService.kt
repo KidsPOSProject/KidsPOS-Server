@@ -13,7 +13,6 @@ import java.util.*
 
 /**
  * Service responsible for sale persistence operations
- * Separated from SaleService to follow Single Responsibility Principle
  */
 @Service
 @Transactional
@@ -118,9 +117,4 @@ class SalePersistenceService(
      * Find sale details by sale ID
      */
     fun findSaleDetailsBySaleId(saleId: Int): List<SaleDetailEntity> = saleDetailRepository.findBySaleId(saleId)
-
-    /**
-     * Find all sale details
-     */
-    fun findAllSaleDetails(): List<SaleDetailEntity> = saleDetailRepository.findAll()
 }

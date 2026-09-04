@@ -1,8 +1,6 @@
 package info.nukoneko.kidspos.server.service
 
 import info.nukoneko.kidspos.server.repository.ItemRepository
-import info.nukoneko.kidspos.server.repository.SaleDetailRepository
-import info.nukoneko.kidspos.server.repository.SaleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -30,32 +28,13 @@ class ConstructorInjectionTest {
     }
 
     @Test
-    fun `sale service should use constructor injection`() {
-        // Given - Create mocks
-        val itemRepository = mock(ItemRepository::class.java)
-        val saleRepository = mock(SaleRepository::class.java)
-        val saleDetailRepository = mock(SaleDetailRepository::class.java)
-
-        // When - Create service with constructor injection
-        val saleService =
-            SaleService(
-                itemRepository,
-                saleRepository,
-                saleDetailRepository,
-            )
-
-        // Then - Service should be properly initialized
-        assertThat(saleService).isNotNull
-    }
-
-    @Test
     fun `spring context should properly wire dependencies with constructor injection`() {
         // When - Get beans from context
         val itemService = applicationContext.getBean(ItemService::class.java)
-        val saleService = applicationContext.getBean(SaleService::class.java)
+        val saleProcessingService = applicationContext.getBean(SaleProcessingService::class.java)
 
         // Then - Beans should be properly initialized
         assertThat(itemService).isNotNull
-        assertThat(saleService).isNotNull
+        assertThat(saleProcessingService).isNotNull
     }
 }

@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
-import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 import java.util.*
 
@@ -109,43 +108,6 @@ class SaleRepositoryTest {
     }
 
     @Test
-    fun `should find sale by ID with details`() {
-        // When
-        val foundSale = saleRepository.findByIdWithDetails(testSale1.id)
-
-        // Then
-        assertNotNull(foundSale)
-        assertEquals(testSale1.id, foundSale?.id)
-        assertEquals(300, foundSale?.amount)
-        assertEquals(1, foundSale?.storeId)
-    }
-
-    @Test
-    fun `should return null when sale not found by ID with details`() {
-        // When
-        val foundSale = saleRepository.findByIdWithDetails(9999)
-
-        // Then
-        assertNull(foundSale)
-    }
-
-    @Test
-    fun `should find sales by store ID with pagination`() {
-        // Given
-        val pageRequest = PageRequest.of(0, 2)
-
-        // When
-        val salesPage = saleRepository.findByStoreId(1, pageRequest)
-
-        // Then
-        assertNotNull(salesPage)
-        assertEquals(2, salesPage.size) // Both testSale1 and testSale2 have storeId = 1
-        assertEquals(2, salesPage.totalElements)
-        assertEquals(1, salesPage.totalPages)
-        assertFalse(salesPage.hasNext())
-    }
-
-    @Test
     fun `should find sales by date range`() {
         // Given
         val startDate = Date(testDate.time - 86400000 * 2) // 2 days ago
@@ -161,42 +123,6 @@ class SaleRepositoryTest {
         // Should be ordered by createdAt DESC
         assertTrue(salesInRange[0].createdAt >= salesInRange[1].createdAt)
         assertTrue(salesInRange[1].createdAt >= salesInRange[2].createdAt)
-    }
-
-    @Test
-    fun `should find sales summary by store`() {
-        // Given
-        val fromDate = Date(testDate.time - 86400000 * 2) // 2 days ago
-
-        // When
-        val salesSummaries = saleRepository.findSalesSummaryByStore(fromDate)
-
-        // Then
-        assertNotNull(salesSummaries)
-        assertTrue(salesSummaries.isNotEmpty())
-
-        val store1Summary = salesSummaries.find { it.storeId == 1 }
-        assertNotNull(store1Summary)
-        assertEquals(2, store1Summary?.totalSales) // testSale1 and testSale2
-        assertEquals(800L, store1Summary?.totalAmount) // 300 + 500
-
-        val store2Summary = salesSummaries.find { it.storeId == 2 }
-        assertNotNull(store2Summary)
-        assertEquals(1, store2Summary?.totalSales) // testSale3
-        assertEquals(200L, store2Summary?.totalAmount)
-    }
-
-    @Test
-    fun `should count sales by store ID`() {
-        // When
-        val store1Count = saleRepository.countByStoreId(1)
-        val store2Count = saleRepository.countByStoreId(2)
-        val store3Count = saleRepository.countByStoreId(3)
-
-        // Then
-        assertEquals(2, store1Count)
-        assertEquals(1, store2Count)
-        assertEquals(0, store3Count)
     }
 
     @Test

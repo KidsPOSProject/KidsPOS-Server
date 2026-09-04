@@ -27,10 +27,6 @@ class OpenApiTestConfiguration {
 
     @Bean
     @Primary
-    fun saleService(): SaleService = mock(SaleService::class.java)
-
-    @Bean
-    @Primary
     fun itemMapper(): ItemMapper = mock(ItemMapper::class.java)
 
     @Bean
