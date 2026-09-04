@@ -111,8 +111,11 @@ AmbientCapabilities=CAP_SYS_TIME はサーバーの時刻同期に必要です�
 | app.system-time.auto-sync-enabled | true | 自動同期の有効・無効 |
 | app.system-time.auto-sync-threshold-millis | 30000 | この値を超えてずれていたら同期する |
 | app.system-time.auto-sync-cooldown-millis | 60000 | 同期を試みる間隔の下限 |
+| app.system-time.backward-sync-window-millis | 300000 | 最初のリクエストからこの時間だけ、時刻を過去へ戻す補正を許す |
 
 RTC が無いため、同期した時刻は fake-hwclock が保存した内容から次回起動時に復元されます。サーバーは時刻を変更した直後に fake-hwclock save を実行するので、同期後すぐ電源を落としても巻き戻りません。fake-hwclock が入っていない場合は sudo apt install -y fake-hwclock を実行してください（doctor.sh でも警告されます）。
+
+巻き戻しの補正を最初のうちに限るのは、起動直後は復元した時刻がずれている一方、運用が始まってから時刻を過去へ戻すと売上やログの時系列が前後するためです。窓を過ぎたあとにずれた場合は管理画面の同期ボタンで直してください。
 
 標準出力と標準エラーは journal に送られます。あわせてアプリ自身が logback で /opt/kidspos/logs/kidspos.log に書き出し、日付ごとに 30 日分ローテーションします。
 
