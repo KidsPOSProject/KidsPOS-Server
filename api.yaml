@@ -1669,6 +1669,7 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
         name:
           type: string
         printerUri:
