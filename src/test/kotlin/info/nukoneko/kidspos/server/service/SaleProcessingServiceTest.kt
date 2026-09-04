@@ -2,7 +2,6 @@ package info.nukoneko.kidspos.server.service
 
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
-import info.nukoneko.kidspos.server.entity.SaleDetailEntity
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -56,15 +55,7 @@ class SaleProcessingServiceTest {
                 createdAt = Date(),
             )
 
-        val expectedDetails =
-            listOf(
-                SaleDetailEntity(1, 1, 1, 300, 1),
-                SaleDetailEntity(2, 1, 2, 400, 1),
-                SaleDetailEntity(3, 1, 3, 200, 1),
-            )
-
-        `when`(salePersistenceService.saveSale(saleBean, items)).thenReturn(expectedSale)
-        `when`(salePersistenceService.saveSaleDetails(1, items)).thenReturn(expectedDetails)
+        `when`(salePersistenceService.saveSaleWithDetails(saleBean, items)).thenReturn(expectedSale)
 
         // When
         val result = saleProcessingService.processSale(saleBean, items)
@@ -76,8 +67,7 @@ class SaleProcessingServiceTest {
         assertEquals(1000, result.deposit)
 
         verify(saleValidationService).validateSaleRequest(saleBean, items)
-        verify(salePersistenceService).saveSale(saleBean, items)
-        verify(salePersistenceService).saveSaleDetails(1, items)
+        verify(salePersistenceService).saveSaleWithDetails(saleBean, items)
     }
 
     @Test
@@ -101,21 +91,14 @@ class SaleProcessingServiceTest {
                 createdAt = Date(),
             )
 
-        `when`(salePersistenceService.saveSale(saleBean, items)).thenReturn(savedSale)
-        `when`(salePersistenceService.saveSaleDetails(2, items)).thenReturn(
-            listOf(
-                SaleDetailEntity(1, 2, 1, 300, 2),
-                SaleDetailEntity(2, 2, 2, 200, 1),
-            ),
-        )
+        `when`(salePersistenceService.saveSaleWithDetails(saleBean, items)).thenReturn(savedSale)
 
         // When
         val result = saleProcessingService.processSale(saleBean, items)
 
         // Then
         assertEquals(2, result.id)
-        verify(salePersistenceService).saveSale(saleBean, items)
-        verify(salePersistenceService).saveSaleDetails(2, items)
+        verify(salePersistenceService).saveSaleWithDetails(saleBean, items)
     }
 
     @Test

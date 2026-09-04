@@ -21,8 +21,5 @@ interface ApkVersionRepository : JpaRepository<ApkVersionEntity, Long> {
 
     fun existsByVersionCode(versionCode: Int): Boolean
 
-    @Query("SELECT MAX(a.id) FROM ApkVersionEntity a")
-    fun findMaxId(): Long?
-
     fun existsByVersion(version: String): Boolean
 }

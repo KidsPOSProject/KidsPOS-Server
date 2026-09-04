@@ -6,6 +6,7 @@ import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.response.ItemResponse
 import info.nukoneko.kidspos.server.domain.exception.InvalidBarcodeException
 import info.nukoneko.kidspos.server.domain.exception.ItemNotFoundException
+import info.nukoneko.kidspos.server.domain.exception.ValidationException
 import info.nukoneko.kidspos.server.service.BarcodePdfService
 import info.nukoneko.kidspos.server.service.ItemService
 import info.nukoneko.kidspos.server.service.ValidationService
@@ -181,7 +182,13 @@ class ItemApiController(
         // Apply updates
         val barcode = updates["barcode"]?.toString() ?: existingItem.barcode
         val name = updates["name"]?.toString() ?: existingItem.name
-        val price = updates["price"]?.toString()?.toIntOrNull() ?: existingItem.price
+        val price =
+            if (updates.containsKey("price")) {
+                updates["price"]?.toString()?.toIntOrNull()
+                    ?: throw ValidationException("価格は整数で指定してください")
+            } else {
+                existingItem.price
+            }
 
         // Validate if barcode changed
         if (barcode != existingItem.barcode) {

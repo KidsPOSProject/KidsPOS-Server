@@ -7,7 +7,6 @@ import info.nukoneko.kidspos.server.entity.SaleDetailEntity
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 /**
  * Main sale processing service that orchestrates the sale creation process
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional
  * @param salePersistenceService Service for sales data persistence
  */
 @Service
-@Transactional
 class SaleProcessingService(
     private val saleCalculationService: SaleCalculationService,
     private val saleValidationService: SaleValidationService,
@@ -49,14 +47,11 @@ class SaleProcessingService(
     ): SaleEntity {
         logger.info("Processing sale for store: {}, items: {}", saleBean.storeId, items.size)
 
-        // Step 1: Validate the sale request
         saleValidationService.validateSaleRequest(saleBean, items)
 
-        // Step 2: Save the sale
-        val savedSale = salePersistenceService.saveSale(saleBean, items)
-
-        // Step 3: Save sale details
-        salePersistenceService.saveSaleDetails(savedSale.id, items)
+        // 保存はひとつのトランザクションにまとめる。ここで境界を張ると、下位が付けたロールバック指定と
+        // 呼び出し元の例外処理が衝突して結果を返せなくなる
+        val savedSale = salePersistenceService.saveSaleWithDetails(saleBean, items)
 
         logger.info(
             "Sale processed successfully: ID={}, total={}",

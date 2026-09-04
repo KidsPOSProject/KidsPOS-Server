@@ -25,6 +25,18 @@ class SalePersistenceService(
     private val logger = LoggerFactory.getLogger(SalePersistenceService::class.java)
 
     /**
+     * Save sale and its details in a single transaction
+     */
+    fun saveSaleWithDetails(
+        saleBean: SaleBean,
+        items: List<ItemBean>,
+    ): SaleEntity {
+        val savedSale = saveSale(saleBean, items)
+        saveSaleDetails(savedSale.id, items)
+        return savedSale
+    }
+
+    /**
      * Save sale entity
      */
     fun saveSale(

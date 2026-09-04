@@ -7,6 +7,7 @@ import java.time.LocalDateTime
 @Table(name = "apk_versions")
 data class ApkVersionEntity(
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
     @Column(nullable = false, unique = true)
     val version: String = "",
@@ -27,11 +28,10 @@ data class ApkVersionEntity(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
     @Column(name = "updated_at", nullable = false)
-    val updatedAt: LocalDateTime = LocalDateTime.now(),
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
 ) {
     @PreUpdate
     fun preUpdate() {
-        @Suppress("REASSIGNED_PARAMETER")
-        var updatedAt = LocalDateTime.now()
+        updatedAt = LocalDateTime.now()
     }
 }
