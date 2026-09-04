@@ -1,31 +1,23 @@
 package info.nukoneko.kidspos.server.service
 
-import info.nukoneko.kidspos.common.Constants
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
-import info.nukoneko.kidspos.server.entity.SaleDetailEntity
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 /**
  * Main sale processing service that orchestrates the sale creation process
  *
  * This service handles the complete sale transaction workflow by coordinating
- * validation, calculation, and persistence services. It was refactored from
- * the original SaleService to follow Single Responsibility Principle and
- * improve maintainability.
+ * validation and persistence services.
  *
  * @constructor Creates SaleProcessingService with required dependencies
- * @param saleCalculationService Service for sales amount calculations
  * @param saleValidationService Service for sales validation logic
  * @param salePersistenceService Service for sales data persistence
  */
 @Service
-@Transactional
 class SaleProcessingService(
-    private val saleCalculationService: SaleCalculationService,
     private val saleValidationService: SaleValidationService,
     private val salePersistenceService: SalePersistenceService,
 ) {
@@ -34,9 +26,9 @@ class SaleProcessingService(
     /**
      * Process a complete sale transaction
      *
-     * Orchestrates the entire sale processing workflow including validation,
-     * persistence of sale record and sale details. Logs the processing progress
-     * and handles transaction boundaries.
+     * Orchestrates the entire sale processing workflow including validation and
+     * persistence of the sale record and its details. The transaction boundary
+     * belongs to the persistence service.
      *
      * @param saleBean Sale request data containing store ID, staff info, and deposit
      * @param items List of items being purchased with their details
@@ -49,14 +41,11 @@ class SaleProcessingService(
     ): SaleEntity {
         logger.info("Processing sale for store: {}, items: {}", saleBean.storeId, items.size)
 
-        // Step 1: Validate the sale request
         saleValidationService.validateSaleRequest(saleBean, items)
 
-        // Step 2: Save the sale
-        val savedSale = salePersistenceService.saveSale(saleBean, items)
-
-        // Step 3: Save sale details
-        salePersistenceService.saveSaleDetails(savedSale.id, items)
+        // 保存はひとつのトランザクションにまとめる。ここで境界を張ると、下位が付けたロールバック指定と
+        // 呼び出し元の例外処理が衝突して結果を返せなくなる
+        val savedSale = salePersistenceService.saveSaleWithDetails(saleBean, items)
 
         logger.info(
             "Sale processed successfully: ID={}, total={}",
@@ -65,52 +54,6 @@ class SaleProcessingService(
         )
 
         return savedSale
-    }
-
-    /**
-     * Extract staff ID from staff barcode
-     *
-     * Parses the staff barcode to extract the numeric staff ID from the suffix.
-     * Returns 0 if the barcode is invalid or too short.
-     *
-     * @param staffBarcode The barcode string containing staff information
-     * @return Extracted staff ID as integer, or 0 if extraction fails
-     */
-    fun extractStaffId(staffBarcode: String): Int =
-        if (staffBarcode.length > Constants.Barcode.MIN_LENGTH) {
-            staffBarcode
-                .substring(staffBarcode.length - Constants.Barcode.SUFFIX_LENGTH)
-                .toIntOrNull() ?: 0
-        } else {
-            0
-        }
-
-    /**
-     * Calculate sale summary
-     *
-     * Calculates comprehensive sale summary including total amount, change,
-     * item counts, and quantity distributions for reporting purposes.
-     *
-     * @param items List of items in the sale
-     * @param deposit Customer deposit amount
-     * @return SaleSummary containing calculated totals and statistics
-     */
-    fun calculateSaleSummary(
-        items: List<ItemBean>,
-        deposit: Int,
-    ): SaleSummary {
-        val totalAmount = saleCalculationService.calculateSaleAmount(items)
-        val change = saleCalculationService.calculateChange(totalAmount, deposit)
-        val itemQuantities = saleCalculationService.calculateItemQuantities(items)
-
-        return SaleSummary(
-            totalAmount = totalAmount,
-            deposit = deposit,
-            change = change,
-            itemCount = items.size,
-            uniqueItems = itemQuantities.size,
-            itemQuantities = itemQuantities,
-        )
     }
 
     /**
@@ -128,10 +71,7 @@ class SaleProcessingService(
         items: List<ItemBean>,
     ): SaleResult =
         try {
-            val sale = processSale(saleBean, items)
-            val summary = calculateSaleSummary(items, saleBean.deposit)
-
-            SaleResult.Success(sale, summary)
+            SaleResult.Success(processSale(saleBean, items))
         } catch (e: IllegalArgumentException) {
             logger.warn("Sale validation failed: {}", e.message)
             SaleResult.ValidationError(e.message ?: "Validation error")
@@ -158,29 +98,7 @@ class SaleProcessingService(
      * @return List of all SaleEntity records
      */
     fun findAllSales(): List<SaleEntity> = salePersistenceService.findAllSales()
-
-    /**
-     * Find sale details by sale ID
-     *
-     * Retrieves all sale detail records for a specific sale.
-     *
-     * @param saleId Sale identifier
-     * @return List of SaleDetailEntity records
-     */
-    fun findSaleDetailsBySaleId(saleId: Int): List<SaleDetailEntity> = salePersistenceService.findSaleDetailsBySaleId(saleId)
 }
-
-/**
- * Data class for sale summary information
- */
-data class SaleSummary(
-    val totalAmount: Int,
-    val deposit: Int,
-    val change: Int,
-    val itemCount: Int,
-    val uniqueItems: Int,
-    val itemQuantities: Map<Int, Int>,
-)
 
 /**
  * Sealed class for sale processing results
@@ -188,11 +106,6 @@ data class SaleSummary(
 sealed class SaleResult {
     data class Success(
         val sale: SaleEntity,
-        val summary: SaleSummary,
-    ) : SaleResult()
-
-    data class Error(
-        val message: String,
     ) : SaleResult()
 
     data class ValidationError(

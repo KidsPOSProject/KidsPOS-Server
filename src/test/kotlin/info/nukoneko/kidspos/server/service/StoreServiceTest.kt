@@ -1,6 +1,5 @@
 package info.nukoneko.kidspos.server.service
 
-import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.controller.dto.request.StoreBean
 import info.nukoneko.kidspos.server.entity.StoreEntity
 import info.nukoneko.kidspos.server.repository.StoreRepository
@@ -17,14 +16,11 @@ class StoreServiceTest {
     @MockBean
     private lateinit var storeRepository: StoreRepository
 
-    @MockBean
-    private lateinit var idGenerationService: IdGenerationService
-
     private lateinit var storeService: StoreService
 
     @BeforeEach
     fun setup() {
-        storeService = StoreService(storeRepository, idGenerationService)
+        storeService = StoreService(storeRepository)
     }
 
     @Test
@@ -78,7 +74,6 @@ class StoreServiceTest {
                 name = "New Store",
                 printerUri = "192.168.1.200",
             )
-        `when`(idGenerationService.generateNextId(storeRepository)).thenReturn(1)
         `when`(storeRepository.save(any<StoreEntity>())).thenReturn(expectedStore)
 
         // When
@@ -89,7 +84,6 @@ class StoreServiceTest {
         assertEquals(1, result.id)
         assertEquals("New Store", result.name)
         assertEquals("192.168.1.200", result.printerUri)
-        verify(idGenerationService).generateNextId(storeRepository)
         verify(storeRepository).save(any<StoreEntity>())
     }
 
@@ -128,7 +122,6 @@ class StoreServiceTest {
                 name = "Store without printer",
                 printerUri = "",
             )
-        `when`(idGenerationService.generateNextId(storeRepository)).thenReturn(2)
         `when`(storeRepository.save(any<StoreEntity>())).thenReturn(expectedStore)
 
         // When
@@ -139,7 +132,6 @@ class StoreServiceTest {
         assertEquals(2, result.id)
         assertEquals("Store without printer", result.name)
         assertEquals("", result.printerUri)
-        verify(idGenerationService).generateNextId(storeRepository)
         verify(storeRepository).save(any<StoreEntity>())
     }
 }

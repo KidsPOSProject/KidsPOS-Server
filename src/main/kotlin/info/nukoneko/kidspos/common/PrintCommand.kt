@@ -52,26 +52,6 @@ class PrintCommand(
     }
 
     /***
-     * QRコードを印字する
-     * 対応している機種のみ
-     */
-    fun drawQR(code: String) {
-        writeBytes(0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x05)
-        writeBytes(
-            0x1D,
-            0x28,
-            0x6B,
-            (code.length + 3).toByte(),
-            0,
-            0x31,
-            0x50,
-            0x30,
-        )
-        writeByteArray(code.toByteArray(textEncoding))
-        writeBytes(0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30)
-    }
-
-    /***
      * テキストを印字する
      */
     fun writeText(text: String) {
@@ -84,12 +64,6 @@ class PrintCommand(
     fun writeTextLine(text: String) {
         writeByteArray(text.toByteArray(textEncoding))
         newLine()
-    }
-
-    fun writeTextBold(text: String) {
-        writeBytes(0x1B, 0x45, 0x01)
-        writeByteArray(text.toByteArray(textEncoding))
-        writeBytes(0x1B, 0x45, 0x00)
     }
 
     /***

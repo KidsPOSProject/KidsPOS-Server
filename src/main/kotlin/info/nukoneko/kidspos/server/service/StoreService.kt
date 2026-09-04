@@ -1,6 +1,5 @@
 package info.nukoneko.kidspos.server.service
 
-import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.config.CacheConfig
 import info.nukoneko.kidspos.server.controller.dto.request.StoreBean
 import info.nukoneko.kidspos.server.entity.StoreEntity
@@ -16,33 +15,30 @@ import org.springframework.transaction.annotation.Transactional
 /**
  * Service for managing store operations and configurations
  *
- * Handles CRUD operations for store entities with caching support and
- * automatic ID generation. Stores represent physical locations where
- * POS systems operate, each with their own configuration including
- * printer settings and operational parameters.
+ * Handles CRUD operations for store entities with caching support.
+ * Stores represent physical locations where POS systems operate, each with
+ * their own configuration including printer settings and operational
+ * parameters. IDs are assigned by the database.
  *
  * Key responsibilities:
  * - Managing store entity data storage and retrieval
  * - Providing cached access to store information
- * - Automatic ID generation for new stores
  * - Supporting store-specific configuration management
  * - Cache invalidation coordination for data consistency
  *
  * Store lifecycle:
- * - New stores get automatically generated unique IDs
+ * - New stores get a unique ID from the database
  * - Store configurations include printer URI settings
  * - Cached data ensures fast access for POS operations
  * - Updates trigger appropriate cache eviction
  *
  * @constructor Creates StoreService with required dependencies
  * @param repository Repository for store data access
- * @param idGenerationService Service for generating unique store IDs
  */
 @Service
 @Transactional
 class StoreService(
     private val repository: StoreRepository,
-    private val idGenerationService: IdGenerationService,
 ) {
     private val logger = LoggerFactory.getLogger(StoreService::class.java)
 
@@ -61,19 +57,12 @@ class StoreService(
     @Caching(
         evict = [
             CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
-            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#result.id"),
+            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], allEntries = true),
         ],
     )
     fun save(storeBean: StoreBean): StoreEntity {
         logger.info("Saving store with name: {}", storeBean.name)
-        val storeId = storeBean.id
-        val generatedId =
-            if (storeId != null && storeId > 0) {
-                storeId
-            } else {
-                idGenerationService.generateNextId(repository)
-            }
-        val store = StoreEntity(generatedId, storeBean.name, storeBean.printerUri)
+        val store = StoreEntity(storeBean.id?.takeIf { it > 0 } ?: 0, storeBean.name, storeBean.printerUri)
         val savedStore = repository.save(store)
         logger.info("Store saved successfully with ID: {}", savedStore.id)
         return savedStore
@@ -82,18 +71,12 @@ class StoreService(
     @Caching(
         evict = [
             CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
-            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#result.id"),
+            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], allEntries = true),
         ],
     )
     fun save(store: StoreEntity): StoreEntity {
         logger.info("Saving store: {}", store.name)
-        val savedStore =
-            if (store.id == 0) {
-                val id = idGenerationService.generateNextId(repository)
-                repository.save(store.copy(id = id))
-            } else {
-                repository.save(store)
-            }
+        val savedStore = repository.save(store)
         logger.info("Store saved successfully with ID: {}", savedStore.id)
         return savedStore
     }
@@ -101,7 +84,7 @@ class StoreService(
     @Caching(
         evict = [
             CacheEvict(value = [CacheConfig.STORES_CACHE], allEntries = true),
-            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], key = "#id"),
+            CacheEvict(value = [CacheConfig.STORE_BY_ID_CACHE], allEntries = true),
         ],
     )
     fun delete(id: Int) {

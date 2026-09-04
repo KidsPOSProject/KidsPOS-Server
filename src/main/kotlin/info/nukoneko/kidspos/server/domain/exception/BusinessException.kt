@@ -36,13 +36,6 @@ class StoreNotFoundException(
 ) : BusinessException("Store with ID $id not found")
 
 /**
- * Thrown when a staff member is not found
- */
-class StaffNotFoundException(
-    id: Int,
-) : BusinessException("Staff with ID $id not found")
-
-/**
  * Thrown when barcode format is invalid
  */
 class InvalidBarcodeException(

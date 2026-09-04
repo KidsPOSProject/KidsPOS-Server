@@ -71,11 +71,6 @@ class SaleApiController(
                     ResponseEntity.status(201).body(response)
                 }
 
-                is SaleResult.Error -> {
-                    logger.error("Sale creation failed: {}", result.message)
-                    ResponseEntity.badRequest().body(mapOf("error" to result.message))
-                }
-
                 is SaleResult.ValidationError -> {
                     logger.warn("Sale validation failed: {}", result.message)
                     ResponseEntity.badRequest().body(mapOf("error" to result.message))
@@ -125,11 +120,6 @@ class SaleApiController(
                 is SaleResult.ProcessingError -> {
                     logger.error("Sale processing failed: {}", result.message)
                     ResponseEntity.internalServerError().build()
-                }
-
-                is SaleResult.Error -> {
-                    logger.error("Sale creation failed: {}", result.message)
-                    ResponseEntity.badRequest().build()
                 }
             }
         } catch (e: Exception) {

@@ -38,12 +38,6 @@ class SettingService(
 ) {
     private val logger = LoggerFactory.getLogger(SettingService::class.java)
 
-    @Cacheable(value = [CacheConfig.SETTINGS_CACHE])
-    fun findAllSetting(): List<SettingEntity> {
-        logger.debug("Fetching all settings from database")
-        return repository.findAll()
-    }
-
     @Cacheable(value = [CacheConfig.SETTINGS_CACHE], key = "'visible'")
     fun findVisibleSetting(): List<SettingEntity> {
         logger.debug("Fetching visible settings from database")

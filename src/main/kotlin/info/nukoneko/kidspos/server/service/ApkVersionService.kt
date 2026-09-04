@@ -81,12 +81,8 @@ class ApkVersionService(
         val fileName = buildFileName(version)
         val filePath = saveApkFile(file, fileName)
 
-        // 新しいIDを生成（最大ID + 1）
-        val nextId = (apkVersionRepository.findMaxId() ?: 0) + 1
-
         val apkVersion =
             ApkVersionEntity(
-                id = nextId,
                 version = version,
                 versionCode = versionCode,
                 fileName = fileName,

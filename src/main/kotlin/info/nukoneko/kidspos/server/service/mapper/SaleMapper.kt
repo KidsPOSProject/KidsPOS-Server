@@ -3,107 +3,68 @@ package info.nukoneko.kidspos.server.service.mapper
 import info.nukoneko.kidspos.server.controller.dto.response.SaleItemResponse
 import info.nukoneko.kidspos.server.controller.dto.response.SaleResponse
 import info.nukoneko.kidspos.server.entity.SaleEntity
-import info.nukoneko.kidspos.server.repository.ItemRepository
-import info.nukoneko.kidspos.server.repository.SaleDetailRepository
-import info.nukoneko.kidspos.server.repository.StoreRepository
+import info.nukoneko.kidspos.server.service.ItemService
+import info.nukoneko.kidspos.server.service.SalePersistenceService
+import info.nukoneko.kidspos.server.service.StoreService
 import org.springframework.stereotype.Component
 import java.time.OffsetDateTime
 import java.time.ZoneId
 
 /**
- * Data mapper for Sale entities and DTOs with complex relationship resolution
+ * Data mapper for Sale entities and DTOs with relationship resolution
  *
- * This mapper handles the most complex data transformations in the Kids POS system,
- * managing sales data conversion while resolving multiple entity relationships
- * and performing real-time data aggregation. It orchestrates data retrieval
- * from multiple repositories to build comprehensive sale responses.
+ * Builds sale responses by resolving the related store, items and line items.
+ * Lookups go through the services so the mapper stays out of the data access
+ * layer, and every relation is fetched once per call rather than per line item.
  *
- * ## Mapping Responsibilities:
- * - **Entity to Response**: Transforms SaleEntity objects into detailed SaleResponse DTOs
- *   with full relationship resolution and calculated fields
- * - **Relationship Resolution**: Dynamically resolves and populates related data from:
- *   - Store information via StoreRepository
- * *   - Item details via ItemRepository
- *   - Sale line items via SaleDetailRepository
- * - **Financial Calculations**: Computes derived values like change amounts and subtotals
- * - **Temporal Conversion**: Handles timestamp conversions from database format to OffsetDateTime
- * - **Batch Operations**: Provides efficient list transformations with relationship resolution
- *
- * ## Data Flow Patterns:
- * ```
- * SaleEntity -> SaleResponse (with full relationship data)
- * ├─ Store lookup -> StoreName population
- * ├─ SaleDetail lookup -> Item list construction
- * └─ Item lookup per detail -> Complete item information
- *
- * List<SaleEntity> -> List<SaleResponse> (with relationships)
- * ```
- *
- * ## Complex Transformation Logic:
- * - **Multi-Repository Coordination**: Performs coordinated lookups across four repositories
- *   to build complete sale representations with all related data
- * - **Graceful Degradation**: Handles missing related entities by providing fallback values
- *   ("Unknown Store", "Unknown" item names)
- * - **Financial Integrity**: Calculates change amounts using deposit minus total logic
- * - **Timezone Handling**: Converts UTC timestamps to system timezone for display
- * - **Performance Considerations**: Each sale response requires multiple database queries,
- *   making this mapper resource-intensive for large datasets
- *
- * ## Business Context:
- * Sales represent completed transactions in the Kids POS system, encompassing
- * the store location, staff member, items purchased, quantities, and payment details.
- * This mapper provides the most comprehensive view of sales data by aggregating
- * information from across the entire system architecture.
- *
- * ## Repository Dependencies:
- * This mapper requires injected repositories for relationship resolution:
- * - StoreRepository: Store name and details
- * - ItemRepository: Product details and pricing
- * - SaleDetailRepository: Individual line items per sale
- *
- * @param storeRepository Repository for store data lookup
- * @param itemRepository Repository for item/product data lookup
- * @param saleDetailRepository Repository for sale line item lookup
- *
- * @see SaleEntity
- * @see SaleResponse
- * @see SaleItemResponse
- * @since 1.0.0
+ * @param storeService Service for store lookup
+ * @param itemService Service for item lookup
+ * @param salePersistenceService Service for sale detail lookup
  */
 @Component
 class SaleMapper(
-    private val storeRepository: StoreRepository,
-    private val itemRepository: ItemRepository,
-    private val saleDetailRepository: SaleDetailRepository,
+    private val storeService: StoreService,
+    private val itemService: ItemService,
+    private val salePersistenceService: SalePersistenceService,
 ) {
-    fun toResponse(entity: SaleEntity): SaleResponse {
-        val store = storeRepository.findById(entity.storeId).orElse(null)
-        val saleDetails = saleDetailRepository.findBySaleId(entity.id)
+    fun toResponse(entity: SaleEntity): SaleResponse = toResponseList(listOf(entity)).first()
 
-        val items =
-            saleDetails.map { detail ->
-                val item = itemRepository.findById(detail.itemId).orElse(null)
-                SaleItemResponse(
-                    itemId = detail.itemId,
-                    itemName = item?.name ?: "Unknown",
-                    barcode = item?.barcode ?: "",
-                    quantity = detail.quantity,
-                    unitPrice = detail.price,
-                    subtotal = detail.price * detail.quantity,
-                )
-            }
+    fun toResponseList(entities: List<SaleEntity>): List<SaleResponse> {
+        if (entities.isEmpty()) {
+            return emptyList()
+        }
 
-        return SaleResponse(
-            id = entity.id,
-            storeId = entity.storeId,
-            storeName = store?.name ?: "Unknown Store",
-            totalAmount = entity.amount,
-            deposit = entity.deposit,
-            change = entity.deposit - entity.amount,
-            saleTime = OffsetDateTime.ofInstant(entity.createdAt.toInstant(), ZoneId.systemDefault()),
-            items = items,
-        )
+        val detailsBySaleId =
+            salePersistenceService
+                .findSaleDetails(entities.map { it.id })
+                .groupBy { it.saleId }
+        val storeNames = storeService.findAll().associate { it.id to it.name }
+        val items = itemService.findAll().associateBy { it.id }
+
+        return entities.map { entity ->
+            val itemResponses =
+                detailsBySaleId[entity.id].orEmpty().map { detail ->
+                    val item = items[detail.itemId]
+                    SaleItemResponse(
+                        itemId = detail.itemId,
+                        itemName = item?.name ?: "Unknown",
+                        barcode = item?.barcode ?: "",
+                        quantity = detail.quantity,
+                        unitPrice = detail.price,
+                        subtotal = detail.price * detail.quantity,
+                    )
+                }
+
+            SaleResponse(
+                id = entity.id,
+                storeId = entity.storeId,
+                storeName = storeNames[entity.storeId] ?: "Unknown Store",
+                totalAmount = entity.amount,
+                deposit = entity.deposit,
+                change = entity.deposit - entity.amount,
+                saleTime = OffsetDateTime.ofInstant(entity.createdAt.toInstant(), ZoneId.systemDefault()),
+                items = itemResponses,
+            )
+        }
     }
-
-    fun toResponseList(entities: List<SaleEntity>): List<SaleResponse> = entities.map { toResponse(it) }
 }

@@ -1,6 +1,8 @@
 package info.nukoneko.kidspos.server.entity
 
 import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 
@@ -16,7 +18,7 @@ import jakarta.persistence.Table
 @Entity
 @Table(name = "item")
 data class ItemEntity(
-    @Id var id: Int = 0,
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Int = 0,
     val barcode: String,
     val name: String = "",
     val price: Int = 0,

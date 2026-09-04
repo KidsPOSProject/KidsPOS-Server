@@ -1,6 +1,8 @@
 package info.nukoneko.kidspos.server.entity
 
 import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.util.*
@@ -20,7 +22,7 @@ import java.util.*
 @Entity
 @Table(name = "sale")
 data class SaleEntity(
-    @Id var id: Int = 0, // 売り上げID
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Int = 0, // 売り上げID
     val storeId: Int, // 店舗ID
     val quantity: Int, // 数量
     val amount: Int, // 売り上げ

@@ -5,72 +5,65 @@ import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.streams.asSequence
 
+/**
+ * レイヤの置き場所が崩れていないことを検証する
+ *
+ * ディレクトリの有無ではなく、アノテーションの付いたクラスが所定のパッケージに
+ * あるかどうかを見る。
+ */
 class PackageStructureTest {
-    private val basePackage = "info.nukoneko.kidspos.server"
-    private val sourcePath = Paths.get("src/main/kotlin/info/nukoneko/kidspos/server")
+    private val sourcePath: Path = Paths.get("src/main/kotlin/info/nukoneko/kidspos")
 
     @Test
-    fun `controllers should be in controller package`() {
-        // Check that all @Controller and @RestController classes are in the controller package
-        val controllerFiles = findFilesInPackage("controller")
-        assertThat(controllerFiles).isNotEmpty
+    fun `services should be in the service package`() {
+        assertThat(misplaced("@Service", "server/service")).isEmpty()
     }
 
     @Test
-    fun `services should be in service package`() {
-        // Check that all @Service classes are in the service package
-        val serviceFiles = findFilesInPackage("service")
-        assertThat(serviceFiles).isNotEmpty
+    fun `repositories should be in the repository package`() {
+        assertThat(misplaced("@Repository", "server/repository")).isEmpty()
     }
 
     @Test
-    fun `repositories should be in repository package`() {
-        // Check that all @Repository classes are in the repository package
-        val repositoryFiles = findFilesInPackage("repository")
-        assertThat(repositoryFiles).isNotEmpty
+    fun `entities should be in the entity package`() {
+        assertThat(misplaced("@Entity", "server/entity")).isEmpty()
     }
 
     @Test
-    fun `entities should be in entity package`() {
-        // Check that all @Entity classes are in the entity package
-        val entityFiles = findFilesInPackage("entity")
-        assertThat(entityFiles).isNotEmpty
+    fun `controllers should be in the controller package`() {
+        assertThat(misplaced("@RestController", "server/controller")).isEmpty()
+        assertThat(misplaced("@Controller", "server/controller")).isEmpty()
     }
 
     @Test
-    fun `DTOs should be in dto package under controller`() {
-        // Check that DTOs are properly organized
-        val dtoPath = sourcePath.resolve("controller/dto")
-        assertThat(Files.exists(dtoPath)).isTrue
-
-        val requestPath = dtoPath.resolve("request")
-        val responsePath = dtoPath.resolve("response")
-        assertThat(Files.exists(requestPath)).isTrue
-        assertThat(Files.exists(responsePath)).isTrue
-    }
-
-    @Test
-    fun `configuration classes should be in config package`() {
-        val configFiles = findFilesInPackage("config")
-        assertThat(configFiles).isNotEmpty
-    }
-
-    @Test
-    fun `domain exceptions should be in domain exception package`() {
-        val domainPath = sourcePath.resolve("domain/exception")
-        assertThat(Files.exists(domainPath)).isTrue
-    }
-
-    private fun findFilesInPackage(packageName: String): List<Path> {
-        val path = sourcePath.resolve(packageName)
-        return if (Files.exists(path)) {
-            Files
-                .walk(path)
-                .filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
+    fun `mappers should not depend on repositories directly`() {
+        val offenders =
+            kotlinFiles()
+                .filter { it.contains(Paths.get("service/mapper")) }
+                .filter { Files.readString(it).contains(".repository.") }
+                .map { it.fileName.toString() }
                 .toList()
-        } else {
-            emptyList()
-        }
+
+        assertThat(offenders).isEmpty()
     }
+
+    private fun misplaced(
+        annotation: String,
+        expectedPackage: String,
+    ): List<String> {
+        val expected = sourcePath.resolve(expectedPackage)
+        return kotlinFiles()
+            .filter { Files.readString(it).lineSequence().any { line -> line.trimEnd() == annotation } }
+            .filter { !it.startsWith(expected) }
+            .map { sourcePath.relativize(it).toString() }
+            .toList()
+    }
+
+    private fun kotlinFiles(): Sequence<Path> =
+        Files
+            .walk(sourcePath)
+            .asSequence()
+            .filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
 }

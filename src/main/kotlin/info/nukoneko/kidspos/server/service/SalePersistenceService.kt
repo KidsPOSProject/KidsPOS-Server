@@ -1,6 +1,5 @@
 package info.nukoneko.kidspos.server.service
 
-import info.nukoneko.kidspos.common.service.IdGenerationService
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
 import info.nukoneko.kidspos.server.entity.SaleDetailEntity
@@ -14,17 +13,27 @@ import java.util.*
 
 /**
  * Service responsible for sale persistence operations
- * Separated from SaleService to follow Single Responsibility Principle
  */
 @Service
 @Transactional
 class SalePersistenceService(
     private val saleRepository: SaleRepository,
     private val saleDetailRepository: SaleDetailRepository,
-    private val idGenerationService: IdGenerationService,
     private val saleCalculationService: SaleCalculationService,
 ) {
     private val logger = LoggerFactory.getLogger(SalePersistenceService::class.java)
+
+    /**
+     * Save sale and its details in a single transaction
+     */
+    fun saveSaleWithDetails(
+        saleBean: SaleBean,
+        items: List<ItemBean>,
+    ): SaleEntity {
+        val savedSale = saveSale(saleBean, items)
+        saveSaleDetails(savedSale.id, items)
+        return savedSale
+    }
 
     /**
      * Save sale entity
@@ -33,13 +42,11 @@ class SalePersistenceService(
         saleBean: SaleBean,
         items: List<ItemBean>,
     ): SaleEntity {
-        val saleId = idGenerationService.generateNextId(saleRepository)
         val totalAmount = saleCalculationService.calculateSaleAmount(items)
         val quantity = saleCalculationService.calculateQuantity(items)
 
         val sale =
             SaleEntity(
-                id = saleId,
                 storeId = saleBean.storeId,
                 quantity = quantity,
                 amount = totalAmount,
@@ -70,13 +77,11 @@ class SalePersistenceService(
         val savedDetails = mutableListOf<SaleDetailEntity>()
 
         groupedItems.forEach { (itemId, itemList) ->
-            val detailId = idGenerationService.generateNextId(saleDetailRepository)
             val quantity = itemList.size
             val unitPrice = itemList.first().price
 
             val saleDetail =
                 SaleDetailEntity(
-                    id = detailId,
                     saleId = saleId,
                     itemId = itemId,
                     price = unitPrice,
@@ -109,12 +114,8 @@ class SalePersistenceService(
     fun findAllSales(): List<SaleEntity> = saleRepository.findAll()
 
     /**
-     * Find sale details by sale ID
+     * Find sale details for the given sales at once
      */
-    fun findSaleDetailsBySaleId(saleId: Int): List<SaleDetailEntity> = saleDetailRepository.findBySaleId(saleId)
-
-    /**
-     * Find all sale details
-     */
-    fun findAllSaleDetails(): List<SaleDetailEntity> = saleDetailRepository.findAll()
+    fun findSaleDetails(saleIds: Collection<Int>): List<SaleDetailEntity> =
+        if (saleIds.isEmpty()) emptyList() else saleDetailRepository.findBySaleIdIn(saleIds)
 }

@@ -81,7 +81,6 @@ class ApkVersionServiceTest {
 
         whenever(apkVersionRepository.existsByVersion("1.2.3")).thenReturn(false)
         whenever(apkVersionRepository.existsByVersionCode(10203)).thenReturn(false)
-        whenever(apkVersionRepository.findMaxId()).thenReturn(null)
         whenever(apkVersionRepository.save(any<ApkVersionEntity>())).thenAnswer { it.arguments[0] as ApkVersionEntity }
 
         val result = apkVersionService.uploadApk(file, releaseNotes)
@@ -101,7 +100,6 @@ class ApkVersionServiceTest {
 
         whenever(apkVersionRepository.existsByVersion(any())).thenReturn(false)
         whenever(apkVersionRepository.existsByVersionCode(any())).thenReturn(false)
-        whenever(apkVersionRepository.findMaxId()).thenReturn(null)
         whenever(apkVersionRepository.save(any<ApkVersionEntity>())).thenAnswer { it.arguments[0] as ApkVersionEntity }
 
         val result = apkVersionService.uploadApk(file, null)

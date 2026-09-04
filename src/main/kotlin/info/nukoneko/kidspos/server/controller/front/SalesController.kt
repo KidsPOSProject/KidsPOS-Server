@@ -1,7 +1,7 @@
 package info.nukoneko.kidspos.server.controller.front
 
 import info.nukoneko.kidspos.server.service.SaleAggregationService
-import info.nukoneko.kidspos.server.service.SaleService
+import info.nukoneko.kidspos.server.service.SaleProcessingService
 import info.nukoneko.kidspos.server.service.StoreService
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
@@ -13,14 +13,14 @@ import java.util.Date
 @Controller
 @RequestMapping("/sales")
 class SalesController(
-    private val saleService: SaleService,
+    private val saleProcessingService: SaleProcessingService,
     private val storeService: StoreService,
     private val saleAggregationService: SaleAggregationService,
 ) {
     @GetMapping
     fun index(model: Model): String {
         model.addAttribute("title", "売上管理")
-        model.addAttribute("data", saleService.findAllSale().sortedByDescending { it.createdAt })
+        model.addAttribute("data", saleProcessingService.findAllSales().sortedByDescending { it.createdAt })
         model.addAttribute("storeNames", storeService.findAll().associate { it.id to it.name })
         model.addAttribute("stats", saleAggregationService.dailyComparison(Date()))
         return "sales/index"

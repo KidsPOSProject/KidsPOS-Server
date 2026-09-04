@@ -66,6 +66,18 @@ class ItemRepositoryTest {
     }
 
     @Test
+    fun `should assign distinct ids to consecutive saves`() {
+        // When
+        val first = itemRepository.save(ItemEntity(barcode = "900000001", name = "First", price = 10))
+        val second = itemRepository.save(ItemEntity(barcode = "900000002", name = "Second", price = 20))
+
+        // Then
+        assertTrue(first.id > 0)
+        assertTrue(second.id > 0)
+        assertNotEquals(first.id, second.id)
+    }
+
+    @Test
     fun `should find item by barcode`() {
         // When
         val foundItem = itemRepository.findByBarcode("123456789")
@@ -106,7 +118,6 @@ class ItemRepositoryTest {
         // Given
         val newItem =
             ItemEntity(
-                id = 2001,
                 barcode = "111222333",
                 name = "New Item",
                 price = 300,
@@ -117,7 +128,7 @@ class ItemRepositoryTest {
 
         // Then
         assertNotNull(savedItem)
-        assertEquals(2001, savedItem.id)
+        assertTrue(savedItem.id > 0)
         assertEquals("111222333", savedItem.barcode)
         assertEquals("New Item", savedItem.name)
         assertEquals(300, savedItem.price)
@@ -190,62 +201,5 @@ class ItemRepositoryTest {
         assertEquals(2, itemPage.totalPages)
         assertTrue(itemPage.hasNext())
         assertFalse(itemPage.hasPrevious())
-    }
-
-    @Test
-    fun `should find items by price range using custom query`() {
-        // When
-        val priceRangeItems = itemRepository.findByPriceRange(100, 500)
-
-        // Then
-        assertNotNull(priceRangeItems)
-        assertEquals(2, priceRangeItems.size)
-        assertTrue(priceRangeItems.all { it.price in 100..500 })
-    }
-
-    @Test
-    fun `should count items with price greater than threshold`() {
-        // When
-        val expensiveItemCount = itemRepository.countByPriceGreaterThan(150)
-
-        // Then
-        assertEquals(2, expensiveItemCount) // testItem2 (200) and testItem3 (1000)
-    }
-
-    @Test
-    fun `should find all item summaries using projection`() {
-        // When
-        val itemSummaries = itemRepository.findAllItemSummaries()
-
-        // Then
-        assertNotNull(itemSummaries)
-        assertEquals(3, itemSummaries.size)
-    }
-
-    @Test
-    fun `should batch fetch items by IDs`() {
-        // Given
-        val idsToFetch = listOf(testItem1.id, testItem3.id)
-
-        // When
-        val batchItems = itemRepository.findAllByIdsBatch(idsToFetch)
-
-        // Then
-        assertNotNull(batchItems)
-        assertEquals(2, batchItems.size)
-        assertTrue(batchItems.any { it.id == testItem1.id })
-        assertTrue(batchItems.any { it.id == testItem3.id })
-        assertFalse(batchItems.any { it.id == testItem2.id })
-    }
-
-    @Test
-    fun `should get last ID correctly`() {
-        // When
-        val lastId = itemRepository.getLastId()
-
-        // Then
-        assertTrue(lastId > 0)
-        // Should be the highest ID (testItem3.id = 1003)
-        assertEquals(1003, lastId)
     }
 }

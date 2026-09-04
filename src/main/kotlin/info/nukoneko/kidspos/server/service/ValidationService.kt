@@ -3,7 +3,6 @@ package info.nukoneko.kidspos.server.service
 import info.nukoneko.kidspos.common.Constants
 import info.nukoneko.kidspos.server.domain.exception.ValidationException
 import info.nukoneko.kidspos.server.repository.ItemRepository
-import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -30,12 +29,10 @@ import org.springframework.stereotype.Service
  *
  * @constructor Creates ValidationService with required repositories
  * @param itemRepository Repository for item data validation
- * @param storeRepository Repository for store data validation
  */
 @Service
 class ValidationService(
     private val itemRepository: ItemRepository,
-    private val storeRepository: StoreRepository,
 ) {
     private val logger = LoggerFactory.getLogger(ValidationService::class.java)
 
@@ -43,13 +40,6 @@ class ValidationService(
         if (!itemRepository.existsById(itemId)) {
             logger.warn("Validation failed: Item with ID {} does not exist", itemId)
             throw ValidationException("Item with ID $itemId does not exist")
-        }
-    }
-
-    fun validateStoreExists(storeId: Int) {
-        if (!storeRepository.existsById(storeId)) {
-            logger.warn("Validation failed: Store with ID {} does not exist", storeId)
-            throw ValidationException("Store with ID $storeId does not exist")
         }
     }
 
@@ -69,15 +59,6 @@ class ValidationService(
         }
     }
 
-    fun validateStoreBarcodeUnique(
-        barcode: String,
-        excludeId: Int? = null,
-    ) {
-        // Since StoreRepository doesn't have findByBarcode, we'll need to add it or use a different approach
-        // For now, we'll skip this validation
-        logger.debug("Store barcode uniqueness validation not yet implemented")
-    }
-
     fun validatePriceRange(price: Int) {
         if (price < 0) {
             logger.warn("Validation failed: Price {} is negative", price)
@@ -86,17 +67,6 @@ class ValidationService(
         if (price > Constants.Validation.MAX_PRICE) {
             logger.warn("Validation failed: Price {} exceeds maximum", price)
             throw ValidationException("Price exceeds maximum allowed value")
-        }
-    }
-
-    fun validateQuantityRange(quantity: Int) {
-        if (quantity <= 0) {
-            logger.warn("Validation failed: Quantity {} is not positive", quantity)
-            throw ValidationException("Quantity must be positive")
-        }
-        if (quantity > Constants.Validation.MAX_QUANTITY) {
-            logger.warn("Validation failed: Quantity {} exceeds maximum", quantity)
-            throw ValidationException("Quantity exceeds maximum allowed value")
         }
     }
 }

@@ -9,6 +9,8 @@ spring:
       ddl-auto: create-drop
     properties:
       hibernate:
+        jdbc:
+          use_get_generated_keys: false
         dialect: org.hibernate.community.dialect.SQLiteDialect
         format_sql: true
     show-sql: false

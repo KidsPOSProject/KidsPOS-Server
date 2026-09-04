@@ -67,16 +67,6 @@ class SaleApiControllerUnitTest {
                 deposit = 400,
             )
 
-        val summary =
-            SaleSummary(
-                totalAmount = 300,
-                deposit = 400,
-                change = 100,
-                itemCount = 2,
-                uniqueItems = 2,
-                itemQuantities = mapOf(1 to 1, 2 to 1),
-            )
-
         val expectedSaleBean =
             SaleBean(
                 storeId = request.storeId,
@@ -86,7 +76,7 @@ class SaleApiControllerUnitTest {
 
         `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
         `when`(saleProcessingService.processSaleWithValidation(expectedSaleBean, testItems))
-            .thenReturn(SaleResult.Success(testSale, summary))
+            .thenReturn(SaleResult.Success(testSale))
         `when`(receiptService.printReceiptAsync(1, testItems, 400)).thenReturn(true)
 
         // When
@@ -205,42 +195,6 @@ class SaleApiControllerUnitTest {
 
         verify(itemParsingService).parseItemsFromIds("1,2")
         verifyNoInteractions(saleProcessingService)
-        verifyNoInteractions(receiptService)
-    }
-
-    @Test
-    fun `should return error for generic sale error`() {
-        // Given
-        val request =
-            CreateSaleRequest(
-                storeId = 1,
-                itemIds = "1,2",
-                deposit = 400,
-            )
-
-        val expectedSaleBean =
-            SaleBean(
-                storeId = request.storeId,
-                itemIds = request.itemIds,
-                deposit = request.deposit,
-            )
-
-        `when`(itemParsingService.parseItemsFromIds("1,2")).thenReturn(testItems)
-        `when`(saleProcessingService.processSaleWithValidation(expectedSaleBean, testItems))
-            .thenReturn(SaleResult.Error("General error"))
-
-        // When
-        val result = controller.createSale(request)
-
-        // Then
-        assertEquals(HttpStatus.BAD_REQUEST, result.statusCode)
-        assertNotNull(result.body)
-
-        val body = result.body as Map<String, Any>
-        assertEquals("General error", body["error"])
-
-        verify(itemParsingService).parseItemsFromIds("1,2")
-        verify(saleProcessingService).processSaleWithValidation(expectedSaleBean, testItems)
         verifyNoInteractions(receiptService)
     }
 }

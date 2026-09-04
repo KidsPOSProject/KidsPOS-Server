@@ -4,7 +4,7 @@ import info.nukoneko.kidspos.server.controller.dto.response.SaleReportDetailData
 import info.nukoneko.kidspos.server.entity.SaleEntity
 import info.nukoneko.kidspos.server.entity.StoreEntity
 import info.nukoneko.kidspos.server.service.SaleAggregationService
-import info.nukoneko.kidspos.server.service.SaleService
+import info.nukoneko.kidspos.server.service.SaleProcessingService
 import info.nukoneko.kidspos.server.service.StoreService
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -33,7 +33,7 @@ class SalesControllerTest {
     private lateinit var mockMvc: MockMvc
 
     @MockBean
-    private lateinit var saleService: SaleService
+    private lateinit var saleProcessingService: SaleProcessingService
 
     @MockBean
     private lateinit var storeService: StoreService
@@ -44,7 +44,7 @@ class SalesControllerTest {
     @Test
     @DisplayName("売上一覧を新しい順に表示する")
     fun showsSalesOrderedByNewest() {
-        whenever(saleService.findAllSale()).thenReturn(
+        whenever(saleProcessingService.findAllSales()).thenReturn(
             listOf(
                 sale(id = 1, createdAt = dateOf(2026, 8, 20, 10)),
                 sale(id = 2, createdAt = dateOf(2026, 8, 21, 10)),

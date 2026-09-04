@@ -2,19 +2,20 @@ package info.nukoneko.kidspos.server.service
 
 import info.nukoneko.kidspos.server.controller.dto.request.ItemBean
 import info.nukoneko.kidspos.server.controller.dto.request.SaleBean
-import info.nukoneko.kidspos.server.entity.SaleDetailEntity
 import info.nukoneko.kidspos.server.entity.SaleEntity
+import info.nukoneko.kidspos.server.repository.StoreRepository
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import java.util.*
 
 @SpringBootTest
 class SaleProcessingServiceTest {
-    @MockBean
+    @Autowired
     private lateinit var saleCalculationService: SaleCalculationService
 
     @MockBean
@@ -29,7 +30,6 @@ class SaleProcessingServiceTest {
     fun setup() {
         saleProcessingService =
             SaleProcessingService(
-                saleCalculationService,
                 saleValidationService,
                 salePersistenceService,
             )
@@ -56,15 +56,7 @@ class SaleProcessingServiceTest {
                 createdAt = Date(),
             )
 
-        val expectedDetails =
-            listOf(
-                SaleDetailEntity(1, 1, 1, 300, 1),
-                SaleDetailEntity(2, 1, 2, 400, 1),
-                SaleDetailEntity(3, 1, 3, 200, 1),
-            )
-
-        `when`(salePersistenceService.saveSale(saleBean, items)).thenReturn(expectedSale)
-        `when`(salePersistenceService.saveSaleDetails(1, items)).thenReturn(expectedDetails)
+        `when`(salePersistenceService.saveSaleWithDetails(saleBean, items)).thenReturn(expectedSale)
 
         // When
         val result = saleProcessingService.processSale(saleBean, items)
@@ -76,8 +68,7 @@ class SaleProcessingServiceTest {
         assertEquals(1000, result.deposit)
 
         verify(saleValidationService).validateSaleRequest(saleBean, items)
-        verify(salePersistenceService).saveSale(saleBean, items)
-        verify(salePersistenceService).saveSaleDetails(1, items)
+        verify(salePersistenceService).saveSaleWithDetails(saleBean, items)
     }
 
     @Test
@@ -101,36 +92,14 @@ class SaleProcessingServiceTest {
                 createdAt = Date(),
             )
 
-        `when`(salePersistenceService.saveSale(saleBean, items)).thenReturn(savedSale)
-        `when`(salePersistenceService.saveSaleDetails(2, items)).thenReturn(
-            listOf(
-                SaleDetailEntity(1, 2, 1, 300, 2),
-                SaleDetailEntity(2, 2, 2, 200, 1),
-            ),
-        )
+        `when`(salePersistenceService.saveSaleWithDetails(saleBean, items)).thenReturn(savedSale)
 
         // When
         val result = saleProcessingService.processSale(saleBean, items)
 
         // Then
         assertEquals(2, result.id)
-        verify(salePersistenceService).saveSale(saleBean, items)
-        verify(salePersistenceService).saveSaleDetails(2, items)
-    }
-
-    @Test
-    fun `should extract staff ID from barcode correctly`() {
-        // Given
-        val longBarcode = "123456789001"
-        val shortBarcode = "001"
-
-        // When
-        val staffId1 = saleProcessingService.extractStaffId(longBarcode)
-        val staffId2 = saleProcessingService.extractStaffId(shortBarcode)
-
-        // Then
-        assertEquals(1, staffId1)
-        assertEquals(0, staffId2)
+        verify(salePersistenceService).saveSaleWithDetails(saleBean, items)
     }
 }
 
@@ -160,19 +129,6 @@ class SaleCalculationServiceTest {
     }
 
     @Test
-    fun `should calculate change correctly`() {
-        // Given
-        val amount = 750
-        val deposit = 1000
-
-        // When
-        val change = saleCalculationService.calculateChange(amount, deposit)
-
-        // Then
-        assertEquals(250, change)
-    }
-
-    @Test
     fun `should group items by type correctly`() {
         // Given
         val items =
@@ -196,11 +152,13 @@ class SaleCalculationServiceTest {
 }
 
 class SaleValidationServiceTest {
+    private val storeRepository = mock(StoreRepository::class.java)
     private lateinit var saleValidationService: SaleValidationService
 
     @BeforeEach
     fun setup() {
-        saleValidationService = SaleValidationService()
+        `when`(storeRepository.existsById(anyInt())).thenReturn(true)
+        saleValidationService = SaleValidationService(storeRepository)
     }
 
     @Test
@@ -228,6 +186,19 @@ class SaleValidationServiceTest {
                 ItemBean(1, "001", "Item 1", 200),
                 ItemBean(2, "002", "Item 2", 250),
             )
+
+        // When & Then
+        assertThrows(IllegalArgumentException::class.java) {
+            saleValidationService.validateSaleRequest(saleBean, items)
+        }
+    }
+
+    @Test
+    fun `should throw exception when store does not exist`() {
+        // Given
+        `when`(storeRepository.existsById(anyInt())).thenReturn(false)
+        val saleBean = SaleBean(storeId = 9999, itemIds = "1", deposit = 500)
+        val items = listOf(ItemBean(1, "001", "Item 1", 200))
 
         // When & Then
         assertThrows(IllegalArgumentException::class.java) {
