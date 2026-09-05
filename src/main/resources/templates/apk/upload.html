@@ -2,93 +2,77 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header('APKアップロード')}"></head>
 <body>
-<div th:replace="~{layout::nav('apk')}"></div>
+<nav th:replace="~{layout::nav('apk')}"></nav>
+<main class="container">
+    <div class="page-header">
+        <h1>APKアップロード</h1>
+    </div>
 
-<div class="main-container">
-    <!-- Main Content -->
-    <div class="container-wrapper">
-        <div class="content-area">
-            <div class="container-fluid mt-3">
-                <div class="row">
-                    <div class="col-12 col-md-8 col-lg-6 mx-auto">
-                        <div class="card-modern">
-                            <div class="card-body">
-                                <h1 class="h4 mb-4 text-center">
-                                    <i class="fas fa-mobile-alt text-purple me-2"></i>
-                                    APKアップロード
-                                </h1>
-                                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                                    <span th:text="${errorMessage}"></span>
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-
-                                <form method="post" action="/apk/upload" enctype="multipart/form-data" onsubmit="return validateForm()">
-                                    <div class="mb-3">
-                                        <label for="file" class="form-label">APKファイル <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <input type="file" class="form-control" id="file" name="file" accept=".apk" required style="display: none;">
-                                            <input type="text" class="form-control" id="fileDisplay" readonly placeholder="ファイルが選択されていません">
-                                            <button class="btn btn-outline-secondary" type="button" id="fileSelectBtn">
-                                                <i class="fas fa-folder-open"></i> ファイルを選択
-                                            </button>
-                                        </div>
-                                        <div class="form-text">最大ファイルサイズ: 100MB</div>
-                                        <div class="form-text" id="analyzeStatus"></div>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="version" class="form-label">バージョン</label>
-                                        <input type="text" class="form-control" id="version"
-                                               placeholder="APKファイルを選択すると自動入力されます" readonly>
-                                        <div class="form-text">APKのAndroidManifestから自動的に読み取ります</div>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="versionCode" class="form-label">バージョンコード</label>
-                                        <input type="text" class="form-control" id="versionCode"
-                                               placeholder="APKファイルを選択すると自動入力されます" readonly>
-                                        <div class="form-text">APKのAndroidManifestから自動的に読み取ります</div>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="releaseNotes" class="form-label">リリースノート</label>
-                                        <textarea class="form-control" id="releaseNotes" name="releaseNotes"
-                                                  rows="5" placeholder="このバージョンの変更点を記載してください"></textarea>
-                                    </div>
-
-                                    <div class="d-flex justify-content-between">
-                                        <a href="/apk" class="btn btn-secondary">
-                                            <i class="bi bi-arrow-left"></i> 戻る
-                                        </a>
-                                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
-                                            <i class="bi bi-upload"></i> アップロード
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-
-                        <div class="card-modern mt-4">
-                            <div class="card-body">
-                                <h5 class="mb-3">
-                                    <i class="fas fa-info-circle text-primary"></i> アップロードガイドライン
-                                </h5>
-                                <ul>
-                                    <li>APKファイルは正しく署名されている必要があります</li>
-                                    <li>バージョン名とバージョンコードはAPKから自動的に読み取られます</li>
-                                    <li>バージョンコードは既存のバージョンより大きい値にしてビルドしてください</li>
-                                    <li>リリースノートには主要な変更点や修正内容を記載してください</li>
-                                    <li>アップロード後、自動的に最新バージョンとして設定されます</li>
-                                </ul>
-                            </div>
-                        </div>
+    <div class="row">
+        <div class="col-12 col-md-8 col-lg-6 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <span th:text="${errorMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
+
+                    <form method="post" action="/apk/upload" enctype="multipart/form-data" onsubmit="return validateForm()">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">APKファイル <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="file" name="file" accept=".apk" required style="display: none;">
+                                <input type="text" class="form-control" id="fileDisplay" readonly placeholder="ファイルが選択されていません">
+                                <button class="btn btn-outline-secondary" type="button" id="fileSelectBtn">ファイルを選択</button>
+                            </div>
+                            <div class="form-text">最大ファイルサイズ: 100MB</div>
+                            <div class="form-text" id="analyzeStatus"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="version" class="form-label">バージョン</label>
+                            <input type="text" class="form-control" id="version"
+                                   placeholder="APKファイルを選択すると自動入力されます" readonly>
+                            <div class="form-text">APKのAndroidManifestから自動的に読み取ります</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="versionCode" class="form-label">バージョンコード</label>
+                            <input type="text" class="form-control" id="versionCode"
+                                   placeholder="APKファイルを選択すると自動入力されます" readonly>
+                            <div class="form-text">APKのAndroidManifestから自動的に読み取ります</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="releaseNotes" class="form-label">リリースノート</label>
+                            <textarea class="form-control" id="releaseNotes" name="releaseNotes"
+                                      rows="5" placeholder="このバージョンの変更点を記載してください"></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/apk" class="btn btn-outline-secondary">戻る</a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>アップロード</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">アップロードガイドライン</h2>
+                    <ul>
+                        <li>APKファイルは正しく署名されている必要があります</li>
+                        <li>バージョン名とバージョンコードはAPKから自動的に読み取られます</li>
+                        <li>バージョンコードは既存のバージョンより大きい値にしてビルドしてください</li>
+                        <li>リリースノートには主要な変更点や修正内容を記載してください</li>
+                        <li>アップロード後、自動的に最新バージョンとして設定されます</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
-</div>
-
+</main>
+<footer th:replace="~{layout::footer}"></footer>
 <script th:inline="javascript">
     const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
@@ -186,6 +170,5 @@
         analyzeApk(file);
     });
 </script>
-<div th:replace="~{layout::footer}"></div>
 </body>
 </html>

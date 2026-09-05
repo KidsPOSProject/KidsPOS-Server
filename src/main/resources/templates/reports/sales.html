@@ -2,254 +2,217 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header('売上レポート')}"></head>
 <body>
-<div th:replace="~{layout::nav('reports')}"></div>
+<nav th:replace="~{layout::nav('reports')}"></nav>
+<main class="container">
+    <div class="page-header">
+        <div>
+            <h1>売上レポート</h1>
+        </div>
+    </div>
 
-<div class="main-container">
-    <!-- Main Content -->
-    <div class="container-wrapper">
-        <div class="content-area">
-            <div class="container-fluid mt-3">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card-modern">
-                            <div class="card-body">
-                                <h1 class="mb-4">
-                                    <i class="fas fa-file-pdf text-danger me-2"></i>
-                                    売上レポート
-                                </h1>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">期間指定レポート</h2>
+        </div>
+        <div class="card-body">
+            <form id="dateRangeForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="startDate" class="form-label">開始日</label>
+                        <input type="date" class="form-control" id="startDate" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="endDate" class="form-label">終了日</label>
+                        <input type="date" class="form-control" id="endDate" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="storeId" class="form-label">店舗</label>
+                        <select class="form-select" id="storeId">
+                            <option value="">全店舗</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="loadSummary()">集計</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="downloadReport('pdf', 'range')">PDF</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="downloadReport('excel', 'range')">Excel</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                                <!-- 期間指定レポート -->
-                                <div class="card mb-4">
-                                    <div class="card-header bg-primary text-white">
-                                        <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> 期間指定レポート</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <form id="dateRangeForm">
-                                            <div class="row g-3">
-                                                <div class="col-md-3">
-                                                    <label for="startDate" class="form-label">開始日</label>
-                                                    <input type="date" class="form-control" id="startDate" required>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label for="endDate" class="form-label">終了日</label>
-                                                    <input type="date" class="form-control" id="endDate" required>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label for="storeId" class="form-label">店舗</label>
-                                                    <select class="form-select" id="storeId">
-                                                        <option value="">全店舗</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-3 d-flex align-items-end">
-                                                    <div class="btn-group w-100" role="group">
-                                                        <button type="button" class="btn btn-primary btn-sm" onclick="loadSummary()">
-                                                            <i class="fas fa-calculator"></i> 集計
-                                                        </button>
-                                                        <button type="button" class="btn btn-danger btn-sm" onclick="downloadReport('pdf', 'range')">
-                                                            <i class="fas fa-file-pdf"></i> PDF
-                                                        </button>
-                                                        <button type="button" class="btn btn-success btn-sm" onclick="downloadReport('excel', 'range')">
-                                                            <i class="fas fa-file-excel"></i> Excel
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">集計結果</h2>
+            <small class="text-muted" id="summaryPeriod">-</small>
+        </div>
+        <div class="card-body">
+            <div id="summaryLoading" class="text-center text-muted py-3">読み込み中...</div>
+            <div id="summaryError" class="alert alert-danger d-none" role="alert"></div>
+            <div id="summaryBody" class="d-none">
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">総売上金額</div>
+                            <div class="fs-3 fw-bold" id="statTotalAmount">-</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">取引件数</div>
+                            <div class="fs-3 fw-bold" id="statTotalSales">-</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">販売点数</div>
+                            <div class="fs-3 fw-bold" id="statTotalItemCount">-</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">平均客単価</div>
+                            <div class="fs-3 fw-bold" id="statAverageAmount">-</div>
+                        </div>
+                    </div>
+                </div>
 
-                                <!-- 集計結果 -->
-                                <div class="card mb-4">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="mb-0"><i class="fas fa-chart-bar"></i> 集計結果</h5>
-                                        <small class="text-muted" id="summaryPeriod">-</small>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="summaryLoading" class="text-center text-muted py-3">
-                                            <i class="fas fa-spinner fa-spin"></i> 読み込み中...
-                                        </div>
-                                        <div id="summaryError" class="alert alert-danger d-none" role="alert"></div>
-                                        <div id="summaryBody" class="d-none">
-                                            <div class="row g-3 mb-4">
-                                                <div class="col-6 col-lg-3">
-                                                    <div class="border rounded p-3 h-100">
-                                                        <div class="text-muted small">総売上金額</div>
-                                                        <div class="fs-3 fw-bold" id="statTotalAmount">-</div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6 col-lg-3">
-                                                    <div class="border rounded p-3 h-100">
-                                                        <div class="text-muted small">取引件数</div>
-                                                        <div class="fs-3 fw-bold" id="statTotalSales">-</div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6 col-lg-3">
-                                                    <div class="border rounded p-3 h-100">
-                                                        <div class="text-muted small">販売点数</div>
-                                                        <div class="fs-3 fw-bold" id="statTotalItemCount">-</div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6 col-lg-3">
-                                                    <div class="border rounded p-3 h-100">
-                                                        <div class="text-muted small">平均客単価</div>
-                                                        <div class="fs-3 fw-bold" id="statAverageAmount">-</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <ul class="nav nav-tabs" role="tablist">
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabDaily" type="button" role="tab">日別</button>
-                                                </li>
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabItems" type="button" role="tab">商品別</button>
-                                                </li>
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabStores" type="button" role="tab">店舗別</button>
-                                                </li>
-                                            </ul>
-                                            <div class="tab-content pt-3">
-                                                <div class="tab-pane fade show active" id="tabDaily" role="tabpanel">
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm table-striped align-middle">
-                                                            <thead>
-                                                            <tr>
-                                                                <th>日付</th>
-                                                                <th class="text-end">件数</th>
-                                                                <th class="text-end">点数</th>
-                                                                <th class="text-end">売上金額</th>
-                                                            </tr>
-                                                            </thead>
-                                                            <tbody id="dailyBody"></tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                                <div class="tab-pane fade" id="tabItems" role="tabpanel">
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm table-striped align-middle">
-                                                            <thead>
-                                                            <tr>
-                                                                <th>商品名</th>
-                                                                <th class="text-end">単価</th>
-                                                                <th class="text-end">販売数</th>
-                                                                <th class="text-end">売上金額</th>
-                                                            </tr>
-                                                            </thead>
-                                                            <tbody id="itemsBody"></tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                                <div class="tab-pane fade" id="tabStores" role="tabpanel">
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm table-striped align-middle">
-                                                            <thead>
-                                                            <tr>
-                                                                <th>店舗名</th>
-                                                                <th class="text-end">件数</th>
-                                                                <th class="text-end">点数</th>
-                                                                <th class="text-end">売上金額</th>
-                                                            </tr>
-                                                            </thead>
-                                                            <tbody id="storesBody"></tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 本日のレポート -->
-                                <div class="card mb-4">
-                                    <div class="card-header bg-info text-white">
-                                        <h5 class="mb-0"><i class="fas fa-calendar-check"></i> 本日のレポート</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label for="todayStoreId" class="form-label">店舗</label>
-                                                <select class="form-select" id="todayStoreId">
-                                                    <option value="">全店舗</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6 d-flex align-items-end">
-                                                <div class="btn-group w-100" role="group">
-                                                    <button type="button" class="btn btn-danger btn-sm" onclick="downloadReport('pdf', 'today')">
-                                                        <i class="fas fa-file-pdf"></i> PDF
-                                                    </button>
-                                                    <button type="button" class="btn btn-success btn-sm" onclick="downloadReport('excel', 'today')">
-                                                        <i class="fas fa-file-excel"></i> Excel
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 月次レポート -->
-                                <div class="card mb-4">
-                                    <div class="card-header bg-warning text-dark">
-                                        <h5 class="mb-0"><i class="fas fa-calendar"></i> 月次レポート</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row g-3">
-                                            <div class="col-md-3">
-                                                <label for="year" class="form-label">年</label>
-                                                <select class="form-select" id="year">
-                                                    <!-- 年のオプションはJavaScriptで生成 -->
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label for="month" class="form-label">月</label>
-                                                <select class="form-select" id="month">
-                                                    <option value="1">1月</option>
-                                                    <option value="2">2月</option>
-                                                    <option value="3">3月</option>
-                                                    <option value="4">4月</option>
-                                                    <option value="5">5月</option>
-                                                    <option value="6">6月</option>
-                                                    <option value="7">7月</option>
-                                                    <option value="8">8月</option>
-                                                    <option value="9">9月</option>
-                                                    <option value="10">10月</option>
-                                                    <option value="11">11月</option>
-                                                    <option value="12">12月</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label for="monthlyStoreId" class="form-label">店舗</label>
-                                                <select class="form-select" id="monthlyStoreId">
-                                                    <option value="">全店舗</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3 d-flex align-items-end">
-                                                <div class="btn-group w-100" role="group">
-                                                    <button type="button" class="btn btn-danger btn-sm" onclick="downloadReport('pdf', 'monthly')">
-                                                        <i class="fas fa-file-pdf"></i> PDF
-                                                    </button>
-                                                    <button type="button" class="btn btn-success btn-sm" onclick="downloadReport('excel', 'monthly')">
-                                                        <i class="fas fa-file-excel"></i> Excel
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="mt-3">
-                                    <a class="btn btn-secondary" href="/">
-                                        <i class="fas fa-arrow-left"></i> 戻る
-                                    </a>
-                                </div>
-                            </div>
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabDaily" type="button" role="tab">日別</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabItems" type="button" role="tab">商品別</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabStores" type="button" role="tab">店舗別</button>
+                    </li>
+                </ul>
+                <div class="tab-content pt-3">
+                    <div class="tab-pane fade show active" id="tabDaily" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped align-middle">
+                                <thead>
+                                <tr>
+                                    <th>日付</th>
+                                    <th class="text-end">件数</th>
+                                    <th class="text-end">点数</th>
+                                    <th class="text-end">売上金額</th>
+                                </tr>
+                                </thead>
+                                <tbody id="dailyBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="tabItems" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped align-middle">
+                                <thead>
+                                <tr>
+                                    <th>商品名</th>
+                                    <th class="text-end">単価</th>
+                                    <th class="text-end">販売数</th>
+                                    <th class="text-end">売上金額</th>
+                                </tr>
+                                </thead>
+                                <tbody id="itemsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="tabStores" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped align-middle">
+                                <thead>
+                                <tr>
+                                    <th>店舗名</th>
+                                    <th class="text-end">件数</th>
+                                    <th class="text-end">点数</th>
+                                    <th class="text-end">売上金額</th>
+                                </tr>
+                                </thead>
+                                <tbody id="storesBody"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">本日のレポート</h2>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="todayStoreId" class="form-label">店舗</label>
+                    <select class="form-select" id="todayStoreId">
+                        <option value="">全店舗</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="downloadReport('pdf', 'today')">PDF</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="downloadReport('excel', 'today')">Excel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">月次レポート</h2>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="year" class="form-label">年</label>
+                    <select class="form-select" id="year">
+                        <!-- 年のオプションはJavaScriptで生成 -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="month" class="form-label">月</label>
+                    <select class="form-select" id="month">
+                        <option value="1">1月</option>
+                        <option value="2">2月</option>
+                        <option value="3">3月</option>
+                        <option value="4">4月</option>
+                        <option value="5">5月</option>
+                        <option value="6">6月</option>
+                        <option value="7">7月</option>
+                        <option value="8">8月</option>
+                        <option value="9">9月</option>
+                        <option value="10">10月</option>
+                        <option value="11">11月</option>
+                        <option value="12">12月</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="monthlyStoreId" class="form-label">店舗</label>
+                    <select class="form-select" id="monthlyStoreId">
+                        <option value="">全店舗</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="downloadReport('pdf', 'monthly')">PDF</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="downloadReport('excel', 'monthly')">Excel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a class="btn btn-outline-secondary" href="/">戻る</a>
+    </div>
+</main>
+<footer th:replace="~{layout::footer}"></footer>
 <script>
 /*<![CDATA[*/
     // ページ読み込み時の初期化
@@ -446,6 +409,5 @@
     }
 /*]]>*/
 </script>
-<div th:replace="~{layout::footer}"></div>
 </body>
 </html>

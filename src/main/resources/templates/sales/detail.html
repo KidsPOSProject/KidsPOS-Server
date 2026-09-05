@@ -2,125 +2,97 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header(${title})}"></head>
 <body>
-<div th:replace="~{layout::nav('sales')}"></div>
+<nav th:replace="~{layout::nav('sales')}"></nav>
+<main class="container">
+    <div class="page-header">
+        <div>
+            <h1>取引詳細 #<span th:text="${detail.sale.id}"></span></h1>
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" href="/sales">一覧へ戻る</a>
+    </div>
 
-<div class="main-container">
-    <div class="container-wrapper">
-        <div class="content-area">
-            <div class="container-fluid mt-3">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card-modern">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h1 class="mb-0">
-                                        <i class="fas fa-receipt text-warning me-2"></i>
-                                        取引詳細 #<span th:text="${detail.sale.id}"></span>
-                                    </h1>
-                                    <a class="btn btn-secondary btn-sm" href="/sales">
-                                        <i class="fas fa-arrow-left"></i> 一覧へ戻る
-                                    </a>
-                                </div>
-
-                                <div class="row mb-4">
-                                    <div class="col-md-3">
-                                        <div class="card bg-light border-0 text-center">
-                                            <div class="card-body py-3">
-                                                <h6 class="text-muted mb-2">店舗</h6>
-                                                <h5 class="mb-0" th:text="${detail.storeName}"></h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="card bg-light border-0 text-center">
-                                            <div class="card-body py-3">
-                                                <h6 class="text-muted mb-2">合計金額</h6>
-                                                <h5 class="mb-0 text-primary">
-                                                    ¥<span th:text="${#numbers.formatInteger(detail.sale.amount, 1, 'COMMA')}"></span>
-                                                </h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="card bg-light border-0 text-center">
-                                            <div class="card-body py-3">
-                                                <h6 class="text-muted mb-2">受取金額</h6>
-                                                <h5 class="mb-0 text-success">
-                                                    ¥<span th:text="${#numbers.formatInteger(detail.sale.deposit, 1, 'COMMA')}"></span>
-                                                </h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="card bg-light border-0 text-center">
-                                            <div class="card-body py-3">
-                                                <h6 class="text-muted mb-2">お釣り</h6>
-                                                <h5 class="mb-0 text-info">
-                                                    ¥<span th:text="${#numbers.formatInteger(detail.sale.deposit - detail.sale.amount, 1, 'COMMA')}"></span>
-                                                </h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <p class="text-muted">
-                                    <i class="fas fa-clock"></i>
-                                    <span th:if="${detail.sale.createdAt != null}"
-                                          th:text="${#dates.format(detail.sale.createdAt, 'yyyy/MM/dd HH:mm:ss')}"></span>
-                                    <span th:if="${detail.sale.createdAt == null}">-</span>
-                                </p>
-
-                                <div class="alert alert-warning" th:if="${detail.detailAmount != detail.sale.amount}">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    明細の小計合計（¥<span th:text="${#numbers.formatInteger(detail.detailAmount, 1, 'COMMA')}"></span>）が
-                                    伝票の合計金額（¥<span th:text="${#numbers.formatInteger(detail.sale.amount, 1, 'COMMA')}"></span>）と一致しません。
-                                </div>
-
-                                <div class="table-responsive">
-                                    <table id="content" class="table table-striped table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>商品名</th>
-                                                <th>単価</th>
-                                                <th>数量</th>
-                                                <th>小計</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr th:each="line: ${detail.details}">
-                                                <td th:text="${line.itemName}"></td>
-                                                <td>
-                                                    ¥<span th:text="${#numbers.formatInteger(line.price, 1, 'COMMA')}"></span>
-                                                </td>
-                                                <td style="text-align: center;" th:text="${line.quantity}"></td>
-                                                <td>
-                                                    <strong>
-                                                        ¥<span th:text="${#numbers.formatInteger(line.subtotal, 1, 'COMMA')}"></span>
-                                                    </strong>
-                                                </td>
-                                            </tr>
-                                            <tr th:if="${#lists.isEmpty(detail.details)}">
-                                                <td colspan="4" class="text-center text-muted">明細がありません</td>
-                                            </tr>
-                                        </tbody>
-                                        <tfoot th:if="${!#lists.isEmpty(detail.details)}">
-                                            <tr>
-                                                <th colspan="3" class="text-end">明細合計</th>
-                                                <th>
-                                                    ¥<span th:text="${#numbers.formatInteger(detail.detailAmount, 1, 'COMMA')}"></span>
-                                                </th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <p class="stat-label">店舗</p>
+                    <p class="stat-value" th:text="${detail.storeName}"></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <p class="stat-label">合計金額</p>
+                    <p class="stat-value">¥<span th:text="${#numbers.formatInteger(detail.sale.amount, 1, 'COMMA')}"></span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <p class="stat-label">受取金額</p>
+                    <p class="stat-value">¥<span th:text="${#numbers.formatInteger(detail.sale.deposit, 1, 'COMMA')}"></span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <p class="stat-label">お釣り</p>
+                    <p class="stat-value">¥<span th:text="${#numbers.formatInteger(detail.sale.deposit - detail.sale.amount, 1, 'COMMA')}"></span></p>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<div th:replace="~{layout::footer}"></div>
+
+    <p class="text-muted">
+        <span th:if="${detail.sale.createdAt != null}"
+              th:text="${#dates.format(detail.sale.createdAt, 'yyyy/MM/dd HH:mm:ss')}"></span>
+        <span th:if="${detail.sale.createdAt == null}">-</span>
+    </p>
+
+    <div class="alert alert-warning" th:if="${detail.detailAmount != detail.sale.amount}">
+        明細の小計合計（¥<span th:text="${#numbers.formatInteger(detail.detailAmount, 1, 'COMMA')}"></span>）が
+        伝票の合計金額（¥<span th:text="${#numbers.formatInteger(detail.sale.amount, 1, 'COMMA')}"></span>）と一致しません。
+    </div>
+
+    <div class="table-responsive">
+        <table id="content" class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>商品名</th>
+                    <th>単価</th>
+                    <th>数量</th>
+                    <th>小計</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="line: ${detail.details}">
+                    <td th:text="${line.itemName}"></td>
+                    <td>
+                        ¥<span th:text="${#numbers.formatInteger(line.price, 1, 'COMMA')}"></span>
+                    </td>
+                    <td th:text="${line.quantity}"></td>
+                    <td>
+                        <strong>¥<span th:text="${#numbers.formatInteger(line.subtotal, 1, 'COMMA')}"></span></strong>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(detail.details)}">
+                    <td colspan="4" class="text-center text-muted">明細がありません</td>
+                </tr>
+            </tbody>
+            <tfoot th:if="${!#lists.isEmpty(detail.details)}">
+                <tr>
+                    <th colspan="3" class="text-end">明細合計</th>
+                    <th>
+                        ¥<span th:text="${#numbers.formatInteger(detail.detailAmount, 1, 'COMMA')}"></span>
+                    </th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</main>
+<footer th:replace="~{layout::footer}"></footer>
 </body>
 </html>

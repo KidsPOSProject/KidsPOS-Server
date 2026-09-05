@@ -10,22 +10,13 @@ KidsPOSサーバーを完全な閉鎖環境（オフライン環境）で実行�
 
 すべてのCDNリソースを `/src/main/resources/static/vendor/` 配下に配置しました。
 
-#### CSS ライブラリ (合計 5ファイル)
+#### CSS ライブラリ (合計 2ファイル)
 - **Bootstrap 5.3.0** (227KB)
   - `vendor/bootstrap/bootstrap.min.css`
-- **Font Awesome 6.4.0** (100KB + Webフォント)
-  - `vendor/font-awesome/all.min.css`
-  - `vendor/font-awesome/webfonts/fa-solid-900.woff2`
-  - `vendor/font-awesome/webfonts/fa-regular-400.woff2`
-  - `vendor/font-awesome/webfonts/fa-brands-400.woff2`
-- **Google Fonts - Inter** (1.1KB)
-  - `vendor/fonts/inter.css`
 - **DataTables Bootstrap5** (11KB)
   - `vendor/datatables/dataTables.bootstrap5.min.css`
-- **SweetAlert2** (30KB)
-  - `vendor/sweetalert2/sweetalert2.min.css`
 
-#### JavaScript ライブラリ (合計 6ファイル)
+#### JavaScript ライブラリ (合計 4ファイル)
 - **jQuery 3.7.0** (85KB)
   - `vendor/jquery/jquery-3.7.0.min.js`
 - **Bootstrap 5.3.0 Bundle** (79KB)
@@ -33,16 +24,8 @@ KidsPOSサーバーを完全な閉鎖環境（オフライン環境）で実行�
 - **DataTables** (85KB + 2.3KB)
   - `vendor/datatables/jquery.dataTables.min.js`
   - `vendor/datatables/dataTables.bootstrap5.min.js`
-- **SweetAlert2** (47KB)
-  - `vendor/sweetalert2/sweetalert2.min.js`
-- **Chart.js** (203KB)
-  - `vendor/chartjs/chart.umd.min.js`
 
-#### 多言語対応ファイル
-- **DataTables 日本語化**
-  - `vendor/datatables/i18n/ja.json`
-
-**合計サイズ: 約 1.3MB**
+**合計サイズ: 約 600KB**
 
 ### 2. 修正したファイル
 
@@ -68,12 +51,8 @@ KidsPOSサーバーを完全な閉鎖環境（オフライン環境）で実行�
 
 #### CDNからの読み込み (削除完了)
 - ❌ `https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/`
-- ❌ `https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/`
-- ❌ `https://fonts.googleapis.com/css2?family=Inter`
 - ❌ `https://cdn.datatables.net/1.13.4/`
 - ❌ `https://code.jquery.com/jquery-3.7.0.min.js`
-- ❌ `https://cdn.jsdelivr.net/npm/sweetalert2@11`
-- ❌ `https://cdn.jsdelivr.net/npm/chart.js`
 
 #### 外部API (削除完了)
 - ❌ `https://api.qrserver.com/v1/create-qr-code/` (QRコード生成)
@@ -97,9 +76,7 @@ KidsPOSサーバーを完全な閉鎖環境（オフライン環境）で実行�
 1. ✅ インターネット接続なしでシステム起動可能
 2. ✅ すべてのUIコンポーネントが正常に表示
 3. ✅ DataTablesの日本語化が機能
-4. ✅ Font Awesomeアイコンが表示
-5. ✅ QRコードがローカルライブラリで生成
-6. ✅ SweetAlert2によるモダンなアラート表示
+4. ✅ QRコードがローカルライブラリで生成
 
 ### 動作環境
 - Raspberry Pi等の閉鎖ネットワーク環境
@@ -114,13 +91,7 @@ KidsPOSサーバーを完全な閉鎖環境（オフライン環境）で実行�
    curl -sL <CDN_URL> -o src/main/resources/static/vendor/<path>
    ```
 
-2. Font Awesome CSSのパス修正
-   ```bash
-   sed -i 's|https://cdnjs.cloudflare.com/ajax/libs/font-awesome/[^/]*/webfonts/|./webfonts/|g' \
-     src/main/resources/static/vendor/font-awesome/all.min.css
-   ```
-
-3. ビルドして動作確認
+2. ビルドして動作確認
    ```bash
    ./gradlew build -x test -x detekt
    ```
@@ -138,32 +109,16 @@ src/main/resources/static/
 │   ├── bootstrap/
 │   │   ├── bootstrap.min.css
 │   │   └── bootstrap.bundle.min.js
-│   ├── font-awesome/
-│   │   ├── all.min.css
-│   │   └── webfonts/
-│   │       ├── fa-solid-900.woff2
-│   │       ├── fa-regular-400.woff2
-│   │       └── fa-brands-400.woff2
 │   ├── datatables/
 │   │   ├── dataTables.bootstrap5.min.css
 │   │   ├── jquery.dataTables.min.js
-│   │   ├── dataTables.bootstrap5.min.js
-│   │   └── i18n/
-│   │       └── ja.json
-│   ├── jquery/
-│   │   └── jquery-3.7.0.min.js
-│   ├── sweetalert2/
-│   │   ├── sweetalert2.min.css
-│   │   └── sweetalert2.min.js
-│   ├── chartjs/
-│   │   └── chart.umd.min.js
-│   └── fonts/
-│       └── inter.css
+│   │   └── dataTables.bootstrap5.min.js
+│   └── jquery/
+│       └── jquery-3.7.0.min.js
 ├── css/
-│   ├── modern-style.css
-│   └── mobile-responsive.css
+│   └── admin.css
 ├── js/
-│   └── modern-scripts.js
+│   └── admin.js
 └── QrCode/
     └── js/
         └── qrcode.min.js

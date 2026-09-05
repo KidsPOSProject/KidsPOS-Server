@@ -36,6 +36,16 @@ spring:
     validate-on-migrate: false
   thymeleaf:
     mode: HTML
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 30d
+      chain:
+        strategy:
+          content:
+            enabled: true
+            paths: /**
 
 server:
   port: 8080

@@ -2,181 +2,121 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header('ダッシュボード')}"></head>
 <body>
-    <div th:replace="~{layout::nav('top')}"></div>
-
-    <div class="main-container">
-        <!-- Main Content -->
-        <div class="container-wrapper">
-            <div class="content-area">
-                <!-- Page Header -->
-                <div class="page-header text-center">
-                    <h1 class="page-title">
-                        <i class="fas fa-store"></i> KidsPOS System
-                    </h1>
-                    <p class="page-subtitle">売店管理システムへようこそ</p>
-                </div>
-
-                <!-- Network Information Section -->
-                <div class="container mt-4 mb-5">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-12">
-                            <div class="card-modern network-card">
-                                <div class="card-body text-center p-4">
-                                    <h3 class="h5 mb-3">
-                                        <i class="fas fa-network-wired text-primary"></i> システムアクセス情報
-                                    </h3>
-                                    <div class="row" th:each="host : ${hosts}">
-                                        <div class="col-md-12">
-                                            <div class="network-info-item">
-                                                <h5 class="text-primary mb-2">
-                                                    <i class="fas fa-globe"></i>
-                                                    IPアドレス: <code class="ip-address" th:text="${host.address}"></code>
-                                                </h5>
-                                                <div class="access-url">
-                                                    <span class="text-muted">アクセスURL: </span>
-                                                    <a th:href="'http://' + ${host.address} + ':' + ${port}"
-                                                       th:text="'http://' + ${host.address} + ':' + ${port}"
-                                                       target="_blank" class="url-link"></a>
-                                                </div>
-                                                <div class="mt-3">
-                                                    <div th:id="'qrcode-' + ${hostStat.index}" class="qr-code-container"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="alert alert-info mt-3 mb-0" th:if="${!hosts.isEmpty()}">
-                                        <i class="fas fa-info-circle"></i>
-                                        QRコードをスキャンして、モバイル端末からアクセスできます
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions Grid -->
-                <div class="container mt-5">
-                    <div class="row g-4">
-                        <div class="col-lg-4 col-md-6">
-                            <a href="/items" class="text-decoration-none">
-                                <div class="card-modern h-100">
-                                    <div class="card-body text-center p-4">
-                                        <i class="fas fa-box fa-3x text-primary mb-3"></i>
-                                        <h3 class="h4">商品管理</h3>
-                                        <p class="text-muted">商品の登録・編集・削除</p>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-                        
-                        <div class="col-lg-4 col-md-6">
-                            <a href="/stores" class="text-decoration-none">
-                                <div class="card-modern h-100">
-                                    <div class="card-body text-center p-4">
-                                        <i class="fas fa-store-alt fa-3x text-success mb-3"></i>
-                                        <h3 class="h4">店舗管理</h3>
-                                        <p class="text-muted">店舗情報の管理</p>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-                        
-                        
-                        <div class="col-lg-4 col-md-6">
-                            <a href="/sales" class="text-decoration-none">
-                                <div class="card-modern h-100">
-                                    <div class="card-body text-center p-4">
-                                        <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
-                                        <h3 class="h4">売上管理</h3>
-                                        <p class="text-muted">売上データの確認</p>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-                        
-                        <div class="col-lg-4 col-md-6">
-                            <a href="/reports/sales" class="text-decoration-none">
-                                <div class="card-modern h-100">
-                                    <div class="card-body text-center p-4">
-                                        <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
-                                        <h3 class="h4">売上レポート</h3>
-                                        <p class="text-muted">PDF・Excelでダウンロード</p>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6">
-                            <a href="/apk" class="text-decoration-none">
-                                <div class="card-modern h-100">
-                                    <div class="card-body text-center p-4">
-                                        <i class="fas fa-mobile-alt fa-3x text-purple mb-3"></i>
-                                        <h3 class="h4">APK管理</h3>
-                                        <p class="text-muted">アプリのバージョン管理・配布</p>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6">
-                            <a href="/logs" class="text-decoration-none">
-                                <div class="card-modern h-100">
-                                    <div class="card-body text-center p-4">
-                                        <i class="fas fa-clipboard-list fa-3x text-info mb-3"></i>
-                                        <h3 class="h4">ログ</h3>
-                                        <p class="text-muted">直近のエラーログを確認</p>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6">
-                            <a href="/ip" class="text-decoration-none">
-                                <div class="card-modern h-100">
-                                    <div class="card-body text-center p-4">
-                                        <i class="fas fa-network-wired fa-3x text-primary mb-3"></i>
-                                        <h3 class="h4">接続情報</h3>
-                                        <p class="text-muted">端末から接続するQRコード</p>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-
-                        <div class="col-lg-4 col-md-6">
-                            <a href="/settings" class="text-decoration-none">
-                                <div class="card-modern h-100">
-                                    <div class="card-body text-center p-4">
-                                        <i class="fas fa-cog fa-3x text-secondary mb-3"></i>
-                                        <h3 class="h4">システム設定</h3>
-                                        <p class="text-muted">各種設定の変更</p>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<nav th:replace="~{layout::nav('top')}"></nav>
+<main class="container">
+    <div class="page-header">
+        <div>
+            <h1>KidsPOS 管理画面</h1>
+            <p>売店管理システム</p>
         </div>
     </div>
 
-    <!-- Footer -->
-    <div th:replace="~{layout::footer}"></div>
+    <div class="card mb-4">
+        <div class="card-header">接続情報</div>
+        <div class="card-body">
+            <p class="text-muted mb-3" th:if="${hosts.isEmpty()}">ネットワーク接続が見つかりません</p>
+            <div class="row g-3">
+                <div class="col-12 col-md-6" th:each="host, hostStat : ${hosts}">
+                    <p class="stat-label">IPアドレス</p>
+                    <p class="stat-value"><code th:text="${host.address}"></code></p>
+                    <p class="mb-2">
+                        <a th:href="'http://' + ${host.address} + ':' + ${port}"
+                           th:text="'http://' + ${host.address} + ':' + ${port}"></a>
+                    </p>
+                    <div th:id="'qrcode-' + ${hostStat.index}" class="qr-code"></div>
+                </div>
+            </div>
+            <p class="text-muted small mb-0 mt-3" th:if="${!hosts.isEmpty()}">
+                QRコードを端末で読み取ると、この管理画面に接続できます
+            </p>
+        </div>
+    </div>
 
-    <script th:inline="javascript">
-        /*<![CDATA[*/
-        document.addEventListener('DOMContentLoaded', function() {
-            /*[# th:each="host,hostStat : ${hosts}"]*/
-            var qrcode = new QRCode(document.getElementById('qrcode-[(${hostStat.index})]'), {
-                text: 'http://[(${host.address})]:[(${port})]',
-                width: 150,
-                height: 150,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            /*[/]*/
+    <h2 class="h5 mb-3">メニュー</h2>
+    <div class="row g-3">
+        <div class="col-12 col-sm-6 col-lg-4">
+            <a href="/items" class="card h-100 text-decoration-none text-body">
+                <div class="card-body">
+                    <h3 class="h6 mb-1">商品管理</h3>
+                    <p class="text-muted small mb-0">商品の登録・編集・削除、バーコード印刷</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+            <a href="/stores" class="card h-100 text-decoration-none text-body">
+                <div class="card-body">
+                    <h3 class="h6 mb-1">店舗管理</h3>
+                    <p class="text-muted small mb-0">店舗とプリンタの設定</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+            <a href="/sales" class="card h-100 text-decoration-none text-body">
+                <div class="card-body">
+                    <h3 class="h6 mb-1">売上管理</h3>
+                    <p class="text-muted small mb-0">売上データの確認</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+            <a href="/reports/sales" class="card h-100 text-decoration-none text-body">
+                <div class="card-body">
+                    <h3 class="h6 mb-1">売上レポート</h3>
+                    <p class="text-muted small mb-0">PDF・Excelでダウンロード</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+            <a href="/apk" class="card h-100 text-decoration-none text-body">
+                <div class="card-body">
+                    <h3 class="h6 mb-1">APK管理</h3>
+                    <p class="text-muted small mb-0">アプリのバージョン管理・配布</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+            <a href="/logs" class="card h-100 text-decoration-none text-body">
+                <div class="card-body">
+                    <h3 class="h6 mb-1">ログ</h3>
+                    <p class="text-muted small mb-0">直近のエラーログを確認</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+            <a href="/ip" class="card h-100 text-decoration-none text-body">
+                <div class="card-body">
+                    <h3 class="h6 mb-1">接続情報</h3>
+                    <p class="text-muted small mb-0">ホスト名・IPアドレスとQRコード</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+            <a href="/settings" class="card h-100 text-decoration-none text-body">
+                <div class="card-body">
+                    <h3 class="h6 mb-1">システム設定</h3>
+                    <p class="text-muted small mb-0">各種設定の変更</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</main>
+<footer th:replace="~{layout::footer}"></footer>
+<th:block th:replace="~{layout::qrcode_scripts}"></th:block>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    document.addEventListener('DOMContentLoaded', function() {
+        /*[# th:each="host,hostStat : ${hosts}"]*/
+        new QRCode(document.getElementById('qrcode-[(${hostStat.index})]'), {
+            text: 'http://[(${host.address})]:[(${port})]',
+            width: 150,
+            height: 150,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
         });
-        /*]]>*/
-    </script>
+        /*[/]*/
+    });
+    /*]]>*/
+</script>
 </body>
 </html>

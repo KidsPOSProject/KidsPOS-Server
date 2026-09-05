@@ -1,68 +1,56 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
-<!--suppress HtmlRequiredTitleElement -->
 <head th:replace="~{layout::base_header(${title})}">
 </head>
 <body>
-<div th:replace="~{layout::nav('items')}"></div>
+<nav th:replace="~{layout::nav('items')}"></nav>
+<main class="container">
+    <div class="page-header">
+        <h1>新規商品作成</h1>
+    </div>
 
-<div class="main-container">
-    <!-- Main Content -->
-    <div class="container-wrapper">
-        <div class="content-area">
-            <div class="container-fluid mt-3">
-                <div class="row">
-                    <div class="col-12 col-md-8 col-lg-6 mx-auto">
-                        <div class="card-modern">
-                            <div class="card-body">
-                                <h1 class="h4 mb-4 text-center">
-                                    <i class="fas fa-plus-circle text-success me-2"></i>
-                                    新規商品作成
-                                </h1>
-                                <form th:action="@{/items}" th:method="post">
-                                    <div class="mb-3">
-                                        <label for="name" class="form-label">商品名 <span class="text-danger">*</span></label>
-                                        <input id="name" name="name" type="text" class="form-control" required placeholder="商品名を入力してください"/>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="barcodeId" class="form-label">バーコードID</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">A01</span>
-                                            <input id="barcodeId" type="text" class="form-control"
-                                                   placeholder="6桁の数字（空欄で自動生成）"
-                                                   pattern="^\d{6}$"
-                                                   maxlength="6"
-                                                   title="6桁の数字を入力してください"/>
-                                            <span class="input-group-text">A</span>
-                                        </div>
-                                        <input type="hidden" id="barcode" name="barcode"/>
-                                        <div class="form-text">6桁の数字を入力（空欄で自動生成、例: 000001 → A01000001A）</div>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label for="price" class="form-label">価格 <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">¥</span>
-                                            <input id="price" name="price" type="number" class="form-control" min="0" required placeholder="価格を入力してください"/>
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex justify-content-between">
-                                        <a class="btn btn-secondary" href="/items">
-                                            <i class="fas fa-arrow-left"></i> 戻る
-                                        </a>
-                                        <button class="btn btn-success" type="submit">
-                                            <i class="fas fa-save"></i> 作成
-                                        </button>
-                                    </div>
-                                </form>
+    <div class="row">
+        <div class="col-12 col-md-8 col-lg-6 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form th:action="@{/items}" th:method="post">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">商品名 <span class="text-danger">*</span></label>
+                            <input id="name" name="name" type="text" class="form-control" required placeholder="商品名を入力してください"/>
+                        </div>
+                        <div class="mb-3">
+                            <label for="barcodeId" class="form-label">バーコードID</label>
+                            <div class="input-group">
+                                <span class="input-group-text">A01</span>
+                                <input id="barcodeId" type="text" class="form-control"
+                                       placeholder="6桁の数字（空欄で自動生成）"
+                                       pattern="^\d{6}$"
+                                       maxlength="6"
+                                       title="6桁の数字を入力してください"/>
+                                <span class="input-group-text">A</span>
+                            </div>
+                            <input type="hidden" id="barcode" name="barcode"/>
+                            <div class="form-text">6桁の数字を入力（空欄で自動生成、例: 000001 → A01000001A）</div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="price" class="form-label">価格 <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                <input id="price" name="price" type="number" class="form-control" min="0" required placeholder="価格を入力してください"/>
                             </div>
                         </div>
-                    </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a class="btn btn-outline-secondary" href="/items">戻る</a>
+                            <button class="btn btn-primary" type="submit">作成</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</main>
+<footer th:replace="~{layout::footer}"></footer>
 <script src="/validation.js"></script>
 <script>
     // バーコードIDの入力を監視してフォーマット
@@ -85,6 +73,5 @@
         }
     });
 </script>
-<div th:replace="~{layout::footer}"></div>
 </body>
 </html>

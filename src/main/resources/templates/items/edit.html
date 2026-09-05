@@ -3,78 +3,65 @@
 <head th:replace="~{layout::base_header('商品編集')}">
 </head>
 <body>
-<div th:replace="~{layout::nav('items')}"></div>
+<nav th:replace="~{layout::nav('items')}"></nav>
+<main class="container">
+    <div class="page-header">
+        <h1>商品編集</h1>
+    </div>
 
-<div class="main-container">
-    <!-- Main Content -->
-    <div class="container-wrapper">
-        <div class="content-area">
-            <div class="container-fluid mt-3">
-                <div class="row">
-                    <div class="col-12 col-md-8 col-lg-6 mx-auto">
-                        <div class="card-modern">
-                            <div class="card-body">
-                                <h1 class="h4 mb-4 text-center">
-                                    <i class="fas fa-edit text-warning me-2"></i>
-                                    商品編集
-                                </h1>
-                                <form th:action="@{/items/{id}/update(id=${item.id})}" method="post">
-                                    <div class="mb-3">
-                                        <label for="barcodeId" class="form-label">バーコードID <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">A01</span>
-                                            <input type="text" id="barcodeId" class="form-control" required
-                                                   placeholder="6桁の数字"
-                                                   pattern="^\d{6}$"
-                                                   maxlength="6"
-                                                   title="6桁の数字を入力してください"/>
-                                            <span class="input-group-text">A</span>
-                                        </div>
-                                        <input type="hidden" id="barcode" name="barcode" th:value="${item.barcode}"/>
-                                        <div class="form-text">6桁の数字を入力（例: 000001 → A01000001A）</div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="name" class="form-label">商品名 <span class="text-danger">*</span></label>
-                                        <input type="text" id="name" name="name" class="form-control" th:value="${item.name}" required
-                                               placeholder="商品名を入力してください">
-                                    </div>
-                                    <div class="mb-4">
-                                        <label for="price" class="form-label">価格 <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">¥</span>
-                                            <input type="number" id="price" name="price" class="form-control" th:value="${item.price}" required min="0"
-                                                   placeholder="価格を入力してください">
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex justify-content-between mb-3">
-                                        <a href="/items" class="btn btn-secondary">
-                                            <i class="fas fa-arrow-left"></i> 戻る
-                                        </a>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-save"></i> 更新
-                                        </button>
-                                    </div>
-                                </form>
-
-                                <hr class="my-4">
-
-                                <div class="text-center">
-                                    <form th:action="@{/items/{id}/delete(id=${item.id})}" method="post"
-                                          onsubmit="return confirm('この商品を削除しますか？この操作は取り消しできません。')">
-                                        <button type="submit" class="btn btn-danger">
-                                            <i class="fas fa-trash"></i> 商品を削除する
-                                        </button>
-                                    </form>
-                                </div>
+    <div class="row">
+        <div class="col-12 col-md-8 col-lg-6 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form th:action="@{/items/{id}/update(id=${item.id})}" method="post">
+                        <div class="mb-3">
+                            <label for="barcodeId" class="form-label">バーコードID <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">A01</span>
+                                <input type="text" id="barcodeId" class="form-control" required
+                                       placeholder="6桁の数字"
+                                       pattern="^\d{6}$"
+                                       maxlength="6"
+                                       title="6桁の数字を入力してください"/>
+                                <span class="input-group-text">A</span>
+                            </div>
+                            <input type="hidden" id="barcode" name="barcode" th:value="${item.barcode}"/>
+                            <div class="form-text">6桁の数字を入力（例: 000001 → A01000001A）</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">商品名 <span class="text-danger">*</span></label>
+                            <input type="text" id="name" name="name" class="form-control" th:value="${item.name}" required
+                                   placeholder="商品名を入力してください">
+                        </div>
+                        <div class="mb-4">
+                            <label for="price" class="form-label">価格 <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                <input type="number" id="price" name="price" class="form-control" th:value="${item.price}" required min="0"
+                                       placeholder="価格を入力してください">
                             </div>
                         </div>
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <a href="/items" class="btn btn-outline-secondary">戻る</a>
+                            <button type="submit" class="btn btn-primary">更新</button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <form th:action="@{/items/{id}/delete(id=${item.id})}" method="post"
+                              onsubmit="return confirm('この商品を削除しますか？この操作は取り消しできません。')">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">商品を削除する</button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</main>
+<footer th:replace="~{layout::footer}"></footer>
 <script>
     // ページ読み込み時に既存のバーコードから6桁のIDを抽出
     window.addEventListener('DOMContentLoaded', function() {
@@ -107,6 +94,5 @@
         }
     });
 </script>
-<div th:replace="~{layout::footer}"></div>
 </body>
 </html>

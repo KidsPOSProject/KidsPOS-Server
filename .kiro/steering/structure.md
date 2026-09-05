@@ -153,10 +153,10 @@ service/
 ```
 resources/
 ├── static/                     # Static web assets
-│   ├── vendor/                # Offline third-party assets (Bootstrap 5, DataTables, jQuery, Chart.js, SweetAlert2, Font Awesome, Inter)
+│   ├── vendor/                # Offline third-party assets (Bootstrap 5, DataTables, jQuery)
 │   ├── QrCode/                # QR code generation
-│   ├── css/                   # modern-style.css, mobile-responsive.css
-│   ├── js/                    # modern-scripts.js
+│   ├── css/                   # admin.css
+│   ├── js/                    # admin.js
 │   └── validation.js          # Form validation helpers
 ├── templates/                  # Thymeleaf HTML templates
 │   ├── apk/                  # APK version management views
