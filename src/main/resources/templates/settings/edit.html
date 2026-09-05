@@ -2,49 +2,37 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header(${title})}"></head>
 <body>
-<div th:replace="~{layout::nav('settings')}"></div>
+<nav th:replace="~{layout::nav('settings')}"></nav>
+<main class="container">
+    <div class="page-header">
+        <h1>設定編集</h1>
+    </div>
 
-<div class="main-container">
-    <div class="container-wrapper">
-        <div class="content-area">
-            <div class="container-fluid mt-3">
-                <div class="row justify-content-center">
-                    <div class="col-lg-8">
-                        <div class="card-modern">
-                            <div class="card-body">
-                                <h1 class="h4 mb-4">
-                                    <i class="fas fa-cog text-secondary me-2"></i>
-                                    設定編集
-                                </h1>
-
-                                <form th:action="@{/settings/{key}(key=${setting.key})}" method="post">
-                                    <div class="mb-3">
-                                        <label class="form-label" for="settingKey">設定項目</label>
-                                        <input class="form-control" id="settingKey" name="key" type="text"
-                                               th:value="${setting.key}" readonly>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label" for="settingValue">値</label>
-                                        <input class="form-control" id="settingValue" name="value" type="text"
-                                               th:value="${setting.value}" required>
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <button class="btn btn-primary" type="submit">
-                                            <i class="fas fa-save"></i> 更新
-                                        </button>
-                                        <a class="btn btn-secondary" href="/settings">
-                                            <i class="fas fa-arrow-left"></i> 一覧へ戻る
-                                        </a>
-                                    </div>
-                                </form>
-                            </div>
+    <div class="row">
+        <div class="col-12 col-md-8 col-lg-6 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form th:action="@{/settings/{key}(key=${setting.key})}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label" for="settingKey">設定項目</label>
+                            <input class="form-control" id="settingKey" name="key" type="text"
+                                   th:value="${setting.key}" readonly>
                         </div>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="settingValue">値</label>
+                            <input class="form-control" id="settingValue" name="value" type="text"
+                                   th:value="${setting.value}" required>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" type="submit">更新</button>
+                            <a class="btn btn-outline-secondary" href="/settings">一覧へ戻る</a>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<div th:replace="~{layout::footer}"></div>
+</main>
+<footer th:replace="~{layout::footer}"></footer>
 </body>
 </html>

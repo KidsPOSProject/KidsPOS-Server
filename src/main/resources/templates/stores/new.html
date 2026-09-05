@@ -2,66 +2,55 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout::base_header('店舗作成')}"></head>
 <body>
-<div th:replace="~{layout::nav('stores')}"></div>
+<nav th:replace="~{layout::nav('stores')}"></nav>
+<main class="container">
+    <div class="page-header">
+        <h1>新規店舗作成</h1>
+    </div>
 
-<div class="main-container">
-    <!-- Main Content -->
-    <div class="container-wrapper">
-        <div class="content-area">
-            <div class="container-fluid mt-3">
-                <div class="row">
-                    <div class="col-12 col-md-8 col-lg-6 mx-auto">
-                        <div class="card-modern">
-                            <div class="card-body">
-                                <h1 class="h4 mb-4 text-center">
-                                    <i class="fas fa-plus-circle text-success me-2"></i>
-                                    新規店舗作成
-                                </h1>
-                                <form th:action="@{/stores}" th:method="post">
-                                    <div class="mb-3">
-                                        <label for="name" class="form-label">店舗名 <span class="text-danger">*</span></label>
-                                        <input id="name" name="name" type="text" class="form-control"
-                                               required
-                                               placeholder="店舗名を入力してください"
-                                               maxlength="100"/>
-                                        <div class="form-text">店舗を識別するための名前を入力してください</div>
-                                    </div>
-
-                                    <div class="mb-4">
-                                        <label class="form-label">プリンタIPアドレス</label>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <input id="printerIp1" type="number" class="form-control text-center ip-input"
-                                                   min="0" max="255" style="width: 70px;">
-                                            <span>.</span>
-                                            <input id="printerIp2" type="number" class="form-control text-center ip-input"
-                                                   min="0" max="255" style="width: 70px;">
-                                            <span>.</span>
-                                            <input id="printerIp3" type="number" class="form-control text-center ip-input"
-                                                   min="0" max="255" style="width: 70px;">
-                                            <span>.</span>
-                                            <input id="printerIp4" type="number" class="form-control text-center ip-input"
-                                                   min="0" max="255" style="width: 70px;">
-                                        </div>
-                                        <input id="printerUri" name="printerUri" type="hidden"/>
-                                    </div>
-
-                                    <div class="d-flex justify-content-between">
-                                        <a class="btn btn-secondary" href="/stores">
-                                            <i class="fas fa-arrow-left"></i> 戻る
-                                        </a>
-                                        <button class="btn btn-success" type="submit">
-                                            <i class="fas fa-save"></i> 作成
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
+    <div class="row">
+        <div class="col-12 col-md-8 col-lg-6 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form th:action="@{/stores}" th:method="post">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">店舗名 <span class="text-danger">*</span></label>
+                            <input id="name" name="name" type="text" class="form-control"
+                                   required
+                                   placeholder="店舗名を入力してください"
+                                   maxlength="100"/>
+                            <div class="form-text">店舗を識別するための名前を入力してください</div>
                         </div>
-                    </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">プリンタIPアドレス</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input id="printerIp1" type="number" class="form-control text-center ip-input"
+                                       min="0" max="255">
+                                <span>.</span>
+                                <input id="printerIp2" type="number" class="form-control text-center ip-input"
+                                       min="0" max="255">
+                                <span>.</span>
+                                <input id="printerIp3" type="number" class="form-control text-center ip-input"
+                                       min="0" max="255">
+                                <span>.</span>
+                                <input id="printerIp4" type="number" class="form-control text-center ip-input"
+                                       min="0" max="255">
+                            </div>
+                            <input id="printerUri" name="printerUri" type="hidden"/>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a class="btn btn-outline-secondary" href="/stores">戻る</a>
+                            <button class="btn btn-primary" type="submit">作成</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</main>
+<footer th:replace="~{layout::footer}"></footer>
 <script src="/validation.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -116,6 +105,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-<div th:replace="~{layout::footer}"></div>
 </body>
 </html>
